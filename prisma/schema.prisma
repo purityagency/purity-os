@@ -1,0 +1,85 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id        String    @id @default(cuid())
+  email     String    @unique
+  name      String?
+  role      String    @default("CLIENT") // "ADMIN" or "CLIENT"
+  createdAt DateTime  @default(now())
+  
+  projects  Project[]
+  messages  Message[]
+}
+
+model Project {
+  id               String     @id @default(cuid())
+  clientId         String
+  name             String
+  status           String     @default("ACTIVE") // "ACTIVE", "COMPLETED", "ON_HOLD"
+  estimatedDelivery DateTime?
+  createdAt        DateTime   @default(now())
+
+  client           User       @relation(fields: [clientId], references: [id])
+  stages           Stage[]
+  documents        Document[]
+  payments         Payment[]
+}
+
+model Stage {
+  id          String    @id @default(cuid())
+  projectId   String
+  title       String
+  description String?
+  status      String    @default("PENDING") // "PENDING", "IN_PROGRESS", "WAITING_CLIENT", "BLOCKED", "REVIEW", "COMPLETED"
+  orderIndex  Int
+
+  project     Project   @relation(fields: [projectId], references: [id])
+  messages    Message[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  stageId   String?
+  authorId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  stage     Stage?   @relation(fields: [stageId], references: [id])
+  author    User     @relation(fields: [authorId], references: [id])
+}
+
+model Document {
+  id         String   @id @default(cuid())
+  projectId  String
+  type       String   // "INVOICE", "ASSET", "CONTRACT"
+  url        String
+  filename   String
+  filesize   Int
+  mimeType   String
+  uploadedBy String
+  uploadedAt DateTime @default(now())
+
+  project    Project  @relation(fields: [projectId], references: [id])
+}
+
+model Payment {
+  id        String   @id @default(cuid())
+  projectId String
+  amount    Float
+  status    String   @default("PENDING") // "PENDING", "PAID", "CANCELLED"
+  type      String   // "QUOTE", "INVOICE", "PAYMENT"
+  createdAt DateTime @default(now())
+
+  project   Project  @relation(fields: [projectId], references: [id])
+}
