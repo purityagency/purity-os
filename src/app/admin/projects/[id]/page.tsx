@@ -7,18 +7,25 @@ import { Label } from "@/components/ui/label"
 import { addStageToProject } from "@/actions/stageActions"
 import { TimelineInteractive } from "@/components/TimelineInteractive"
 
+import { ProjectChat } from "@/components/ProjectChat"
+import { getServerSession } from "next-auth/next"
+import { authOptions } from "@/modules/auth/authOptions"
+
 export default async function AdminProjectDetailsPage({ params }: { params: { id: string } }) {
+  const session = await getServerSession(authOptions)
+  const userId = session?.user ? (session.user as any).id : ""
+
   const project = await prisma.project.findUnique({
     where: { id: params.id },
     include: {
       client: true,
-      stages: { orderBy: { orderIndex: 'asc' } }
+      stages: { orderBy: { orderIndex: 'asc' } },
+      messages: { orderBy: { createdAt: 'asc' }, include: { author: true } }
     }
   })
 
   if (!project) notFound()
 
-  // Pre-bind the server action with the project ID
   const addStage = addStageToProject.bind(null, project.id)
 
   return (
@@ -37,6 +44,15 @@ export default async function AdminProjectDetailsPage({ params }: { params: { id
             </CardHeader>
             <CardContent>
               <TimelineInteractive stages={project.stages} projectId={project.id} />
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-white/5 border-white/10 text-white backdrop-blur-md">
+            <CardHeader>
+              <CardTitle>Discussion avec le Client</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProjectChat messages={project.messages} projectId={project.id} currentUserId={userId} />
             </CardContent>
           </Card>
         </div>

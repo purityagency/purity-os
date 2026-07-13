@@ -3,6 +3,8 @@ import { authOptions } from "@/modules/auth/authOptions"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 
+import { ProjectChat } from "@/components/ProjectChat"
+
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
   
@@ -10,16 +12,13 @@ export default async function DashboardPage() {
     redirect("/login")
   }
 
-  // Cast session.user to extract custom id added in callback
   const userId = (session.user as any).id as string
 
-  // Fetch active project for user
   const project = await prisma.project.findFirst({
     where: { clientId: userId },
     include: {
-      stages: {
-        orderBy: { orderIndex: 'asc' }
-      }
+      stages: { orderBy: { orderIndex: 'asc' } },
+      messages: { orderBy: { createdAt: 'asc' }, include: { author: true } }
     }
   })
 
@@ -34,7 +33,6 @@ export default async function DashboardPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Info */}
           <div className="lg:col-span-2 space-y-8">
             <div className="p-6 border border-white/10 bg-white/5 rounded-2xl backdrop-blur-sm">
               <h2 className="text-xl font-bold text-[#7C3AED] mb-2">{project.name}</h2>
@@ -46,7 +44,6 @@ export default async function DashboardPage() {
               </div>
             </div>
 
-            {/* Stages overview */}
             <div className="p-6 border border-white/10 bg-white/5 rounded-2xl backdrop-blur-sm">
               <h3 className="font-bold mb-4">Progression (Étapes)</h3>
               <div className="space-y-4">
@@ -68,15 +65,10 @@ export default async function DashboardPage() {
             </div>
           </div>
 
-          {/* Sidebar Widgets */}
           <div className="space-y-8">
-            <div className="p-6 border border-[#7C3AED]/30 bg-[#7C3AED]/10 rounded-2xl backdrop-blur-sm text-center">
-              <div className="text-4xl mb-4">💬</div>
-              <h3 className="font-bold text-white mb-2">Besoin d'aide ?</h3>
-              <p className="text-sm text-zinc-400 mb-4">L'équipe Purity est disponible pour répondre à vos questions.</p>
-              <button className="w-full py-2 bg-white text-[#060309] font-bold rounded-lg hover:bg-zinc-200 transition-colors">
-                Contacter l'équipe
-              </button>
+            <div className="p-6 border border-white/10 bg-white/5 rounded-2xl backdrop-blur-sm">
+              <h3 className="font-bold mb-4 text-[#7C3AED]">Discussion</h3>
+              <ProjectChat messages={project.messages} projectId={project.id} currentUserId={userId} />
             </div>
           </div>
         </div>
