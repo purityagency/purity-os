@@ -73,9 +73,9 @@ export default function LoginPage() {
   return (
     <div className="relative min-h-screen bg-[#060309] flex flex-col items-center justify-center p-6 text-white overflow-hidden select-none">
       
-      {/* ── DESIGN SYSTEM AURA & GLOW (2026-2027 Era) ── */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-[#7C3AED]/12 rounded-full blur-[140px] pointer-events-none animate-pulse" style={{ animationDuration: '10s' }} />
-      <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] bg-[#7C3AED]/5 rounded-full blur-[90px] pointer-events-none" />
+      {/* ── DESIGN SYSTEM AURA & GLOW (Official Mauve #A855F7) ── */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-[#A855F7]/12 rounded-full blur-[140px] pointer-events-none animate-pulse" style={{ animationDuration: '10s' }} />
+      <div className="absolute top-1/3 left-1/4 w-[300px] h-[300px] bg-[#A855F7]/5 rounded-full blur-[90px] pointer-events-none" />
 
       {/* ── OCTOMASK TENTACLE BACKGROUND SVG (Fine lines - Opacity 3%) ── */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
@@ -93,16 +93,14 @@ export default function LoginPage() {
         </svg>
       </div>
 
-      {/* ── PORTAL BRANDING ── */}
-      <div className="mb-8 text-center z-10">
-        <div className="text-2xl font-bold tracking-[0.25em] font-sans">
-          PURITY<span className="text-[#7C3AED]">.</span>OS
-        </div>
-        <p className="text-zinc-500 text-xs mt-2 uppercase tracking-[0.15em]">Unified Agency Gateway</p>
+      {/* ── PORTAL BRANDING (Official Logo Style) ── */}
+      <div className="mb-10 text-center z-10 flex flex-col items-center select-none cursor-default group transition-transform duration-300 hover:scale-[1.03]">
+        <span className="font-bold text-2xl tracking-[0.16em] text-white" style={{ fontFamily: "var(--font-heading)" }}>PURITY</span>
+        <span className="font-medium text-[9px] tracking-[13px] -mr-[13px] mt-1 text-white/90" style={{ fontFamily: "var(--font-heading)" }}>AGENCY</span>
       </div>
 
-      {/* ── CARD LOGIN (Liquid Glass Effect) ── */}
-      <div className="w-full max-w-[430px] backdrop-blur-2xl bg-white/[0.015] border border-white/[0.08] rounded-3xl p-8 shadow-2xl relative z-10 transition-all duration-500 hover:border-white/[0.12]">
+      {/* ── CARD LOGIN (Liquid Glass Effect matching --c-border) ── */}
+      <div className="w-full max-w-[430px] backdrop-blur-2xl bg-white/[0.02] border border-white/[0.1] rounded-[24px] p-8 shadow-2xl relative z-10 transition-all duration-300 hover:border-white/[0.15]">
         
         {/* Fine Glass Reflection Line */}
         <div className="absolute top-0 inset-x-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none" />
@@ -138,8 +136,8 @@ export default function LoginPage() {
         {/* ── FORM CLIENT (Magic Link) ── */}
         {activeTab === "client" ? (
           <div className="animate-fadeIn duration-300">
-            <h2 className="text-xl font-bold font-sans">Accès client sécurisé</h2>
-            <p className="mt-2 text-zinc-400 text-xs leading-relaxed">
+            <h2 className="text-xl font-bold font-heading tracking-wide">Accès client sécurisé</h2>
+            <p className="mt-2 text-zinc-400 text-xs leading-relaxed font-sans">
               Entrez l&apos;adresse mail associée à votre projet. Un lien d&apos;accès direct et sécurisé vous sera envoyé instantanément.
             </p>
 
@@ -151,25 +149,25 @@ export default function LoginPage() {
                   onChange={(e) => setClientEmail(e.target.value)}
                   required
                   placeholder="client@domaine.com"
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#7C3AED] focus:outline-none focus:ring-1 focus:ring-[#7C3AED]/30 transition-all"
+                  className="w-full rounded-full border border-white/10 bg-white/[0.02] px-5 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#A855F7] focus:outline-none focus:ring-1 focus:ring-[#A855F7]/30 transition-all font-sans"
                 />
               </div>
 
               <Button 
                 type="submit" 
                 disabled={clientLoading} 
-                className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-semibold py-3 rounded-xl transition-all shadow-lg shadow-[#7C3AED]/20 uppercase tracking-wider disabled:opacity-50"
+                className="w-full bg-transparent hover:bg-transparent border border-white/80 hover:border-[#A855F7]/90 hover:shadow-[0_0_18px_rgba(168,85,247,0.45),0_0_4px_rgba(168,85,247,0.25)] text-white text-xs font-semibold py-3.5 rounded-full transition-all uppercase tracking-wider disabled:opacity-50 font-sans hover:scale-[1.02] active:scale-[0.98]"
               >
                 {clientLoading ? "Génération du lien..." : "Recevoir mon lien magique"}
               </Button>
 
               {clientSuccess ? (
-                <div className="mt-4 p-3 rounded-lg border border-emerald-500/20 bg-emerald-500/10 text-emerald-300 text-xs leading-relaxed">
+                <div className="mt-4 p-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300 text-xs leading-relaxed font-sans">
                   ✓ Si l&apos;adresse correspond à un projet actif, le lien vient d&apos;être envoyé. Vérifiez votre boîte de réception (et vos spams).
                 </div>
               ) : null}
               {clientError ? (
-                <div className="mt-4 p-3 rounded-lg border border-red-500/20 bg-red-500/10 text-red-300 text-xs">
+                <div className="mt-4 p-3 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-300 text-xs font-sans">
                   ✕ {clientError}
                 </div>
               ) : null}
@@ -178,8 +176,8 @@ export default function LoginPage() {
         ) : (
           /* ── FORM ADMIN (Credentials) ── */
           <div className="animate-fadeIn duration-300">
-            <h2 className="text-xl font-bold font-sans">Console équipe</h2>
-            <p className="mt-2 text-zinc-400 text-xs leading-relaxed">
+            <h2 className="text-xl font-bold font-heading tracking-wide">Console équipe</h2>
+            <p className="mt-2 text-zinc-400 text-xs leading-relaxed font-sans">
               Réservé à l&apos;administration interne de Purity Agency pour gérer les projets, documents et workflows.
             </p>
 
@@ -191,7 +189,7 @@ export default function LoginPage() {
                   onChange={(e) => setAdminEmail(e.target.value)}
                   required
                   placeholder="Identifiant"
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#7C3AED] focus:outline-none focus:ring-1 focus:ring-[#7C3AED]/30 transition-all"
+                  className="w-full rounded-full border border-white/10 bg-white/[0.02] px-5 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#A855F7] focus:outline-none focus:ring-1 focus:ring-[#A855F7]/30 transition-all font-sans"
                 />
               </div>
 
@@ -202,20 +200,20 @@ export default function LoginPage() {
                   onChange={(e) => setAdminPassword(e.target.value)}
                   required
                   placeholder="Mot de passe"
-                  className="w-full rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#7C3AED] focus:outline-none focus:ring-1 focus:ring-[#7C3AED]/30 transition-all"
+                  className="w-full rounded-full border border-white/10 bg-white/[0.02] px-5 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#A855F7] focus:outline-none focus:ring-1 focus:ring-[#A855F7]/30 transition-all font-sans"
                 />
               </div>
 
               <Button 
                 type="submit" 
                 disabled={adminLoading} 
-                className="w-full bg-white text-black hover:bg-zinc-200 text-xs font-semibold py-3 rounded-xl transition-all shadow-lg uppercase tracking-wider disabled:opacity-50"
+                className="w-full bg-white text-black hover:bg-zinc-200 text-xs font-semibold py-3.5 rounded-full transition-all shadow-lg uppercase tracking-wider disabled:opacity-50 font-sans hover:scale-[1.02] active:scale-[0.98]"
               >
                 {adminLoading ? "Authentification..." : "Accéder à la console"}
               </Button>
 
               {adminError ? (
-                <div className="mt-4 p-3 rounded-lg border border-red-500/20 bg-red-500/10 text-red-300 text-xs">
+                <div className="mt-4 p-3 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-300 text-xs">
                   ✕ {adminError}
                 </div>
               ) : null}
