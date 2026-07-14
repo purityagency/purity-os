@@ -2,48 +2,54 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/modules/auth/authOptions"
+import { hashPassword, sanitizeEmailInput, sanitizePasswordInput } from "@/lib/auth"
+import { requireAdminSession } from "@/lib/session"
 
 export async function createProjectWithClient(formData: FormData) {
-  const session = await getServerSession(authOptions)
-  if (!session || (session.user as any).role !== "ADMIN") {
-    throw new Error("Unauthorized")
-  }
+  await requireAdminSession()
 
-  const clientName = formData.get("clientName") as string
-  const clientEmail = formData.get("clientEmail") as string
-  const projectName = formData.get("projectName") as string
-  const estimatedDelivery = formData.get("estimatedDelivery") as string
+  const clientName = String(formData.get("clientName") ?? "").trim()
+  const clientEmail = sanitizeEmailInput(formData.get("clientEmail"))
+  const clientPassword = sanitizePasswordInput(formData.get("clientPassword"))
+  const projectName = String(formData.get("projectName") ?? "").trim()
+  const estimatedDelivery = String(formData.get("estimatedDelivery") ?? "").trim()
 
-  // Simple validation
-  if (!clientName || !clientEmail || !projectName) {
+  if (!clientName || !clientEmail || !projectName || !clientPassword) {
     throw new Error("Missing required fields")
   }
+  if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clientEmail)) throw new Error("Invalid email")
+  if (clientPassword.length < 10) throw new Error("Password too short")
 
-  // 1. Create or connect User (Client)
+  let deliveryDate: Date | null = null
+  if (estimatedDelivery) {
+    deliveryDate = new Date(estimatedDelivery)
+    if (Number.isNaN(deliveryDate.getTime())) throw new Error("Invalid delivery date")
+  }
+
   const user = await prisma.user.upsert({
     where: { email: clientEmail },
-    update: { name: clientName },
+    update: {
+      name: clientName,
+      role: "CLIENT",
+      passwordHash: hashPassword(clientPassword),
+    },
     create: {
       email: clientEmail,
       name: clientName,
-      role: "CLIENT"
+      role: "CLIENT",
+      passwordHash: hashPassword(clientPassword),
     }
   })
 
-  // 2. Create Project
-  const project = await prisma.project.create({
+  await prisma.project.create({
     data: {
       name: projectName,
       clientId: user.id,
       status: "ACTIVE",
-      estimatedDelivery: estimatedDelivery ? new Date(estimatedDelivery) : null
+      estimatedDelivery: deliveryDate
     }
   })
 
   revalidatePath("/admin")
   revalidatePath("/admin/projects")
-  
-  return project
 }

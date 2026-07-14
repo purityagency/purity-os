@@ -2,10 +2,12 @@ import { NextAuthOptions } from "next-auth"
 import CredentialsProvider from "next-auth/providers/credentials"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { prisma } from "@/lib/prisma"
+import { ensureBootstrapAdmin, sanitizeEmailInput, sanitizePasswordInput, verifyPassword } from "@/lib/auth"
 
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
+  secret: process.env.NEXTAUTH_SECRET,
   providers: [
     CredentialsProvider({
       name: "Email",
@@ -14,26 +16,35 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Mot de passe", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) return null
-        
-        // MVP: Simple auth check for functional testing
+        const email = sanitizeEmailInput(credentials?.email ?? null)
+        const password = sanitizePasswordInput(credentials?.password ?? null)
+
+        if (!email || !password) return null
+
+        const bootstrappedAdmin = await ensureBootstrapAdmin(email, password)
+        if (bootstrappedAdmin) return bootstrappedAdmin
+
         const user = await prisma.user.findUnique({
-          where: { email: credentials.email }
+          where: { email }
         })
 
-        if (!user) {
-          // Auto-create user for testing purposes if it doesn't exist
-          // In production, this should be handled properly
-          const newUser = await prisma.user.create({
-            data: {
-              email: credentials.email,
-              name: credentials.email.split('@')[0],
-              role: credentials.password === 'admin' ? 'ADMIN' : 'CLIENT'
-            }
-          })
-          return newUser
-        }
+        if (!user || !verifyPassword(password, user.passwordHash)) return null
 
+        return user
+      }
+    }),
+    CredentialsProvider({
+      id: "magic-link",
+      name: "Magic Link",
+      credentials: {
+        token: { label: "Token", type: "text" }
+      },
+      async authorize(credentials) {
+        const token = sanitizePasswordInput(credentials?.token ?? null)
+        if (!token) return null
+
+        const { consumeMagicLinkToken } = await import("@/lib/magic-link")
+        const user = await consumeMagicLinkToken(token)
         return user
       }
     })
@@ -42,9 +53,17 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login',
   },
   callbacks: {
+    async jwt({ token, user }) {
+      if (user?.role) {
+        token.role = user.role
+      }
+
+      return token
+    },
     async session({ session, token }) {
-      if (token && session.user) {
-        (session.user as any).id = token.sub as string
+      if (token.sub && session.user) {
+        session.user.id = token.sub
+        session.user.role = token.role === "ADMIN" ? "ADMIN" : "CLIENT"
       }
       return session
     }

@@ -10,8 +10,7 @@ export default async function AdminLayout({
 }) {
   const session = await getServerSession(authOptions)
 
-  if (!session || (session.user as any).role !== "ADMIN") {
-    // If user is logged in but not admin, maybe redirect to their client dashboard
+  if (!session?.user?.id || session.user.role !== "ADMIN") {
     redirect(session ? "/dashboard" : "/login")
   }
 

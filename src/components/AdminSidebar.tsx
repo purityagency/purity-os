@@ -1,9 +1,10 @@
 "use client"
 
 import Link from "next/link"
+import type { Session } from "next-auth"
 import { usePathname } from "next/navigation"
 
-export function AdminSidebar({ session }: { session: any }) {
+export function AdminSidebar({ session }: { session: Session }) {
   const pathname = usePathname()
 
   const navItems = [

@@ -8,14 +8,12 @@ import { ProjectChat } from "@/components/ProjectChat"
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions)
   
-  if (!session || !session.user) {
+  if (!session?.user?.id) {
     redirect("/login")
   }
 
-  const userId = (session.user as any).id as string
-
   const project = await prisma.project.findFirst({
-    where: { clientId: userId },
+    where: { clientId: session.user.id },
     include: {
       stages: { orderBy: { orderIndex: 'asc' } },
       messages: { orderBy: { createdAt: 'asc' }, include: { author: true } }
@@ -68,7 +66,7 @@ export default async function DashboardPage() {
           <div className="space-y-8">
             <div className="p-6 border border-white/10 bg-white/5 rounded-2xl backdrop-blur-sm">
               <h3 className="font-bold mb-4 text-[#7C3AED]">Discussion</h3>
-              <ProjectChat messages={project.messages} projectId={project.id} currentUserId={userId} />
+              <ProjectChat messages={project.messages} projectId={project.id} currentUserId={session.user.id} />
             </div>
           </div>
         </div>

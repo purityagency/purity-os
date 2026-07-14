@@ -1,11 +1,16 @@
 "use client"
 
 import { useRef, useEffect } from "react"
+import type { Message, User } from "@prisma/client"
 import { sendMessage } from "@/actions/messageActions"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 
-export function ProjectChat({ messages, projectId, currentUserId }: { messages: any[], projectId: string, currentUserId: string }) {
+type ChatMessage = Message & {
+  author: Pick<User, "id" | "name" | "email">
+}
+
+export function ProjectChat({ messages, projectId, currentUserId }: { messages: ChatMessage[], projectId: string, currentUserId: string }) {
   const formRef = useRef<HTMLFormElement>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 

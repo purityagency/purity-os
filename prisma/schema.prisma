@@ -15,11 +15,24 @@ model User {
   id        String    @id @default(cuid())
   email     String    @unique
   name      String?
+  passwordHash String?
   role      String    @default("CLIENT") // "ADMIN" or "CLIENT"
   createdAt DateTime  @default(now())
   
   projects  Project[]
   messages  Message[]
+  magicLinkTokens MagicLinkToken[]
+}
+
+model MagicLinkToken {
+  id         String   @id @default(cuid())
+  userId     String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Project {
@@ -29,9 +42,11 @@ model Project {
   status           String     @default("ACTIVE") // "ACTIVE", "COMPLETED", "ON_HOLD"
   estimatedDelivery DateTime?
   createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
 
   client           User       @relation(fields: [clientId], references: [id])
   stages           Stage[]
+  messages         Message[]
   documents        Document[]
   payments         Payment[]
 }
@@ -43,6 +58,7 @@ model Stage {
   description String?
   status      String    @default("PENDING") // "PENDING", "IN_PROGRESS", "WAITING_CLIENT", "BLOCKED", "REVIEW", "COMPLETED"
   orderIndex  Int
+  updatedAt   DateTime  @updatedAt
 
   project     Project   @relation(fields: [projectId], references: [id])
   messages    Message[]
@@ -50,11 +66,13 @@ model Stage {
 
 model Message {
   id        String   @id @default(cuid())
+  projectId String?
   stageId   String?
   authorId  String
   content   String
   createdAt DateTime @default(now())
 
+  project   Project? @relation(fields: [projectId], references: [id])
   stage     Stage?   @relation(fields: [stageId], references: [id])
   author    User     @relation(fields: [authorId], references: [id])
 }

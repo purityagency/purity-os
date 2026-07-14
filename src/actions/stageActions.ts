@@ -2,19 +2,27 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/modules/auth/authOptions"
+import { requireAdminSession } from "@/lib/session"
+
+const VALID_STAGE_STATUSES = ["PENDING", "IN_PROGRESS", "WAITING_CLIENT", "BLOCKED", "REVIEW", "COMPLETED"] as const
+type StageStatus = (typeof VALID_STAGE_STATUSES)[number]
 
 export async function addStageToProject(projectId: string, formData: FormData) {
-  const session = await getServerSession(authOptions)
-  if (!session || (session.user as any).role !== "ADMIN") throw new Error("Unauthorized")
+  await requireAdminSession()
 
-  const title = formData.get("title") as string
-  const description = formData.get("description") as string
+  const title = String(formData.get("title") ?? "").trim()
+  const description = String(formData.get("description") ?? "").trim()
 
   if (!title) throw new Error("Title is required")
+  if (title.length > 120) throw new Error("Title too long")
+  if (description.length > 500) throw new Error("Description too long")
 
-  // Get current max orderIndex
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { id: true },
+  })
+  if (!project) throw new Error("Project not found")
+
   const maxStage = await prisma.stage.findFirst({
     where: { projectId },
     orderBy: { orderIndex: 'desc' }
@@ -25,7 +33,7 @@ export async function addStageToProject(projectId: string, formData: FormData) {
   await prisma.stage.create({
     data: {
       title,
-      description,
+      description: description || null,
       projectId,
       orderIndex,
       status: "PENDING"
@@ -37,12 +45,18 @@ export async function addStageToProject(projectId: string, formData: FormData) {
 }
 
 export async function updateStageStatus(stageId: string, projectId: string, status: string) {
-  const session = await getServerSession(authOptions)
-  if (!session || (session.user as any).role !== "ADMIN") throw new Error("Unauthorized")
+  await requireAdminSession()
+  if (!VALID_STAGE_STATUSES.includes(status as StageStatus)) throw new Error("Invalid status")
+
+  const stage = await prisma.stage.findFirst({
+    where: { id: stageId, projectId },
+    select: { id: true },
+  })
+  if (!stage) throw new Error("Stage not found")
 
   await prisma.stage.update({
-    where: { id: stageId },
-    data: { status }
+    where: { id: stage.id },
+    data: { status: status as StageStatus }
   })
 
   revalidatePath(`/admin/projects/${projectId}`)

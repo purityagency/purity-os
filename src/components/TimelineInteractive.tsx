@@ -1,15 +1,16 @@
 "use client"
 
 import { useState } from "react"
+import type { Stage } from "@prisma/client"
 import { updateStageStatus } from "@/actions/stageActions"
-import { Button } from "@/components/ui/button"
 
-const STATUSES = ["PENDING", "IN_PROGRESS", "WAITING_CLIENT", "BLOCKED", "REVIEW", "COMPLETED"]
+const STATUSES = ["PENDING", "IN_PROGRESS", "WAITING_CLIENT", "BLOCKED", "REVIEW", "COMPLETED"] as const
+type StageStatus = (typeof STATUSES)[number]
 
-export function TimelineInteractive({ stages, projectId }: { stages: any[], projectId: string }) {
+export function TimelineInteractive({ stages, projectId }: { stages: Stage[], projectId: string }) {
   const [loadingId, setLoadingId] = useState<string | null>(null)
 
-  const handleStatusChange = async (stageId: string, newStatus: string) => {
+  const handleStatusChange = async (stageId: string, newStatus: StageStatus) => {
     setLoadingId(stageId)
     try {
       await updateStageStatus(stageId, projectId, newStatus)

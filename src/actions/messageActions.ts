@@ -2,23 +2,30 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-import { getServerSession } from "next-auth/next"
-import { authOptions } from "@/modules/auth/authOptions"
+import { requireSession } from "@/lib/session"
 
 export async function sendMessage(projectId: string, formData: FormData) {
-  const session = await getServerSession(authOptions)
-  if (!session || !session.user) throw new Error("Unauthorized")
+  const session = await requireSession()
 
-  const content = formData.get("content") as string
-  if (!content || content.trim() === "") return
+  const content = String(formData.get("content") ?? "").trim()
+  if (!content) return
+  if (content.length > 2000) throw new Error("Message too long")
 
-  const userId = (session.user as any).id
+  const project = await prisma.project.findUnique({
+    where: { id: projectId },
+    select: { id: true, clientId: true },
+  })
+
+  if (!project) throw new Error("Project not found")
+  if (session.user.role !== "ADMIN" && project.clientId !== session.user.id) {
+    throw new Error("Unauthorized")
+  }
 
   await prisma.message.create({
     data: {
       content,
       projectId,
-      authorId: userId
+      authorId: session.user.id
     }
   })
 

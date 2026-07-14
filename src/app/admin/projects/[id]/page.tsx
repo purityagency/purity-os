@@ -6,21 +6,20 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { addStageToProject } from "@/actions/stageActions"
 import { TimelineInteractive } from "@/components/TimelineInteractive"
-
 import { ProjectChat } from "@/components/ProjectChat"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/modules/auth/authOptions"
 
 export default async function AdminProjectDetailsPage({ params }: { params: { id: string } }) {
   const session = await getServerSession(authOptions)
-  const userId = session?.user ? (session.user as any).id : ""
+  const userId = session?.user?.id ?? ""
 
   const project = await prisma.project.findUnique({
     where: { id: params.id },
     include: {
       client: true,
-      stages: { orderBy: { orderIndex: 'asc' } },
-      messages: { orderBy: { createdAt: 'asc' }, include: { author: true } }
+      stages: { orderBy: { orderIndex: "asc" } },
+      messages: { orderBy: { createdAt: "asc" }, include: { author: true } }
     }
   })
 
@@ -40,16 +39,16 @@ export default async function AdminProjectDetailsPage({ params }: { params: { id
         <div className="md:col-span-2 space-y-8">
           <Card className="bg-white/5 border-white/10 text-white backdrop-blur-md">
             <CardHeader>
-              <CardTitle>Timeline & Étapes</CardTitle>
+              <CardTitle>Timeline &amp; Étapes</CardTitle>
             </CardHeader>
             <CardContent>
               <TimelineInteractive stages={project.stages} projectId={project.id} />
             </CardContent>
           </Card>
-          
+
           <Card className="bg-white/5 border-white/10 text-white backdrop-blur-md">
             <CardHeader>
-              <CardTitle>Discussion avec le Client</CardTitle>
+              <CardTitle>Discussion avec le client</CardTitle>
             </CardHeader>
             <CardContent>
               <ProjectChat messages={project.messages} projectId={project.id} currentUserId={userId} />
@@ -60,12 +59,12 @@ export default async function AdminProjectDetailsPage({ params }: { params: { id
         <div className="space-y-8">
           <Card className="bg-[#7C3AED]/10 border-[#7C3AED]/30 text-white backdrop-blur-md">
             <CardHeader>
-              <CardTitle>Ajouter une Étape</CardTitle>
+              <CardTitle>Ajouter une étape</CardTitle>
             </CardHeader>
             <CardContent>
               <form action={addStage} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="title">Titre de l'étape</Label>
+                  <Label htmlFor="title">Titre de l&apos;étape</Label>
                   <Input id="title" name="title" required className="bg-white/5 border-white/10" placeholder="Ex: Design Maquette" />
                 </div>
                 <div className="space-y-2">

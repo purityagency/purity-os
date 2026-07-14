@@ -15,7 +15,7 @@ export default async function AdminDashboard() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-8 text-white">Vue d'ensemble</h1>
+      <h1 className="text-3xl font-bold mb-8 text-white">Vue d&apos;ensemble</h1>
 
       <div className="grid gap-6 md:grid-cols-3 mb-8">
         <Card className="bg-white/5 border-white/10 text-white backdrop-blur-md">
