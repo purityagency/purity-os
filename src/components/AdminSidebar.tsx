@@ -3,7 +3,7 @@
 import Link from "next/link"
 import type { Session } from "next-auth"
 import { usePathname } from "next/navigation"
-
+import { signOut } from "next-auth/react"
 export function AdminSidebar({ session }: { session: Session }) {
   const pathname = usePathname()
 
@@ -33,8 +33,16 @@ export function AdminSidebar({ session }: { session: Session }) {
         </div>
       </div>
       <div className="mt-auto p-6 border-t border-white/10 text-sm text-zinc-400">
-        Connecté en tant que<br />
-        <span className="text-white truncate block font-medium">{session?.user?.email}</span>
+        <div className="mb-4">
+          Connecté en tant que<br />
+          <span className="text-white truncate block font-medium">{session?.user?.email}</span>
+        </div>
+        <button 
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="w-full px-4 py-2 text-xs font-semibold rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors"
+        >
+          Déconnexion
+        </button>
       </div>
     </aside>
   )

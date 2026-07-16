@@ -1,8 +1,20 @@
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
+function formatEUR(amount: number) {
+  return new Intl.NumberFormat('fr-BE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(amount)
+}
+
 export default async function AdminDashboard() {
-  const [totalProjects, activeProjects, totalClients, recentStages] = await Promise.all([
+  const [
+    totalProjects,
+    activeProjects,
+    totalClients,
+    recentStages,
+    paidAgg,
+    pendingAgg,
+    activeMonthlyProjects,
+  ] = await Promise.all([
     prisma.project.count(),
     prisma.project.count({ where: { status: { notIn: ['COMPLETED', 'CANCELLED'] } } }),
     prisma.user.count({ where: { role: 'CLIENT' } }),
@@ -10,8 +22,18 @@ export default async function AdminDashboard() {
       orderBy: { updatedAt: 'desc' },
       take: 5,
       include: { project: true }
-    })
+    }),
+    prisma.payment.aggregate({ where: { status: 'PAID' }, _sum: { amount: true } }),
+    prisma.payment.aggregate({ where: { status: 'PENDING' }, _sum: { amount: true } }),
+    prisma.project.findMany({
+      where: { status: { notIn: ['COMPLETED', 'CANCELLED'] }, monthlyAmount: { not: null } },
+      select: { monthlyAmount: true },
+    }),
   ])
+
+  const totalPaid = paidAgg._sum.amount ?? 0
+  const totalPending = pendingAgg._sum.amount ?? 0
+  const monthlyRecurring = activeMonthlyProjects.reduce((sum, p) => sum + (p.monthlyAmount ?? 0), 0)
 
   return (
     <div>
@@ -39,11 +61,31 @@ export default async function AdminDashboard() {
 
         <Card className="bg-white/5 border-white/10 text-white backdrop-blur-md">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">Revenus en attente</CardTitle>
+            <CardTitle className="text-sm font-medium text-zinc-400">Encaissé (acomptes)</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-zinc-500">MVP</div>
-            <p className="text-xs text-zinc-500 mt-1">Module facturation en cours</p>
+            <div className="text-3xl font-bold text-emerald-400">{formatEUR(totalPaid)}</div>
+            <p className="text-xs text-zinc-500 mt-1">Total des paiements Stripe confirmés</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/5 border-white/10 text-white backdrop-blur-md">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-zinc-400">Soldes en attente</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-amber-400">{formatEUR(totalPending)}</div>
+            <p className="text-xs text-zinc-500 mt-1">À encaisser à la livraison (hors Stripe)</p>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/5 border-white/10 text-white backdrop-blur-md">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-zinc-400">Récurrent mensuel</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-3xl font-bold text-[#7C3AED]">{formatEUR(monthlyRecurring)}</div>
+            <p className="text-xs text-zinc-500 mt-1">Somme des suivis mensuels actifs (Stripe)</p>
           </CardContent>
         </Card>
       </div>

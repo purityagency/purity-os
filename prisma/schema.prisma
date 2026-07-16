@@ -39,10 +39,18 @@ model Project {
   id               String     @id @default(cuid())
   clientId         String
   name             String
-  status           String     @default("ACTIVE") // "ACTIVE", "COMPLETED", "ON_HOLD"
+  status           String     @default("ACTIVE") // "ACTIVE", "COMPLETED", "ON_HOLD", "CANCELLED"
   estimatedDelivery DateTime?
   createdAt        DateTime   @default(now())
   updatedAt        DateTime   @updatedAt
+
+  // Origine commande (site public) — permet la vue financière réelle
+  externalOrderId  String?    @unique // ex: ord_1234567890_abcdef (data/orders/*.json côté site)
+  sector           String?    // coiffure, artisan, horeca, praticien...
+  totalPrice       Float?     // prix total HTVA du pack/service
+  depositAmount    Float?     // acompte encaissé (Stripe, one-shot)
+  remainingAmount  Float?     // solde dû à la livraison (hors Stripe, encaissé manuellement)
+  monthlyAmount    Float?     // suivi mensuel récurrent (Stripe subscription)
 
   client           User       @relation(fields: [clientId], references: [id])
   stages           Stage[]

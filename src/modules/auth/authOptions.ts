@@ -32,21 +32,6 @@ export const authOptions: NextAuthOptions = {
 
         return user
       }
-    }),
-    CredentialsProvider({
-      id: "magic-link",
-      name: "Magic Link",
-      credentials: {
-        token: { label: "Token", type: "text" }
-      },
-      async authorize(credentials) {
-        const token = sanitizePasswordInput(credentials?.token ?? null)
-        if (!token) return null
-
-        const { consumeMagicLinkToken } = await import("@/lib/magic-link")
-        const user = await consumeMagicLinkToken(token)
-        return user
-      }
     })
   ],
   pages: {

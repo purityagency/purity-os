@@ -53,3 +53,51 @@ export async function createProjectWithClient(formData: FormData) {
   revalidatePath("/admin")
   revalidatePath("/admin/projects")
 }
+
+const VALID_PROJECT_STATUSES = ["ACTIVE", "ON_HOLD", "COMPLETED", "CANCELLED"] as const
+type ProjectStatus = (typeof VALID_PROJECT_STATUSES)[number]
+
+export async function updateProjectStatus(projectId: string, status: string) {
+  await requireAdminSession()
+  if (!VALID_PROJECT_STATUSES.includes(status as ProjectStatus)) throw new Error("Invalid status")
+
+  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } })
+  if (!project) throw new Error("Project not found")
+
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { status: status as ProjectStatus },
+  })
+
+  revalidatePath(`/admin/projects/${projectId}`)
+  revalidatePath("/admin/projects")
+  revalidatePath("/admin")
+  revalidatePath("/dashboard")
+}
+
+export async function updateProjectDetails(projectId: string, formData: FormData) {
+  await requireAdminSession()
+
+  const name = String(formData.get("name") ?? "").trim()
+  const estimatedDelivery = String(formData.get("estimatedDelivery") ?? "").trim()
+
+  if (!name) throw new Error("Name is required")
+  if (name.length > 200) throw new Error("Name too long")
+
+  let deliveryDate: Date | null = null
+  if (estimatedDelivery) {
+    deliveryDate = new Date(estimatedDelivery)
+    if (Number.isNaN(deliveryDate.getTime())) throw new Error("Invalid delivery date")
+  }
+
+  const project = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } })
+  if (!project) throw new Error("Project not found")
+
+  await prisma.project.update({
+    where: { id: projectId },
+    data: { name, estimatedDelivery: deliveryDate },
+  })
+
+  revalidatePath(`/admin/projects/${projectId}`)
+  revalidatePath("/admin/projects")
+}

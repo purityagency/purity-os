@@ -3,6 +3,7 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { requireAdminSession } from "@/lib/session"
+import { sendEmail } from "@/lib/email"
 
 const VALID_STAGE_STATUSES = ["PENDING", "IN_PROGRESS", "WAITING_CLIENT", "BLOCKED", "REVIEW", "COMPLETED"] as const
 type StageStatus = (typeof VALID_STAGE_STATUSES)[number]
@@ -50,7 +51,7 @@ export async function updateStageStatus(stageId: string, projectId: string, stat
 
   const stage = await prisma.stage.findFirst({
     where: { id: stageId, projectId },
-    select: { id: true },
+    select: { id: true, title: true },
   })
   if (!stage) throw new Error("Stage not found")
 
@@ -61,4 +62,17 @@ export async function updateStageStatus(stageId: string, projectId: string, stat
 
   revalidatePath(`/admin/projects/${projectId}`)
   revalidatePath(`/dashboard`)
+
+  if (status === "BLOCKED") {
+    const adminEmail = process.env.ADMIN_EMAIL
+    if (adminEmail) {
+      const project = await prisma.project.findUnique({ where: { id: projectId }, select: { name: true } })
+      const portalUrl = process.env.NEXTAUTH_URL || ""
+      await sendEmail({
+        to: adminEmail,
+        subject: `Étape bloquée — ${project?.name ?? projectId}`,
+        html: `<p>L'étape <strong>${stage.title}</strong> du projet <strong>${project?.name ?? ""}</strong> est passée en statut <strong>Bloquée</strong>.</p><p><a href="${portalUrl}/admin/projects/${projectId}">Voir le projet</a></p>`,
+      })
+    }
+  }
 }

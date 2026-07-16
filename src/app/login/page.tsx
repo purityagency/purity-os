@@ -8,37 +8,62 @@ import { Button } from "@/components/ui/button"
 export default function LoginPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<"client" | "admin">("client")
+  const [clientMode, setClientMode] = useState<"login" | "register">("login")
+
+  // Client states
   const [clientEmail, setClientEmail] = useState("")
+  const [clientPassword, setClientPassword] = useState("")
+  const [clientName, setClientName] = useState("")
+  const [clientError, setClientError] = useState("")
+  const [clientLoading, setClientLoading] = useState(false)
+
+  // Admin states
   const [adminEmail, setAdminEmail] = useState("")
   const [adminPassword, setAdminPassword] = useState("")
-  const [clientError, setClientError] = useState("")
   const [adminError, setAdminError] = useState("")
-  const [clientSuccess, setClientSuccess] = useState(false)
-  const [clientLoading, setClientLoading] = useState(false)
   const [adminLoading, setAdminLoading] = useState(false)
 
   const handleClientSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setClientError("")
-    setClientSuccess(false)
     setClientLoading(true)
 
     try {
-      const response = await fetch("/api/client-login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: clientEmail }),
+      if (clientMode === "register") {
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: clientEmail, password: clientPassword, name: clientName }),
+        })
+        const data = await res.json()
+        if (!res.ok) {
+          if (data.error === "email_taken") setClientError("Cet email est déjà utilisé.")
+          else if (data.error === "password_too_short") setClientError("Le mot de passe doit faire au moins 8 caractères.")
+          else if (data.error === "name_required") setClientError("Le nom est requis.")
+          else setClientError("Erreur lors de l'inscription.")
+          setClientLoading(false)
+          return
+        }
+      }
+
+      // Login (for both login and register modes, we login immediately after register)
+      const result = await signIn("credentials", {
+        email: clientEmail,
+        password: clientPassword,
+        redirect: false,
       })
 
-      if (!response.ok) {
-        setClientError("Impossible d'envoyer le lien pour le moment.")
+      if (!result?.ok) {
+        setClientError(clientMode === "register" ? "Erreur de connexion post-inscription." : "Identifiants invalides.")
+        setClientLoading(false)
         return
       }
 
-      setClientSuccess(true)
+      const session = await getSession()
+      router.push(session?.user?.role === "ADMIN" ? "/admin" : "/dashboard")
+      router.refresh()
     } catch {
-      setClientError("Impossible d'envoyer le lien pour le moment.")
-    } finally {
+      setClientError("Une erreur est survenue.")
       setClientLoading(false)
     }
   }
@@ -119,30 +144,47 @@ export default function LoginPage() {
 
           <button
             type="button"
-            onClick={() => setActiveTab("client")}
+            onClick={() => { setActiveTab("client"); setClientError(""); }}
             className={`w-1/2 py-2.5 text-xs font-semibold rounded-full relative z-10 transition-colors duration-200 uppercase tracking-wider ${activeTab === "client" ? "text-white" : "text-zinc-500 hover:text-zinc-300"}`}
           >
             Espace Client
           </button>
           <button
             type="button"
-            onClick={() => setActiveTab("admin")}
+            onClick={() => { setActiveTab("admin"); setAdminError(""); }}
             className={`w-1/2 py-2.5 text-xs font-semibold rounded-full relative z-10 transition-colors duration-200 uppercase tracking-wider ${activeTab === "admin" ? "text-white" : "text-zinc-500 hover:text-zinc-300"}`}
           >
             Équipe
           </button>
         </div>
 
-        {/* ── FORM CLIENT (Magic Link) ── */}
+        {/* ── FORM CLIENT ── */}
         {activeTab === "client" ? (
           <div className="animate-fadeIn duration-300">
-            <h2 className="text-xl font-bold font-heading tracking-wide">Accès client sécurisé</h2>
+            <h2 className="text-xl font-bold font-heading tracking-wide">
+              {clientMode === "login" ? "Accès client sécurisé" : "Créer un compte"}
+            </h2>
             <p className="mt-2 text-zinc-400 text-xs leading-relaxed font-sans">
-              Entrez l&apos;adresse mail associée à votre projet. Un lien d&apos;accès direct et sécurisé vous sera envoyé instantanément.
+              {clientMode === "login" 
+                ? "Entrez vos identifiants pour accéder à votre espace projet."
+                : "Créez votre compte pour suivre l'avancement de vos projets."}
             </p>
 
-            <form onSubmit={handleClientSubmit} className="mt-6 space-y-5">
-              <div className="relative group">
+            <form onSubmit={handleClientSubmit} className="mt-6 space-y-4">
+              {clientMode === "register" && (
+                <div>
+                  <input
+                    type="text"
+                    value={clientName}
+                    onChange={(e) => setClientName(e.target.value)}
+                    required
+                    placeholder="Prénom & Nom"
+                    className="w-full rounded-full border border-white/10 bg-white/[0.02] px-5 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#A855F7] focus:outline-none focus:ring-1 focus:ring-[#A855F7]/30 transition-all font-sans"
+                  />
+                </div>
+              )}
+              
+              <div>
                 <input
                   type="email"
                   value={clientEmail}
@@ -153,24 +195,47 @@ export default function LoginPage() {
                 />
               </div>
 
+              <div>
+                <input
+                  type="password"
+                  value={clientPassword}
+                  onChange={(e) => setClientPassword(e.target.value)}
+                  required
+                  placeholder="Mot de passe"
+                  className="w-full rounded-full border border-white/10 bg-white/[0.02] px-5 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#A855F7] focus:outline-none focus:ring-1 focus:ring-[#A855F7]/30 transition-all font-sans"
+                />
+              </div>
+
               <Button 
                 type="submit" 
                 disabled={clientLoading} 
-                className="w-full bg-transparent hover:bg-transparent border border-white/80 hover:border-[#A855F7]/90 hover:shadow-[0_0_18px_rgba(168,85,247,0.45),0_0_4px_rgba(168,85,247,0.25)] text-white text-xs font-semibold py-3.5 rounded-full transition-all uppercase tracking-wider disabled:opacity-50 font-sans hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full mt-2 bg-transparent hover:bg-transparent border border-white/80 hover:border-[#A855F7]/90 hover:shadow-[0_0_18px_rgba(168,85,247,0.45),0_0_4px_rgba(168,85,247,0.25)] text-white text-xs font-semibold py-3.5 rounded-full transition-all uppercase tracking-wider disabled:opacity-50 font-sans hover:scale-[1.02] active:scale-[0.98]"
               >
-                {clientLoading ? "Génération du lien..." : "Recevoir mon lien magique"}
+                {clientLoading 
+                  ? (clientMode === "login" ? "Connexion..." : "Création...") 
+                  : (clientMode === "login" ? "Se connecter" : "Créer mon compte")}
               </Button>
 
-              {clientSuccess ? (
-                <div className="mt-4 p-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300 text-xs leading-relaxed font-sans">
-                  ✓ Si l&apos;adresse correspond à un projet actif, le lien vient d&apos;être envoyé. Vérifiez votre boîte de réception (et vos spams).
-                </div>
-              ) : null}
               {clientError ? (
                 <div className="mt-4 p-3 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-300 text-xs font-sans">
                   ✕ {clientError}
                 </div>
               ) : null}
+
+              <div className="text-center pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setClientMode(clientMode === "login" ? "register" : "login")
+                    setClientError("")
+                  }}
+                  className="text-xs text-zinc-500 hover:text-white transition-colors"
+                >
+                  {clientMode === "login" 
+                    ? "Pas encore de compte ? S'inscrire" 
+                    : "Déjà un compte ? Se connecter"}
+                </button>
+              </div>
             </form>
           </div>
         ) : (
@@ -207,7 +272,7 @@ export default function LoginPage() {
               <Button 
                 type="submit" 
                 disabled={adminLoading} 
-                className="w-full bg-white text-black hover:bg-zinc-200 text-xs font-semibold py-3.5 rounded-full transition-all shadow-lg uppercase tracking-wider disabled:opacity-50 font-sans hover:scale-[1.02] active:scale-[0.98]"
+                className="w-full mt-2 bg-white text-black hover:bg-zinc-200 text-xs font-semibold py-3.5 rounded-full transition-all shadow-lg uppercase tracking-wider disabled:opacity-50 font-sans hover:scale-[1.02] active:scale-[0.98]"
               >
                 {adminLoading ? "Authentification..." : "Accéder à la console"}
               </Button>
