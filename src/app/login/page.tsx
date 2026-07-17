@@ -7,18 +7,31 @@ import { Button } from "@/components/ui/button"
 
 function authErrorMessage(error: string | null | undefined, fallback: string) {
   if (error === "rate_limited") return "Trop de tentatives. Réessayez dans quelques minutes."
+  if (error === "email_not_verified") return "Confirmez d'abord votre e-mail (lien envoyé à l'inscription)."
   return fallback
 }
 
 export default function LoginPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<"client" | "admin">("client")
+  const [clientMode, setClientMode] = useState<"login" | "register">("login")
 
-  // Client states
+  // Client login states
   const [clientEmail, setClientEmail] = useState("")
   const [clientPassword, setClientPassword] = useState("")
   const [clientError, setClientError] = useState("")
   const [clientLoading, setClientLoading] = useState(false)
+  const [needsVerification, setNeedsVerification] = useState(false)
+  const [resendSent, setResendSent] = useState(false)
+
+  // Register states
+  const [regName, setRegName] = useState("")
+  const [regEmail, setRegEmail] = useState("")
+  const [regPassword, setRegPassword] = useState("")
+  const [regHoneypot, setRegHoneypot] = useState("")
+  const [regError, setRegError] = useState("")
+  const [regLoading, setRegLoading] = useState(false)
+  const [regSuccess, setRegSuccess] = useState(false)
 
   // Admin states
   const [adminEmail, setAdminEmail] = useState("")
@@ -29,6 +42,8 @@ export default function LoginPage() {
   const handleClientSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setClientError("")
+    setNeedsVerification(false)
+    setResendSent(false)
     setClientLoading(true)
 
     try {
@@ -39,6 +54,7 @@ export default function LoginPage() {
       })
 
       if (!result?.ok) {
+        if (result?.error === "email_not_verified") setNeedsVerification(true)
         setClientError(authErrorMessage(result?.error, "Identifiants invalides."))
         setClientLoading(false)
         return
@@ -50,6 +66,54 @@ export default function LoginPage() {
     } catch {
       setClientError("Une erreur est survenue.")
       setClientLoading(false)
+    }
+  }
+
+  const handleResendVerification = async () => {
+    setResendSent(false)
+    try {
+      await fetch("/api/auth/resend-verification", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: clientEmail }),
+      })
+    } catch {
+      /* réponse toujours générique côté serveur, rien à faire ici */
+    } finally {
+      setResendSent(true)
+    }
+  }
+
+  const handleRegisterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setRegError("")
+
+    if (regPassword.length < 8) {
+      setRegError("Le mot de passe doit faire au moins 8 caractères.")
+      return
+    }
+
+    setRegLoading(true)
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: regName, email: regEmail, password: regPassword, website: regHoneypot }),
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        if (data.error === "email_taken") setRegError("Un compte existe déjà pour cet e-mail. Connectez-vous.")
+        else if (data.error === "password_too_short") setRegError("Le mot de passe doit faire au moins 8 caractères.")
+        else if (data.error === "name_required") setRegError("Le nom est requis.")
+        else if (data.error === "rate_limited") setRegError("Trop de tentatives. Réessayez dans quelques minutes.")
+        else setRegError("Une erreur est survenue.")
+        setRegLoading(false)
+        return
+      }
+      setRegSuccess(true)
+    } catch {
+      setRegError("Connexion impossible. Réessayez.")
+      setRegLoading(false)
     }
   }
 
@@ -146,54 +210,149 @@ export default function LoginPage() {
         {/* ── FORM CLIENT ── */}
         {activeTab === "client" ? (
           <div className="animate-fadeIn duration-300">
-            <h2 className="text-xl font-bold font-heading tracking-wide">
-              Accès client sécurisé
-            </h2>
-            <p className="mt-2 text-zinc-400 text-xs leading-relaxed font-sans">
-              Entrez vos identifiants pour accéder à votre espace projet.
-            </p>
+            {clientMode === "login" ? (
+              <>
+                <h2 className="text-xl font-bold font-heading tracking-wide">
+                  Accès client sécurisé
+                </h2>
+                <p className="mt-2 text-zinc-400 text-xs leading-relaxed font-sans">
+                  Entrez vos identifiants pour accéder à votre espace projet.
+                </p>
 
-            <form onSubmit={handleClientSubmit} className="mt-6 space-y-4">
-              <div>
-                <input
-                  type="email"
-                  value={clientEmail}
-                  onChange={(e) => setClientEmail(e.target.value)}
-                  required
-                  placeholder="client@domaine.com"
-                  className="w-full rounded-full border border-white/10 bg-white/[0.02] px-5 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#A855F7] focus:outline-none focus:ring-1 focus:ring-[#A855F7]/30 transition-all font-sans"
-                />
-              </div>
+                <form onSubmit={handleClientSubmit} className="mt-6 space-y-4">
+                  <div>
+                    <input
+                      type="email"
+                      value={clientEmail}
+                      onChange={(e) => setClientEmail(e.target.value)}
+                      required
+                      placeholder="client@domaine.com"
+                      className="w-full rounded-full border border-white/10 bg-white/[0.02] px-5 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#A855F7] focus:outline-none focus:ring-1 focus:ring-[#A855F7]/30 transition-all font-sans"
+                    />
+                  </div>
 
-              <div>
-                <input
-                  type="password"
-                  value={clientPassword}
-                  onChange={(e) => setClientPassword(e.target.value)}
-                  required
-                  placeholder="Mot de passe"
-                  className="w-full rounded-full border border-white/10 bg-white/[0.02] px-5 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#A855F7] focus:outline-none focus:ring-1 focus:ring-[#A855F7]/30 transition-all font-sans"
-                />
-              </div>
+                  <div>
+                    <input
+                      type="password"
+                      value={clientPassword}
+                      onChange={(e) => setClientPassword(e.target.value)}
+                      required
+                      placeholder="Mot de passe"
+                      className="w-full rounded-full border border-white/10 bg-white/[0.02] px-5 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#A855F7] focus:outline-none focus:ring-1 focus:ring-[#A855F7]/30 transition-all font-sans"
+                    />
+                  </div>
 
-              <Button 
-                type="submit" 
-                disabled={clientLoading} 
-                className="w-full mt-2 bg-transparent hover:bg-transparent border border-white/80 hover:border-[#A855F7]/90 hover:shadow-[0_0_18px_rgba(168,85,247,0.45),0_0_4px_rgba(168,85,247,0.25)] text-white text-xs font-semibold py-3.5 rounded-full transition-all uppercase tracking-wider disabled:opacity-50 font-sans hover:scale-[1.02] active:scale-[0.98]"
-              >
-                {clientLoading ? "Connexion..." : "Se connecter"}
-              </Button>
+                  <Button
+                    type="submit"
+                    disabled={clientLoading}
+                    className="w-full mt-2 bg-transparent hover:bg-transparent border border-white/80 hover:border-[#A855F7]/90 hover:shadow-[0_0_18px_rgba(168,85,247,0.45),0_0_4px_rgba(168,85,247,0.25)] text-white text-xs font-semibold py-3.5 rounded-full transition-all uppercase tracking-wider disabled:opacity-50 font-sans hover:scale-[1.02] active:scale-[0.98]"
+                  >
+                    {clientLoading ? "Connexion..." : "Se connecter"}
+                  </Button>
 
-              {clientError ? (
-                <div className="mt-4 p-3 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-300 text-xs font-sans">
-                  ✕ {clientError}
-                </div>
-              ) : null}
+                  {clientError ? (
+                    <div className="mt-4 p-3 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-300 text-xs font-sans">
+                      ✕ {clientError}
+                      {needsVerification && (
+                        <button
+                          type="button"
+                          onClick={handleResendVerification}
+                          className="block mt-2 underline text-red-200 hover:text-white"
+                        >
+                          {resendSent ? "E-mail renvoyé (si le compte existe)" : "Renvoyer l'e-mail de confirmation"}
+                        </button>
+                      )}
+                    </div>
+                  ) : null}
 
-              <p className="text-center pt-2 text-xs text-zinc-600">
-                Votre accès est créé automatiquement par l&apos;équipe Purity Agency après votre commande — vérifiez votre boîte mail.
-              </p>
-            </form>
+                  <div className="text-center pt-2">
+                    <button
+                      type="button"
+                      onClick={() => { setClientMode("register"); setClientError(""); }}
+                      className="text-xs text-zinc-500 hover:text-white transition-colors"
+                    >
+                      Pas encore de compte ? Créer un accès client
+                    </button>
+                  </div>
+                </form>
+              </>
+            ) : (
+              <>
+                <h2 className="text-xl font-bold font-heading tracking-wide">
+                  Créer votre accès client
+                </h2>
+                <p className="mt-2 text-zinc-400 text-xs leading-relaxed font-sans">
+                  Un e-mail de confirmation vous sera envoyé avant toute connexion.
+                </p>
+
+                {regSuccess ? (
+                  <div className="mt-6 p-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300 text-sm font-sans">
+                    Compte créé. Vérifiez votre boîte mail ({regEmail}) et cliquez sur le lien de confirmation pour activer votre accès.
+                  </div>
+                ) : (
+                  <form onSubmit={handleRegisterSubmit} className="mt-6 space-y-4">
+                    <input
+                      type="text"
+                      value={regName}
+                      onChange={(e) => setRegName(e.target.value)}
+                      required
+                      placeholder="Prénom & Nom"
+                      className="w-full rounded-full border border-white/10 bg-white/[0.02] px-5 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#A855F7] focus:outline-none focus:ring-1 focus:ring-[#A855F7]/30 transition-all font-sans"
+                    />
+                    <input
+                      type="email"
+                      value={regEmail}
+                      onChange={(e) => setRegEmail(e.target.value)}
+                      required
+                      placeholder="client@domaine.com"
+                      className="w-full rounded-full border border-white/10 bg-white/[0.02] px-5 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#A855F7] focus:outline-none focus:ring-1 focus:ring-[#A855F7]/30 transition-all font-sans"
+                    />
+                    <input
+                      type="password"
+                      value={regPassword}
+                      onChange={(e) => setRegPassword(e.target.value)}
+                      required
+                      placeholder="Mot de passe (8 caractères min.)"
+                      className="w-full rounded-full border border-white/10 bg-white/[0.02] px-5 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#A855F7] focus:outline-none focus:ring-1 focus:ring-[#A855F7]/30 transition-all font-sans"
+                    />
+                    {/* Honeypot — masqué visuellement, jamais rempli par un humain */}
+                    <input
+                      type="text"
+                      value={regHoneypot}
+                      onChange={(e) => setRegHoneypot(e.target.value)}
+                      tabIndex={-1}
+                      autoComplete="off"
+                      aria-hidden="true"
+                      style={{ position: "absolute", left: "-9999px", width: "1px", height: "1px", opacity: 0 }}
+                    />
+
+                    <Button
+                      type="submit"
+                      disabled={regLoading}
+                      className="w-full mt-2 bg-transparent hover:bg-transparent border border-white/80 hover:border-[#A855F7]/90 hover:shadow-[0_0_18px_rgba(168,85,247,0.45),0_0_4px_rgba(168,85,247,0.25)] text-white text-xs font-semibold py-3.5 rounded-full transition-all uppercase tracking-wider disabled:opacity-50 font-sans hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      {regLoading ? "Création..." : "Créer mon compte"}
+                    </Button>
+
+                    {regError ? (
+                      <div className="mt-4 p-3 rounded-2xl border border-red-500/20 bg-red-500/10 text-red-300 text-xs font-sans">
+                        ✕ {regError}
+                      </div>
+                    ) : null}
+
+                    <div className="text-center pt-2">
+                      <button
+                        type="button"
+                        onClick={() => { setClientMode("login"); setRegError(""); }}
+                        className="text-xs text-zinc-500 hover:text-white transition-colors"
+                      >
+                        Déjà un compte ? Se connecter
+                      </button>
+                    </div>
+                  </form>
+                )}
+              </>
+            )}
           </div>
         ) : (
           /* ── FORM ADMIN (Credentials) ── */

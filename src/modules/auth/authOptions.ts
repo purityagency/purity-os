@@ -36,6 +36,13 @@ export const authOptions: NextAuthOptions = {
 
         if (!user || !verifyPassword(password, user.passwordHash)) return null
 
+        // Un client auto-inscrit doit prouver la propriété de sa boîte mail avant de se connecter.
+        // (Les comptes provisionnés après une vraie commande sont déjà vérifiés dès qu'ils ont
+        // défini leur mot de passe via le lien reçu par email — voir set-password/route.ts.)
+        if (user.role === "CLIENT" && !user.emailVerified) {
+          throw new Error("email_not_verified")
+        }
+
         return user
       }
     })

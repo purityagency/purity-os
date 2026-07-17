@@ -16,9 +16,10 @@ model User {
   email     String    @unique
   name      String?
   passwordHash String?
+  emailVerified DateTime? // preuve de propriété de la boîte mail (lien cliqué) — login CLIENT bloqué tant que null
   role      String    @default("CLIENT") // "ADMIN" or "CLIENT"
   createdAt DateTime  @default(now())
-  
+
   projects  Project[]
   messages  Message[]
   magicLinkTokens MagicLinkToken[]
@@ -28,6 +29,7 @@ model MagicLinkToken {
   id         String   @id @default(cuid())
   userId     String
   tokenHash  String   @unique
+  purpose    String   @default("PASSWORD_SET") // "PASSWORD_SET" ou "EMAIL_VERIFY" — un token n'est valable que pour l'usage prévu
   expiresAt  DateTime
   consumedAt DateTime?
   createdAt  DateTime @default(now())

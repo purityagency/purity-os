@@ -28,7 +28,8 @@ export async function POST(request: Request) {
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { passwordHash: hashPassword(password) },
+    // Cliquer ce lien prouve la propriété de la boîte mail — équivaut à une vérification d'email
+    data: { passwordHash: hashPassword(password), emailVerified: new Date() },
   })
 
   return NextResponse.json({ ok: true }, { status: 200 })
