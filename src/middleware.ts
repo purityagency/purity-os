@@ -20,7 +20,7 @@ export default withAuth(
   },
   {
     callbacks: {
-      authorized: ({ req, token }) => {
+      authorized: () => {
         // Only trigger `middleware` logic if the path matches our protected routes
         // For /admin and /dashboard, returning true delegates the check to the middleware function above.
         return true

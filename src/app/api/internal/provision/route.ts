@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { issuePasswordSetToken } from "@/lib/passwordSetToken"
+import { sendEmail } from "@/lib/email"
 
 export async function POST(request: Request) {
   try {
@@ -34,11 +36,15 @@ export async function POST(request: Request) {
       }
     }
 
-    // Upsert the client user
+    // Upsert the client user. Le mot de passe n'est JAMAIS repris d'un compte
+    // préexistant ici : un paiement réel doit toujours passer par un lien
+    // "définir votre mot de passe" envoyé à l'email de la commande, ce qui
+    // invalide au passage tout mot de passe qu'un tiers aurait pu définir en
+    // s'auto-enregistrant au préalable sur cet email (squattage de compte).
     const user = await prisma.user.upsert({
       where: { email },
       update: {
-        // If they already exist, we might update the name if missing
+        name: name || undefined,
       },
       create: {
         email,
@@ -85,6 +91,16 @@ export async function POST(request: Request) {
         },
       })
     }
+
+    // Lien "définir votre mot de passe" — seul chemin pour accéder au compte,
+    // écrase systématiquement tout mot de passe déjà présent sur ce compte.
+    const rawToken = await issuePasswordSetToken(user.id)
+    const portalUrl = process.env.NEXTAUTH_URL || ""
+    await sendEmail({
+      to: user.email,
+      subject: "Votre espace client Purity Agency est prêt",
+      html: `<p>Bonjour ${user.name ?? ""},</p><p>Votre projet <strong>${projectName}</strong> a été créé. Définissez votre mot de passe pour accéder à votre espace client et suivre son avancement :</p><p><a href="${portalUrl}/set-password?token=${rawToken}">Définir mon mot de passe</a></p><p>Ce lien expire dans 48h.</p>`,
+    })
 
     return NextResponse.json({ ok: true, projectId: project.id, userId: user.id }, { status: 200 })
   } catch (error) {

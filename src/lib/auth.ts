@@ -1,4 +1,4 @@
-import { randomBytes, scryptSync, timingSafeEqual } from "crypto"
+import { randomBytes, scryptSync, timingSafeEqual, createHash } from "crypto"
 import { prisma } from "@/lib/prisma"
 
 const PASSWORD_PREFIX = "scrypt"
@@ -33,7 +33,13 @@ export async function ensureBootstrapAdmin(email: string, password: string) {
   const adminName = process.env.ADMIN_NAME?.trim() || "Purity Admin"
 
   if (!adminEmail || !adminPassword) return null
-  if (normalizeEmail(email) !== adminEmail || password !== adminPassword) return null
+  if (normalizeEmail(email) !== adminEmail) return null
+
+  // Comparaison à temps constant (les deux digests ont une longueur fixe de 32 octets,
+  // donc timingSafeEqual ne peut pas lever à cause d'une différence de longueur)
+  const submitted = createHash("sha256").update(password).digest()
+  const expected = createHash("sha256").update(adminPassword).digest()
+  if (!timingSafeEqual(submitted, expected)) return null
 
   const passwordHash = hashPassword(adminPassword)
 

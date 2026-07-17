@@ -5,15 +5,18 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 
+function authErrorMessage(error: string | null | undefined, fallback: string) {
+  if (error === "rate_limited") return "Trop de tentatives. Réessayez dans quelques minutes."
+  return fallback
+}
+
 export default function LoginPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<"client" | "admin">("client")
-  const [clientMode, setClientMode] = useState<"login" | "register">("login")
 
   // Client states
   const [clientEmail, setClientEmail] = useState("")
   const [clientPassword, setClientPassword] = useState("")
-  const [clientName, setClientName] = useState("")
   const [clientError, setClientError] = useState("")
   const [clientLoading, setClientLoading] = useState(false)
 
@@ -29,24 +32,6 @@ export default function LoginPage() {
     setClientLoading(true)
 
     try {
-      if (clientMode === "register") {
-        const res = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: clientEmail, password: clientPassword, name: clientName }),
-        })
-        const data = await res.json()
-        if (!res.ok) {
-          if (data.error === "email_taken") setClientError("Cet email est déjà utilisé.")
-          else if (data.error === "password_too_short") setClientError("Le mot de passe doit faire au moins 8 caractères.")
-          else if (data.error === "name_required") setClientError("Le nom est requis.")
-          else setClientError("Erreur lors de l'inscription.")
-          setClientLoading(false)
-          return
-        }
-      }
-
-      // Login (for both login and register modes, we login immediately after register)
       const result = await signIn("credentials", {
         email: clientEmail,
         password: clientPassword,
@@ -54,7 +39,7 @@ export default function LoginPage() {
       })
 
       if (!result?.ok) {
-        setClientError(clientMode === "register" ? "Erreur de connexion post-inscription." : "Identifiants invalides.")
+        setClientError(authErrorMessage(result?.error, "Identifiants invalides."))
         setClientLoading(false)
         return
       }
@@ -81,7 +66,7 @@ export default function LoginPage() {
       })
 
       if (!result?.ok) {
-        setAdminError("Identifiants invalides.")
+        setAdminError(authErrorMessage(result?.error, "Identifiants invalides."))
         return
       }
 
@@ -162,28 +147,13 @@ export default function LoginPage() {
         {activeTab === "client" ? (
           <div className="animate-fadeIn duration-300">
             <h2 className="text-xl font-bold font-heading tracking-wide">
-              {clientMode === "login" ? "Accès client sécurisé" : "Créer un compte"}
+              Accès client sécurisé
             </h2>
             <p className="mt-2 text-zinc-400 text-xs leading-relaxed font-sans">
-              {clientMode === "login" 
-                ? "Entrez vos identifiants pour accéder à votre espace projet."
-                : "Créez votre compte pour suivre l'avancement de vos projets."}
+              Entrez vos identifiants pour accéder à votre espace projet.
             </p>
 
             <form onSubmit={handleClientSubmit} className="mt-6 space-y-4">
-              {clientMode === "register" && (
-                <div>
-                  <input
-                    type="text"
-                    value={clientName}
-                    onChange={(e) => setClientName(e.target.value)}
-                    required
-                    placeholder="Prénom & Nom"
-                    className="w-full rounded-full border border-white/10 bg-white/[0.02] px-5 py-3 text-sm text-white placeholder-zinc-600 focus:border-[#A855F7] focus:outline-none focus:ring-1 focus:ring-[#A855F7]/30 transition-all font-sans"
-                  />
-                </div>
-              )}
-              
               <div>
                 <input
                   type="email"
@@ -211,9 +181,7 @@ export default function LoginPage() {
                 disabled={clientLoading} 
                 className="w-full mt-2 bg-transparent hover:bg-transparent border border-white/80 hover:border-[#A855F7]/90 hover:shadow-[0_0_18px_rgba(168,85,247,0.45),0_0_4px_rgba(168,85,247,0.25)] text-white text-xs font-semibold py-3.5 rounded-full transition-all uppercase tracking-wider disabled:opacity-50 font-sans hover:scale-[1.02] active:scale-[0.98]"
               >
-                {clientLoading 
-                  ? (clientMode === "login" ? "Connexion..." : "Création...") 
-                  : (clientMode === "login" ? "Se connecter" : "Créer mon compte")}
+                {clientLoading ? "Connexion..." : "Se connecter"}
               </Button>
 
               {clientError ? (
@@ -222,20 +190,9 @@ export default function LoginPage() {
                 </div>
               ) : null}
 
-              <div className="text-center pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setClientMode(clientMode === "login" ? "register" : "login")
-                    setClientError("")
-                  }}
-                  className="text-xs text-zinc-500 hover:text-white transition-colors"
-                >
-                  {clientMode === "login" 
-                    ? "Pas encore de compte ? S'inscrire" 
-                    : "Déjà un compte ? Se connecter"}
-                </button>
-              </div>
+              <p className="text-center pt-2 text-xs text-zinc-600">
+                Votre accès est créé automatiquement par l&apos;équipe Purity Agency après votre commande — vérifiez votre boîte mail.
+              </p>
             </form>
           </div>
         ) : (
