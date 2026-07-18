@@ -45,3 +45,6 @@ next-env.d.ts
 # fichiers clients uploadés (factures, livrables) — jamais committés
 /uploads/
 dev.db
+
+.vercel
+.env*

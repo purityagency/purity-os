@@ -33,7 +33,7 @@ export default async function AdminDashboard() {
 
   const totalPaid = paidAgg._sum.amount ?? 0
   const totalPending = pendingAgg._sum.amount ?? 0
-  const monthlyRecurring = activeMonthlyProjects.reduce((sum, p) => sum + (p.monthlyAmount ?? 0), 0)
+  const monthlyRecurring = activeMonthlyProjects.reduce((sum: number, p) => sum + (p.monthlyAmount ?? 0), 0)
 
   return (
     <div>
