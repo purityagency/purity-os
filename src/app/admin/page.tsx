@@ -97,7 +97,7 @@ export default async function AdminDashboard() {
             {recentStages.length === 0 ? (
               <div className="p-6 text-zinc-400 text-sm text-center">Aucune activité récente.</div>
             ) : (
-              recentStages.map((stage) => (
+              recentStages.map((stage: (typeof recentStages)[number]) => (
                 <div key={stage.id} className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
                   <div>
                     <p className="font-medium">{stage.title}</p>
