@@ -49,8 +49,8 @@
 }
 
 :root {
-  --font-sans: var(--font-dm-sans), sans-serif;
-  --font-heading: var(--font-space-grotesk), sans-serif;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-heading: 'Space Grotesk', 'Space Grotesk Fallback', system-ui, sans-serif;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
@@ -129,4 +129,74 @@
   html {
     @apply font-sans;
   }
+}
+
+/* Custom Scrollbars */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 99px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(124, 58, 237, 0.4);
+}
+
+/* Neon Violet Glows & Liquid Glass */
+.glass-panel {
+  background: rgba(6, 3, 9, 0.45);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 
+    0 15px 35px -5px rgba(0, 0, 0, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.glass-panel:hover {
+  border-color: rgba(124, 58, 237, 0.15);
+  box-shadow: 
+    0 15px 35px -5px rgba(0, 0, 0, 0.6),
+    0 0 15px -3px rgba(124, 58, 237, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* OctoMask Wave Animations */
+@keyframes octo-breath {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 5px rgba(124, 58, 237, 0.3));
+  }
+  50% {
+    transform: scale(1.02);
+    filter: drop-shadow(0 0 15px rgba(124, 58, 237, 0.6));
+  }
+}
+
+@keyframes tentacle-wave-1 {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(4deg) translateY(-2px); }
+}
+
+@keyframes tentacle-wave-2 {
+  0%, 100% { transform: rotate(0deg); }
+  50% { transform: rotate(-5deg) translateY(1px); }
+}
+
+.octo-anim-breath {
+  animation: octo-breath 4s ease-in-out infinite;
+}
+
+.octo-anim-wave1 {
+  animation: tentacle-wave-1 5s ease-in-out infinite;
+  transform-origin: 50% 50%;
+}
+
+.octo-anim-wave2 {
+  animation: tentacle-wave-2 6s ease-in-out infinite;
+  transform-origin: 50% 50%;
 }

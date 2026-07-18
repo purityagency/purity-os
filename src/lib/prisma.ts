@@ -1,19 +1,17 @@
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3"
+import { PrismaPg } from '@prisma/adapter-pg'
 import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = global as unknown as { prisma: PrismaClient }
-const databaseUrl = process.env.DATABASE_URL
+const connectionString = process.env.DATABASE_URL
 
-if (!databaseUrl) {
+if (!connectionString) {
   throw new Error("DATABASE_URL is not configured")
 }
 
 export const prisma =
   globalForPrisma.prisma ||
   new PrismaClient({
-    adapter: new PrismaBetterSqlite3({
-      url: databaseUrl,
-    }),
+    adapter: new PrismaPg({ connectionString }),
   })
 
 if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
