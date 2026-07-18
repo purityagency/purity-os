@@ -170,7 +170,7 @@ export default async function AdminProjectDetailsPage({ params }: { params: { id
                 {project.payments.length === 0 ? (
                   <p className="text-sm text-zinc-500">Aucun paiement enregistré.</p>
                 ) : (
-                  project.payments.map((payment) => {
+                  project.payments.map((payment: (typeof project.payments)[number]) => {
                     const markPaid = markPaymentPaid.bind(null, payment.id, project.id)
                     const markCancelled = markPaymentCancelled.bind(null, payment.id, project.id)
                     return (
