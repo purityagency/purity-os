@@ -6,19 +6,19 @@ import Link from "next/link"
 
 import { ProjectChat } from "@/components/ProjectChat"
 
-// Status color helper for project phases
+// Simplification des termes techniques pour les indépendants & PME
 const getStatusStyles = (status: string) => {
   switch (status) {
     case "COMPLETED":
-      return { bg: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400", dot: "bg-emerald-400 shadow-[0_0_10px_#10B981]", label: "Terminé" }
+      return { bg: "bg-emerald-500/10 border-emerald-500/20 text-emerald-400", dot: "bg-emerald-400 shadow-[0_0_10px_#10B981]", label: "Terminé & Validé" }
     case "IN_PROGRESS":
-      return { bg: "bg-purple-500/10 border-purple-500/20 text-purple-400", dot: "bg-purple-400 shadow-[0_0_10px_#A855F7]", label: "En cours" }
+      return { bg: "bg-purple-500/10 border-purple-500/20 text-purple-400", dot: "bg-purple-400 shadow-[0_0_10px_#A855F7]", label: "En création" }
     case "WAITING_CLIENT":
-      return { bg: "bg-amber-500/10 border-amber-500/20 text-amber-400", dot: "bg-amber-400 shadow-[0_0_10px_#F59E0B]", label: "Action requise" }
+      return { bg: "bg-amber-500/10 border-amber-500/20 text-amber-400", dot: "bg-amber-400 shadow-[0_0_10px_#F59E0B]", label: "Vos infos attendues" }
     case "BLOCKED":
-      return { bg: "bg-rose-500/10 border-rose-500/20 text-rose-400", dot: "bg-rose-400 shadow-[0_0_10px_#F43F5E]", label: "En pause" }
+      return { bg: "bg-rose-500/10 border-rose-500/20 text-rose-400", dot: "bg-rose-400 shadow-[0_0_10px_#F43F5E]", label: "En attente" }
     default:
-      return { bg: "bg-zinc-500/10 border-zinc-500/20 text-zinc-400", dot: "bg-zinc-500", label: "En attente" }
+      return { bg: "bg-zinc-500/10 border-zinc-500/20 text-zinc-400", dot: "bg-zinc-500", label: "Prochaine étape" }
   }
 }
 
@@ -52,21 +52,18 @@ export default async function DashboardPage() {
           <h1 className="text-3xl font-extrabold tracking-tight bg-gradient-to-r from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent">
             Bonjour, {session.user.name || "Client"} 👋
           </h1>
-          <p className="text-zinc-400 text-sm mt-1">Espace de suivi opérationnel en temps réel de votre projet.</p>
+          <p className="text-zinc-400 text-sm mt-1">Suivez la création de votre site et de vos services en toute simplicité.</p>
         </div>
         <div className="flex items-center gap-3">
           <a
             href="https://wa.me/32465368265"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-xs font-semibold hover:bg-emerald-500/20 transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition-all"
           >
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            Support WhatsApp Agence
+            Contacter par WhatsApp (Réponse rapide)
           </a>
-          <div className="text-xs px-3 py-1.5 rounded-full border border-white/5 bg-white/[0.02] text-zinc-500">
-            Purity OS v1.5.0
-          </div>
         </div>
       </div>
 
@@ -77,16 +74,16 @@ export default async function DashboardPage() {
               <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-white">Espace de travail en cours de préparation</h3>
+          <h3 className="text-lg font-bold text-white">Votre dossier est en cours de création</h3>
           <p className="text-zinc-400 text-sm leading-relaxed">
-            Votre chef de projet Purity prépare actuellement votre espace de travail. Vous recevrez un accès direct dès la création de votre première timeline.
+            Votre conseiller Purity prépare actuellement votre espace. Vous pourrez suivre l&apos;avancement étape par étape dès l&apos;activation.
           </p>
         </div>
       ) : (
         <div className="space-y-6">
           {/* Action Required Alert Banner */}
           {waitingStage && (
-            <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -97,14 +94,14 @@ export default async function DashboardPage() {
                 </div>
                 <div>
                   <h4 className="font-bold text-amber-300 text-sm">Action requise de votre part</h4>
-                  <p className="text-xs text-amber-200/80 mt-0.5">{waitingStage.title} — {waitingStage.description || "Votre validation est attendue."}</p>
+                  <p className="text-xs text-amber-200/90 mt-0.5">{waitingStage.title} — {waitingStage.description || "Nous avons besoin de vos éléments pour continuer."}</p>
                 </div>
               </div>
               <Link
                 href="/dashboard/messages"
-                className="px-4 py-2 rounded-xl bg-amber-500 text-black font-semibold text-xs hover:bg-amber-400 transition-all shrink-0"
+                className="px-4 py-2.5 rounded-xl bg-amber-500 text-black font-bold text-xs hover:bg-amber-400 transition-all shrink-0"
               >
-                Répondre à l&apos;équipe
+                Répondre directement
               </Link>
             </div>
           )}
@@ -114,10 +111,10 @@ export default async function DashboardPage() {
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-xs font-bold text-purple-400 uppercase tracking-widest">
                 <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping" />
-                Environnement Staging Live Synchro
+                Votre site est en cours de construction
               </div>
               <h2 className="text-2xl font-bold text-white">{project.name}</h2>
-              <p className="text-xs text-zinc-400">Prévisualisez l&apos;état d&apos;avancement exact de votre site et vos fonctionnalités en direct.</p>
+              <p className="text-xs text-zinc-400">Testez et visualisez votre site en direct comme le verront vos futurs clients.</p>
             </div>
 
             <div className="flex items-center gap-3 shrink-0">
@@ -132,12 +129,12 @@ export default async function DashboardPage() {
                   <polyline points="15 3 21 3 21 9" />
                   <line x1="10" x2="21" y1="14" y2="3" />
                 </svg>
-                Ouvrir la Prévisualisation Staging
+                Voir mon site en direct
               </a>
             </div>
           </div>
 
-          {/* Quick Actions Bar */}
+          {/* Quick Actions Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Link
               href="/dashboard/timeline"
@@ -147,10 +144,10 @@ export default async function DashboardPage() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
                 </svg>
-                <span className="text-[10px] font-bold text-purple-400">{progressPercent}%</span>
+                <span className="text-[10px] font-bold text-purple-400">{progressPercent}% terminé</span>
               </div>
-              <div className="font-semibold text-xs text-white">Timeline Projet</div>
-              <div className="text-[10px] text-zinc-500 mt-0.5">{completedStages}/{totalStages} étapes validées</div>
+              <div className="font-semibold text-xs text-white">Avancement de la création</div>
+              <div className="text-[10px] text-zinc-500 mt-0.5">{completedStages} étape(s) sur {totalStages}</div>
             </Link>
 
             <Link
@@ -161,10 +158,10 @@ export default async function DashboardPage() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /><path d="M14 2v4a2 2 0 0 0 2 2h4" />
                 </svg>
-                <span className="text-[10px] font-bold text-zinc-400">{project.documents.length}</span>
+                <span className="text-[10px] font-bold text-zinc-400">{project.documents.length} fichier(s)</span>
               </div>
-              <div className="font-semibold text-xs text-white">Fichiers & Briefs</div>
-              <div className="text-[10px] text-zinc-500 mt-0.5">Télécharger / Envoyer</div>
+              <div className="font-semibold text-xs text-white">Envoyer photos & logo</div>
+              <div className="text-[10px] text-zinc-500 mt-0.5">Vos documents & devis</div>
             </Link>
 
             <Link
@@ -175,10 +172,10 @@ export default async function DashboardPage() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
                 </svg>
-                <span className="text-[10px] font-bold text-emerald-400">Direct</span>
+                <span className="text-[10px] font-bold text-emerald-400">Réponse rapide</span>
               </div>
-              <div className="font-semibold text-xs text-white">Discussion Client</div>
-              <div className="text-[10px] text-zinc-500 mt-0.5">{project.messages.length} message(s)</div>
+              <div className="font-semibold text-xs text-white">Discuter avec l&apos;équipe</div>
+              <div className="text-[10px] text-zinc-500 mt-0.5">Posez une question</div>
             </Link>
 
             <Link
@@ -189,10 +186,10 @@ export default async function DashboardPage() {
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                   <rect width="20" height="14" x="2" y="5" rx="2" /><line x1="2" x2="22" y1="10" y2="10" />
                 </svg>
-                <span className="text-[10px] font-bold text-emerald-400">{(project.depositAmount || 0).toLocaleString("fr-BE")} €</span>
+                <span className="text-[10px] font-bold text-emerald-400">{(project.depositAmount || 0).toLocaleString("fr-BE")} € payés</span>
               </div>
-              <div className="font-semibold text-xs text-white">Facturation & Reglement</div>
-              <div className="text-[10px] text-zinc-500 mt-0.5">Acompte & Solde</div>
+              <div className="font-semibold text-xs text-white">Factures & Règlement</div>
+              <div className="text-[10px] text-zinc-500 mt-0.5">Consulter vos reçus</div>
             </Link>
           </div>
 
@@ -206,16 +203,16 @@ export default async function DashboardPage() {
               <div className="p-6 rounded-2xl glass-panel transition-all duration-300">
                 <div className="flex justify-between items-center mb-6">
                   <div>
-                    <h3 className="font-bold text-white text-lg">Timeline Opérationnelle</h3>
-                    <p className="text-zinc-500 text-xs mt-0.5">Avancement en temps réel par phase de projet.</p>
+                    <h3 className="font-bold text-white text-lg">Où en est mon projet ?</h3>
+                    <p className="text-zinc-500 text-xs mt-0.5">Découvrez les 5 étapes simples de la création de votre site.</p>
                   </div>
                   <div className="text-xs text-zinc-400 font-medium">
-                    {completedStages} / {totalStages} Terminé(s) ({progressPercent}%)
+                    {completedStages} sur {totalStages} terminées ({progressPercent}%)
                   </div>
                 </div>
 
                 {/* Progress bar */}
-                <div className="h-2 w-full bg-white/5 rounded-full overflow-hidden mb-6">
+                <div className="h-2.5 w-full bg-white/5 rounded-full overflow-hidden mb-6">
                   <div
                     className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full transition-all duration-500"
                     style={{ width: `${progressPercent}%` }}
@@ -235,7 +232,7 @@ export default async function DashboardPage() {
                           <div>
                             <h4 className="font-semibold text-sm text-white">{stage.title}</h4>
                             {stage.description && (
-                              <p className="text-xs text-zinc-500 mt-1 leading-relaxed max-w-xl">{stage.description}</p>
+                              <p className="text-xs text-zinc-400 mt-1 leading-relaxed max-w-xl">{stage.description}</p>
                             )}
                           </div>
                           <span className={`text-[10px] font-bold px-2.5 py-1 rounded-lg border self-start md:self-auto ${styles.bg}`}>
@@ -252,11 +249,11 @@ export default async function DashboardPage() {
               <div className="p-6 rounded-2xl glass-panel transition-all duration-300">
                 <div className="flex justify-between items-center mb-4">
                   <div>
-                    <h3 className="font-bold text-white text-lg">Facturation & Budget</h3>
-                    <p className="text-zinc-500 text-xs mt-0.5">Récapitulatif des règlements et reste à payer.</p>
+                    <h3 className="font-bold text-white text-lg">Synthèse Financière</h3>
+                    <p className="text-zinc-500 text-xs mt-0.5">Votre acompte, solde restant et abonnement en toute transparence.</p>
                   </div>
                   <Link href="/dashboard/payments" className="text-xs text-purple-400 font-semibold hover:underline">
-                    Voir détails →
+                    Détail des factures →
                   </Link>
                 </div>
 
@@ -274,8 +271,8 @@ export default async function DashboardPage() {
                     <span className="block text-lg font-bold text-purple-400 mt-1">{(project.remainingAmount || 0).toLocaleString('fr-BE')} €</span>
                   </div>
                   <div className="p-4 rounded-xl border border-white/5 bg-white/[0.01]">
-                    <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Suivi Mensuel</span>
-                    <span className="block text-lg font-bold text-zinc-200 mt-1">{(project.monthlyAmount || 0) > 0 ? `${project.monthlyAmount} €/m` : "Aucun"}</span>
+                    <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Abonnement Mensuel</span>
+                    <span className="block text-lg font-bold text-zinc-200 mt-1">{(project.monthlyAmount || 0) > 0 ? `${project.monthlyAmount} €/mois` : "Aucun"}</span>
                   </div>
                 </div>
               </div>
@@ -287,8 +284,8 @@ export default async function DashboardPage() {
               <div className="p-6 rounded-2xl glass-panel relative flex flex-col h-full min-h-[520px]">
                 <div className="mb-4 flex items-center justify-between">
                   <div>
-                    <h3 className="font-bold text-white text-lg">Support Client</h3>
-                    <p className="text-zinc-500 text-xs mt-0.5">Canal direct avec votre équipe Purity.</p>
+                    <h3 className="font-bold text-white text-lg">Échanger avec l&apos;équipe</h3>
+                    <p className="text-zinc-500 text-xs mt-0.5">Posez une question ou envoyez un message.</p>
                   </div>
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10B981]" title="En ligne" />
                 </div>

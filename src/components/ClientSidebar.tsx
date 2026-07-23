@@ -10,7 +10,7 @@ export function ClientSidebar({ session }: { session: Session }) {
 
   const navLinks = [
     {
-      name: "Aperçu",
+      name: "Mon Projet",
       href: "/dashboard",
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -22,7 +22,7 @@ export function ClientSidebar({ session }: { session: Session }) {
       )
     },
     {
-      name: "Timeline",
+      name: "Avancement",
       href: "/dashboard/timeline",
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -32,7 +32,7 @@ export function ClientSidebar({ session }: { session: Session }) {
       )
     },
     {
-      name: "Fichiers",
+      name: "Photos & Documents",
       href: "/dashboard/documents",
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -45,7 +45,7 @@ export function ClientSidebar({ session }: { session: Session }) {
       )
     },
     {
-      name: "Messages",
+      name: "Discussions",
       href: "/dashboard/messages",
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -54,7 +54,7 @@ export function ClientSidebar({ session }: { session: Session }) {
       )
     },
     {
-      name: "Paiements",
+      name: "Factures & Reglement",
       href: "/dashboard/payments",
       icon: (
         <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -78,13 +78,10 @@ export function ClientSidebar({ session }: { session: Session }) {
                   <stop offset="100%" stopColor="#C084FC" />
                 </linearGradient>
               </defs>
-              {/* Face/Mask */}
               <circle cx="50" cy="45" r="18" fill="url(#octoGrad)" className="opacity-90" />
               <path d="M38 42 C 42 48, 48 48, 50 42 C 52 48, 58 48, 62 42" stroke="#060309" strokeWidth="3" strokeLinecap="round" />
-              {/* Eyes */}
               <circle cx="43" cy="39" r="3" fill="#fff" />
               <circle cx="57" cy="39" r="3" fill="#fff" />
-              {/* Tentacles */}
               <path d="M35 55 Q 25 65 30 75" stroke="url(#octoGrad)" strokeWidth="3" strokeLinecap="round" className="octo-anim-wave1" />
               <path d="M50 63 Q 50 78 55 83" stroke="url(#octoGrad)" strokeWidth="3" strokeLinecap="round" className="octo-anim-breath" />
               <path d="M65 55 Q 75 65 70 75" stroke="url(#octoGrad)" strokeWidth="3" strokeLinecap="round" className="octo-anim-wave2" />
@@ -92,7 +89,7 @@ export function ClientSidebar({ session }: { session: Session }) {
           </div>
           <div>
             <div className="text-white font-bold text-lg leading-none tracking-tight group-hover:text-[#7C3AED] transition-colors">Purity OS</div>
-            <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1">Espace Client</div>
+            <div className="text-[10px] text-zinc-500 uppercase font-bold tracking-widest mt-1">Mon Espace Client</div>
           </div>
         </div>
 
@@ -121,7 +118,7 @@ export function ClientSidebar({ session }: { session: Session }) {
       {/* Footer Profile */}
       <div className="mt-auto p-6 border-t border-white/5 bg-black/20">
         <div className="mb-4">
-          <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Compte Client</span>
+          <span className="text-[10px] text-zinc-500 uppercase font-bold tracking-wider">Mon Compte</span>
           <span className="text-zinc-200 truncate block font-medium text-xs mt-1" title={session?.user?.email || ""}>
             {session?.user?.email}
           </span>
