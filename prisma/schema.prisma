@@ -50,9 +50,9 @@ model Project {
   externalOrderId  String?    @unique // ex: ord_1234567890_abcdef (data/orders/*.json côté site)
   sector           String?    // coiffure, artisan, horeca, praticien...
   totalPrice       Float?     // prix total HTVA du pack/service
-  depositAmount    Float?     // acompte encaissé (Stripe, one-shot)
-  remainingAmount  Float?     // solde dû à la livraison (hors Stripe, encaissé manuellement)
-  monthlyAmount    Float?     // suivi mensuel récurrent (Stripe subscription)
+  depositAmount    Float?     // acompte encaissé (Mollie, one-shot)
+  remainingAmount  Float?     // solde dû à la livraison (encaissé manuellement)
+  monthlyAmount    Float?     // suivi mensuel récurrent
 
   client           User       @relation(fields: [clientId], references: [id])
   stages           Stage[]

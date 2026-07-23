@@ -9,9 +9,10 @@ export function AdminSidebar({ session }: { session: Session }) {
 
   const navItems = [
     { name: "Vue d'ensemble", href: "/admin" },
-    { name: "Projets & Clients", href: "/admin/projects" },
+    { name: "Clients", href: "/admin/clients" },
     { name: "Documents", href: "/admin/documents" },
     { name: "Paiements", href: "/admin/payments" },
+    { name: "Paramètres", href: "/admin/settings" },
   ]
 
   return (
@@ -19,7 +20,7 @@ export function AdminSidebar({ session }: { session: Session }) {
       <div className="p-6">
         <div className="text-[#7C3AED] font-bold text-xl mb-1">Purity OS</div>
         <div className="text-xs text-zinc-500 uppercase font-semibold tracking-wider">Espace Agence</div>
-        <div className="mt-8 space-y-2 text-sm text-zinc-400">
+      <div className="mt-8 space-y-2 text-sm text-zinc-400">
           {navItems.map((item) => {
             const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
             return (

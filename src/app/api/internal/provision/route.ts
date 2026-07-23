@@ -3,6 +3,10 @@ import { prisma } from "@/lib/prisma"
 import { issuePasswordSetToken } from "@/lib/passwordSetToken"
 import { sendEmail } from "@/lib/email"
 
+function escapeHtml(value: string) {
+  return value.replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char] ?? char)
+}
+
 export async function POST(request: Request) {
   try {
     const authHeader = request.headers.get("authorization") || ""
@@ -68,7 +72,7 @@ export async function POST(request: Request) {
       },
     })
 
-    // Acompte déjà encaissé par Stripe côté site (le webhook n'appelle provision qu'après paiement confirmé)
+    // Acompte déjà encaissé par Mollie côté site (le webhook n'appelle provision qu'après paiement confirmé)
     if (Number.isFinite(depositAmount) && depositAmount > 0) {
       await prisma.payment.create({
         data: {
@@ -80,7 +84,7 @@ export async function POST(request: Request) {
       })
     }
 
-    // Solde dû à la livraison — encaissé manuellement (hors Stripe), à pointer plus tard par l'admin
+    // Solde dû à la livraison — encaissé manuellement, à pointer plus tard par l'admin
     if (Number.isFinite(remainingAmount) && remainingAmount > 0) {
       await prisma.payment.create({
         data: {
@@ -95,11 +99,14 @@ export async function POST(request: Request) {
     // Lien "définir votre mot de passe" — seul chemin pour accéder au compte,
     // écrase systématiquement tout mot de passe déjà présent sur ce compte.
     const rawToken = await issuePasswordSetToken(user.id)
-    const portalUrl = process.env.NEXTAUTH_URL || ""
+    const portalUrl = process.env.PORTAL_BASE_URL || process.env.NEXTAUTH_URL || ""
+    const safeName = escapeHtml(user.name ?? "")
+    const safeProjectName = escapeHtml(projectName)
+    const safeToken = encodeURIComponent(rawToken)
     await sendEmail({
       to: user.email,
       subject: "Votre espace client Purity Agency est prêt",
-      html: `<p>Bonjour ${user.name ?? ""},</p><p>Votre projet <strong>${projectName}</strong> a été créé. Définissez votre mot de passe pour accéder à votre espace client et suivre son avancement :</p><p><a href="${portalUrl}/set-password?token=${rawToken}">Définir mon mot de passe</a></p><p>Ce lien expire dans 48h.</p>`,
+      html: `<p>Bonjour ${safeName},</p><p>Votre projet <strong>${safeProjectName}</strong> a été créé. Définissez votre mot de passe pour accéder à votre espace client et suivre son avancement :</p><p><a href="${portalUrl}/set-password?token=${safeToken}">Définir mon mot de passe</a></p><p>Ce lien expire dans 48h.</p>`,
     })
 
     return NextResponse.json({ ok: true, projectId: project.id, userId: user.id }, { status: 200 })

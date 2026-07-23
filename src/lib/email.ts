@@ -1,5 +1,5 @@
 // Envoi d'email via Resend — dégrade en silence si la clé n'est pas configurée
-// (même logique que purity-agency-site/server.js : 0 blocage, juste pas de mail).
+// (même logique que purity-agency-site/server/app.js : 0 blocage, juste pas de mail).
 export async function sendEmail({ to, subject, html }: { to: string; subject: string; html: string }) {
   // Toujours logger dans la console en développement pour récupérer les liens de vérification en local
   if (process.env.NODE_ENV !== "production") {

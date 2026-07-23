@@ -8,15 +8,11 @@ function VerifyEmailContent() {
   const searchParams = useSearchParams()
   const token = searchParams.get("token") || ""
 
-  const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
-  const [error, setError] = useState("")
+  const [status, setStatus] = useState<"loading" | "success" | "error">(token ? "loading" : "error")
+  const [error, setError] = useState(token ? "" : "Lien invalide.")
 
   useEffect(() => {
-    if (!token) {
-      setStatus("error")
-      setError("Lien invalide.")
-      return
-    }
+    if (!token) return
 
     fetch("/api/auth/verify-email", {
       method: "POST",

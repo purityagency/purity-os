@@ -1,4 +1,4 @@
-// Rate-limit mémoire par IP — même logique que purity-agency-site/server.js.
+// Rate-limit mémoire par IP — même logique que purity-agency-site/server/app.js.
 // Suffisant pour une seule instance ; à remplacer par un store partagé (Redis)
 // si l'app tourne un jour derrière plusieurs instances.
 type Bucket = { start: number; count: number }

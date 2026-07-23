@@ -68,10 +68,6 @@ export default async function AdminProjectsPage() {
                   <Input id="clientEmail" name="clientEmail" type="email" required className="bg-white/5 border-white/10" placeholder="jean@example.com" />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="clientPassword">Mot de passe client</Label>
-                  <Input id="clientPassword" name="clientPassword" type="password" required minLength={10} className="bg-white/5 border-white/10" placeholder="Minimum 10 caractères" />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="projectName">Nom du Projet</Label>
                   <Input id="projectName" name="projectName" required className="bg-white/5 border-white/10" placeholder="Refonte Site Web" />
                 </div>

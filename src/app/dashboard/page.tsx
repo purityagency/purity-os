@@ -62,7 +62,7 @@ export default async function DashboardPage() {
           </div>
           <h3 className="text-lg font-bold text-white mb-2">Espace de travail en cours de déploiement</h3>
           <p className="text-zinc-400 text-sm leading-relaxed">
-            Votre chef de projet Purity prépare actuellement votre espace de travail. Vous recevrez une notification par email dès l'activation de votre timeline.
+             Votre chef de projet Purity prépare actuellement votre espace de travail. Vous recevrez une notification par email dès l&apos;activation de votre timeline.
           </p>
         </div>
       ) : (
@@ -113,7 +113,7 @@ export default async function DashboardPage() {
               </div>
               
               <div className="relative pl-6 border-l border-white/5 space-y-6">
-                {project.stages.map((stage, idx) => {
+                {project.stages.map((stage) => {
                   const styles = getStatusStyles(stage.status)
                   return (
                     <div key={stage.id} className="relative group">
@@ -189,7 +189,7 @@ export default async function DashboardPage() {
             <div className="p-6 rounded-2xl glass-panel transition-all duration-300">
               <div className="mb-6">
                 <h3 className="font-bold text-white text-lg">Documents & Livrables</h3>
-                <p className="text-zinc-500 text-xs mt-0.5">Accédez à vos maquettes, briefs et factures d'acompte.</p>
+            <p className="text-zinc-500 text-xs mt-0.5">Accédez à vos maquettes, briefs et factures d&apos;acompte.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -226,7 +226,7 @@ export default async function DashboardPage() {
                     <svg className="w-8 h-8 text-zinc-600 mx-auto mb-2" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
                       <path d="M9 13h6m-3-3v6m-9 1V4a2 2 0 0 1 2-2h6l2 2h6a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                     </svg>
-                    <p className="text-zinc-500 text-xs">Aucun document n'a encore été mis à disposition.</p>
+                    <p className="text-zinc-500 text-xs">Aucun document n&apos;a encore été mis à disposition.</p>
                   </div>
                 )}
               </div>
@@ -242,7 +242,7 @@ export default async function DashboardPage() {
               <div className="mb-4 flex items-center justify-between">
                 <div>
                   <h3 className="font-bold text-white text-lg">Discussion</h3>
-                  <p className="text-zinc-500 text-xs mt-0.5">Messagerie directe avec l'équipe technique.</p>
+                  <p className="text-zinc-500 text-xs mt-0.5">Messagerie directe avec l&apos;équipe technique.</p>
                 </div>
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_#10B981]" title="En ligne" />
               </div>

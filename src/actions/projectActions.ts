@@ -2,23 +2,27 @@
 
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
-import { hashPassword, sanitizeEmailInput, sanitizePasswordInput } from "@/lib/auth"
+import { sanitizeEmailInput } from "@/lib/auth"
 import { requireAdminSession } from "@/lib/session"
+import { issuePasswordSetToken } from "@/lib/passwordSetToken"
+import { sendEmail } from "@/lib/email"
+
+function escapeHtml(value: string) {
+  return value.replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char] ?? char)
+}
 
 export async function createProjectWithClient(formData: FormData) {
   await requireAdminSession()
 
   const clientName = String(formData.get("clientName") ?? "").trim()
   const clientEmail = sanitizeEmailInput(formData.get("clientEmail"))
-  const clientPassword = sanitizePasswordInput(formData.get("clientPassword"))
   const projectName = String(formData.get("projectName") ?? "").trim()
   const estimatedDelivery = String(formData.get("estimatedDelivery") ?? "").trim()
 
-  if (!clientName || !clientEmail || !projectName || !clientPassword) {
+  if (!clientName || !clientEmail || !projectName) {
     throw new Error("Missing required fields")
   }
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(clientEmail)) throw new Error("Invalid email")
-  if (clientPassword.length < 10) throw new Error("Password too short")
 
   let deliveryDate: Date | null = null
   if (estimatedDelivery) {
@@ -31,13 +35,11 @@ export async function createProjectWithClient(formData: FormData) {
     update: {
       name: clientName,
       role: "CLIENT",
-      passwordHash: hashPassword(clientPassword),
     },
     create: {
       email: clientEmail,
       name: clientName,
       role: "CLIENT",
-      passwordHash: hashPassword(clientPassword),
     }
   })
 
@@ -48,6 +50,14 @@ export async function createProjectWithClient(formData: FormData) {
       status: "ACTIVE",
       estimatedDelivery: deliveryDate
     }
+  })
+
+  const token = await issuePasswordSetToken(user.id)
+  const baseUrl = process.env.PORTAL_BASE_URL || process.env.NEXTAUTH_URL || "http://localhost:3001"
+  await sendEmail({
+    to: clientEmail,
+    subject: "Votre accès Purity Agency",
+    html: `<p>Bonjour ${escapeHtml(clientName)},</p><p>Votre espace client est prêt.</p><p><a href="${baseUrl}/set-password?token=${encodeURIComponent(token)}">Définir votre mot de passe</a></p><p>Ce lien expire dans 48 heures.</p>`,
   })
 
   revalidatePath("/admin")

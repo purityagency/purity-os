@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import Link from "next/link"
 
 function formatEUR(amount: number) {
   return new Intl.NumberFormat('fr-BE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(amount)
@@ -14,6 +15,7 @@ export default async function AdminDashboard() {
     paidAgg,
     pendingAgg,
     activeMonthlyProjects,
+    overdueProjects,
   ] = await Promise.all([
     prisma.project.count(),
     prisma.project.count({ where: { status: { notIn: ['COMPLETED', 'CANCELLED'] } } }),
@@ -28,6 +30,12 @@ export default async function AdminDashboard() {
     prisma.project.findMany({
       where: { status: { notIn: ['COMPLETED', 'CANCELLED'] }, monthlyAmount: { not: null } },
       select: { monthlyAmount: true },
+    }),
+    prisma.project.findMany({
+      where: { status: { notIn: ['COMPLETED', 'CANCELLED'] }, estimatedDelivery: { lt: new Date() } },
+      orderBy: { estimatedDelivery: 'asc' },
+      take: 5,
+      include: { client: { select: { name: true, email: true } } },
     }),
   ])
 
@@ -65,7 +73,7 @@ export default async function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-emerald-400">{formatEUR(totalPaid)}</div>
-            <p className="text-xs text-zinc-500 mt-1">Total des paiements Stripe confirmés</p>
+            <p className="text-xs text-zinc-500 mt-1">Total des paiements Mollie confirmés</p>
           </CardContent>
         </Card>
 
@@ -75,7 +83,7 @@ export default async function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-amber-400">{formatEUR(totalPending)}</div>
-            <p className="text-xs text-zinc-500 mt-1">À encaisser à la livraison (hors Stripe)</p>
+            <p className="text-xs text-zinc-500 mt-1">À encaisser à la livraison</p>
           </CardContent>
         </Card>
 
@@ -85,10 +93,23 @@ export default async function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="text-3xl font-bold text-[#7C3AED]">{formatEUR(monthlyRecurring)}</div>
-            <p className="text-xs text-zinc-500 mt-1">Somme des suivis mensuels actifs (Stripe)</p>
+            <p className="text-xs text-zinc-500 mt-1">Somme des suivis mensuels actifs</p>
           </CardContent>
         </Card>
+
+        <Card className="bg-red-500/5 border-red-500/20 text-white backdrop-blur-md">
+          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-zinc-400">Projets en retard</CardTitle></CardHeader>
+          <CardContent><div className="text-3xl font-bold text-red-400">{overdueProjects.length}</div><p className="text-xs text-zinc-500 mt-1">Action requise aujourd&apos;hui</p></CardContent>
+        </Card>
       </div>
+
+      <div className="mb-8 flex flex-wrap gap-3">
+        <Link href="/admin/projects" className="rounded-lg bg-[#7C3AED] px-4 py-2 text-sm font-medium text-white hover:bg-[#6D28D9]">Gérer les projets</Link>
+        <Link href="/admin/documents" className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-white/5">Vérifier les documents</Link>
+        <Link href="/admin/payments" className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-white/5">Suivre les paiements</Link>
+      </div>
+
+      {overdueProjects.length > 0 && <Card className="mb-8 border-red-500/20 bg-red-500/5 text-white"><CardHeader><CardTitle className="text-base">À traiter en priorité</CardTitle></CardHeader><CardContent className="space-y-3">{overdueProjects.map((project) => <Link key={project.id} href={`/admin/projects/${project.id}`} className="flex items-center justify-between rounded-lg border border-white/5 p-3 hover:bg-white/5"><span><span className="block font-medium">{project.name}</span><span className="text-xs text-zinc-400">{project.client.name ?? project.client.email}</span></span><span className="text-xs text-red-300">Échéance dépassée</span></Link>)}</CardContent></Card>}
 
       <h2 className="text-xl font-bold mb-4 text-white">Dernières Activités</h2>
       <Card className="bg-white/5 border-white/10 text-white backdrop-blur-md">

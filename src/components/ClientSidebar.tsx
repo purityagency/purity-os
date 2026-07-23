@@ -9,23 +9,60 @@ export function ClientSidebar({ session }: { session: Session }) {
   const pathname = usePathname()
 
   const navLinks = [
-    { name: "Aperçu", href: "/dashboard", icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-        <rect width="7" height="9" x="3" y="3" rx="1" />
-        <rect width="7" height="5" x="14" y="3" rx="1" />
-        <rect width="7" height="9" x="14" y="12" rx="1" />
-        <rect width="7" height="5" x="3" y="16" rx="1" />
-      </svg>
-    )},
-    { name: "Fichiers", href: "/dashboard/documents", icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-        <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
-        <path d="M14 2v4a2 2 0 0 0 2 2h4" />
-        <path d="M10 9H8" />
-        <path d="M16 13H8" />
-        <path d="M16 17H8" />
-      </svg>
-    )}
+    {
+      name: "Aperçu",
+      href: "/dashboard",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <rect width="7" height="9" x="3" y="3" rx="1" />
+          <rect width="7" height="5" x="14" y="3" rx="1" />
+          <rect width="7" height="9" x="14" y="12" rx="1" />
+          <rect width="7" height="5" x="3" y="16" rx="1" />
+        </svg>
+      )
+    },
+    {
+      name: "Timeline",
+      href: "/dashboard/timeline",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      )
+    },
+    {
+      name: "Fichiers",
+      href: "/dashboard/documents",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" />
+          <path d="M14 2v4a2 2 0 0 0 2 2h4" />
+          <path d="M10 9H8" />
+          <path d="M16 13H8" />
+          <path d="M16 17H8" />
+        </svg>
+      )
+    },
+    {
+      name: "Messages",
+      href: "/dashboard/messages",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+      )
+    },
+    {
+      name: "Paiements",
+      href: "/dashboard/payments",
+      icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+          <rect width="20" height="14" x="2" y="5" rx="2" />
+          <line x1="2" x2="22" y1="10" y2="10" />
+        </svg>
+      )
+    }
   ]
 
   return (
@@ -62,7 +99,7 @@ export function ClientSidebar({ session }: { session: Session }) {
         {/* Sidebar Nav */}
         <nav className="space-y-1.5">
           {navLinks.map((link) => {
-            const isActive = pathname === link.href
+            const isActive = pathname === link.href || (link.href !== "/dashboard" && pathname.startsWith(link.href))
             return (
               <Link
                 key={link.name}
