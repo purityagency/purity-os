@@ -22,7 +22,7 @@ export default async function DocumentsPage() {
       ) : (
         <div className="p-6 border border-white/10 bg-white/5 rounded-2xl backdrop-blur-sm">
           <h3 className="font-bold mb-4 text-[#7C3AED]">Fichiers de votre projet</h3>
-          <ProjectDocuments projectId={project.id} documents={project.documents} />
+          <ProjectDocuments projectId={project.id} documents={project.documents} canUpload={true} />
         </div>
       )}
     </div>
