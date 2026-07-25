@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { issuePasswordSetToken } from "@/lib/passwordSetToken"
 import { sendEmail } from "@/lib/email"
+import { verifyInternalSecret } from "@/lib/internalAuth"
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char] ?? char)
@@ -9,11 +10,7 @@ function escapeHtml(value: string) {
 
 export async function POST(request: Request) {
   try {
-    const authHeader = request.headers.get("authorization") || ""
-    const token = authHeader.replace("Bearer ", "").trim()
-
-    const secret = process.env.INTERNAL_API_SECRET
-    if (!secret || token !== secret) {
+    if (!verifyInternalSecret(request)) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 })
     }
 
@@ -94,6 +91,22 @@ export async function POST(request: Request) {
           type: "BALANCE",
         },
       })
+    }
+
+    // Fil d'activité admin — best-effort, ne doit jamais faire échouer le provisioning
+    try {
+      await prisma.event.create({
+        data: {
+          type: "ORDER",
+          name: user.name,
+          email: user.email,
+          company: sector,
+          summary: `${projectName}${Number.isFinite(depositAmount) && depositAmount > 0 ? ` — ${depositAmount} €` : ""}`,
+          payload: { orderId, projectId: project.id, sector, totalPrice, depositAmount, remainingAmount, monthlyAmount },
+        },
+      })
+    } catch (err) {
+      console.error("[internal-provision] event log failed", err)
     }
 
     // Lien "définir votre mot de passe" — seul chemin pour accéder au compte,

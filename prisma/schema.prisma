@@ -111,3 +111,21 @@ model Payment {
 
   project   Project  @relation(fields: [projectId], references: [id])
 }
+
+// Boîte de réception unifiée pour tout ce qui arrive du site public :
+// question/lead (formulaire ou chatbot OctoMask), prise de RDV, commande payée.
+// Les commandes créent aussi un Project (voir /api/internal/provision) — l'Event
+// associé sert uniquement au fil d'activité, pas de duplication de données métier.
+model Event {
+  id        String    @id @default(cuid())
+  type      String    // "LEAD", "BOOKING", "ORDER"
+  status    String    @default("NEW") // "NEW", "SEEN", "DONE"
+  name      String?
+  email     String?
+  phone     String?
+  company   String?
+  summary   String?   // ligne courte : besoin exprimé, pack commandé, créneau réservé...
+  payload   Json?     // détail brut (need, entreprise, créneau, référence commande...)
+  createdAt DateTime  @default(now())
+  seenAt    DateTime?
+}
