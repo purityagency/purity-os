@@ -42,7 +42,9 @@ export async function addStageToProject(projectId: string, formData: FormData) {
   })
 
   revalidatePath(`/admin/projects/${projectId}`)
-  revalidatePath(`/dashboard`)
+  revalidatePath("/admin")
+  revalidatePath("/dashboard")
+  revalidatePath("/dashboard/timeline")
 }
 
 export async function updateStageStatus(stageId: string, projectId: string, status: string) {
@@ -61,7 +63,9 @@ export async function updateStageStatus(stageId: string, projectId: string, stat
   })
 
   revalidatePath(`/admin/projects/${projectId}`)
-  revalidatePath(`/dashboard`)
+  revalidatePath("/admin")
+  revalidatePath("/dashboard")
+  revalidatePath("/dashboard/timeline")
 
   if (status === "BLOCKED") {
     const adminEmail = process.env.ADMIN_EMAIL

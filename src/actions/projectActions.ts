@@ -81,8 +81,10 @@ export async function updateProjectStatus(projectId: string, status: string) {
 
   revalidatePath(`/admin/projects/${projectId}`)
   revalidatePath("/admin/projects")
+  revalidatePath("/admin/clients")
   revalidatePath("/admin")
   revalidatePath("/dashboard")
+  revalidatePath("/dashboard/timeline")
 }
 
 export async function updateProjectDetails(projectId: string, formData: FormData) {
@@ -110,4 +112,9 @@ export async function updateProjectDetails(projectId: string, formData: FormData
 
   revalidatePath(`/admin/projects/${projectId}`)
   revalidatePath("/admin/projects")
+  revalidatePath("/admin/clients")
+  // Le client voit le nom du projet et la date de livraison sur son tableau de
+  // bord — sans ceci il restait sur la version en cache après modification.
+  revalidatePath("/dashboard")
+  revalidatePath("/dashboard/timeline")
 }

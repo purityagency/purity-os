@@ -19,7 +19,12 @@ export async function markPaymentPaid(paymentId: string, projectId: string) {
   })
 
   revalidatePath(`/admin/projects/${projectId}`)
-  revalidatePath(`/admin`)
+  revalidatePath("/admin/payments")
+  revalidatePath("/admin/clients")
+  revalidatePath("/admin")
+  // Le client suit ses paiements sur son espace — il doit voir le changement.
+  revalidatePath("/dashboard")
+  revalidatePath("/dashboard/payments")
 }
 
 export async function markPaymentCancelled(paymentId: string, projectId: string) {
@@ -37,5 +42,10 @@ export async function markPaymentCancelled(paymentId: string, projectId: string)
   })
 
   revalidatePath(`/admin/projects/${projectId}`)
-  revalidatePath(`/admin`)
+  revalidatePath("/admin/payments")
+  revalidatePath("/admin/clients")
+  revalidatePath("/admin")
+  // Le client suit ses paiements sur son espace — il doit voir le changement.
+  revalidatePath("/dashboard")
+  revalidatePath("/dashboard/payments")
 }

@@ -13,6 +13,7 @@ import { ProjectChat } from "@/components/ProjectChat"
 import { ProjectDocuments } from "@/components/ProjectDocuments"
 import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/modules/auth/authOptions"
+import Link from "next/link"
 
 function formatEUR(amount: number) {
   return new Intl.NumberFormat('fr-BE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(amount)
@@ -33,12 +34,13 @@ const PAYMENT_TYPE_LABELS: Record<string, string> = {
   PAYMENT: "Paiement",
 }
 
-export default async function AdminProjectDetailsPage({ params }: { params: { id: string } }) {
+export default async function AdminProjectDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const session = await getServerSession(authOptions)
   const userId = session?.user?.id ?? ""
+  const { id } = await params
 
   const project = await prisma.project.findUnique({
-    where: { id: params.id },
+    where: { id },
     include: {
       client: true,
       stages: { orderBy: { orderIndex: "asc" } },
@@ -57,9 +59,16 @@ export default async function AdminProjectDetailsPage({ params }: { params: { id
     <div className="space-y-8">
       <div className="flex items-start justify-between flex-wrap gap-4">
         <div>
-          <div className="text-sm text-zinc-500 mb-2">Projet / {project.id}</div>
-          <h1 className="text-3xl font-bold text-white">{project.name}</h1>
-          <p className="text-zinc-400">Client: {project.client.name} ({project.client.email})</p>
+          <Link href="/admin/projects" className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+            ← Tous les projets
+          </Link>
+          <h1 className="text-3xl font-bold text-white mt-2">{project.name}</h1>
+          <p className="text-zinc-400 text-sm mt-1">
+            Client :{" "}
+            <Link href={`/admin/clients/${project.clientId}`} className="text-[#C084FC] hover:underline">
+              {project.client.name || project.client.email}
+            </Link>
+          </p>
         </div>
         <Badge className="bg-[#7C3AED]/20 text-[#7C3AED] text-sm px-3 py-1.5 h-auto">
           {STATUS_LABELS[project.status] ?? project.status}

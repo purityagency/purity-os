@@ -1,175 +1,247 @@
 import { prisma } from "@/lib/prisma"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { requireAdminSession } from "@/lib/session"
 import Link from "next/link"
+import {
+  formatEUR,
+  formatDate,
+  formatDateTime,
+  STAGE_STATUS_LABELS,
+  EVENT_TYPE_LABELS,
+  EVENT_TYPE_COLORS,
+} from "@/lib/adminFormat"
 
-const EVENT_TYPE_LABEL: Record<string, string> = { LEAD: "Question / Lead", BOOKING: "RDV", ORDER: "Commande" }
+function StatCard({
+  label,
+  value,
+  hint,
+  tone = "neutral",
+  href,
+}: {
+  label: string
+  value: string | number
+  hint?: string
+  tone?: "neutral" | "accent" | "positive" | "warning" | "critical"
+  href?: string
+}) {
+  const toneClass = {
+    neutral: "text-white",
+    accent: "text-[#C084FC]",
+    positive: "text-emerald-400",
+    warning: "text-amber-400",
+    critical: "text-red-400",
+  }[tone]
 
-function formatEUR(amount: number) {
-  return new Intl.NumberFormat('fr-BE', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(amount)
+  const frameClass =
+    tone === "critical"
+      ? "border-red-500/20 bg-red-500/5"
+      : tone === "accent"
+        ? "border-[#7C3AED]/30 bg-[#7C3AED]/10"
+        : "border-white/10 bg-white/5"
+
+  const content = (
+    <>
+      <p className="text-xs text-zinc-400">{label}</p>
+      <p className={`text-3xl font-bold mt-1 tabular-nums ${toneClass}`}>{value}</p>
+      {hint && <p className="text-[11px] text-zinc-500 mt-1">{hint}</p>}
+    </>
+  )
+
+  const className = `rounded-2xl border p-5 backdrop-blur-md ${frameClass}`
+
+  if (href) {
+    return (
+      <Link href={href} className={`${className} block hover:bg-white/[0.07] transition-colors`}>
+        {content}
+      </Link>
+    )
+  }
+  return <div className={className}>{content}</div>
 }
 
 export default async function AdminDashboard() {
+  await requireAdminSession()
+
+  const now = new Date()
+
   const [
     totalProjects,
     activeProjects,
     totalClients,
-    recentStages,
     paidAgg,
     pendingAgg,
     activeMonthlyProjects,
     overdueProjects,
     newEventsCount,
     recentEvents,
+    blockedStages,
+    waitingStages,
+    inactiveClients,
   ] = await Promise.all([
     prisma.project.count(),
-    prisma.project.count({ where: { status: { notIn: ['COMPLETED', 'CANCELLED'] } } }),
-    prisma.user.count({ where: { role: 'CLIENT' } }),
-    prisma.stage.findMany({
-      orderBy: { updatedAt: 'desc' },
-      take: 5,
-      include: { project: true }
-    }),
-    prisma.payment.aggregate({ where: { status: 'PAID' }, _sum: { amount: true } }),
-    prisma.payment.aggregate({ where: { status: 'PENDING' }, _sum: { amount: true } }),
+    prisma.project.count({ where: { status: { notIn: ["COMPLETED", "CANCELLED"] } } }),
+    prisma.user.count({ where: { role: "CLIENT" } }),
+    prisma.payment.aggregate({ where: { status: "PAID" }, _sum: { amount: true } }),
+    prisma.payment.aggregate({ where: { status: "PENDING" }, _sum: { amount: true } }),
     prisma.project.findMany({
-      where: { status: { notIn: ['COMPLETED', 'CANCELLED'] }, monthlyAmount: { not: null } },
+      where: { status: { notIn: ["COMPLETED", "CANCELLED"] }, monthlyAmount: { not: null } },
       select: { monthlyAmount: true },
     }),
     prisma.project.findMany({
-      where: { status: { notIn: ['COMPLETED', 'CANCELLED'] }, estimatedDelivery: { lt: new Date() } },
-      orderBy: { estimatedDelivery: 'asc' },
+      where: { status: { notIn: ["COMPLETED", "CANCELLED"] }, estimatedDelivery: { lt: now } },
+      orderBy: { estimatedDelivery: "asc" },
       take: 5,
       include: { client: { select: { name: true, email: true } } },
     }),
-    prisma.event.count({ where: { status: 'NEW' } }),
-    prisma.event.findMany({ orderBy: { createdAt: 'desc' }, take: 5 }),
+    prisma.event.count({ where: { status: "NEW" } }),
+    prisma.event.findMany({ orderBy: { createdAt: "desc" }, take: 5 }),
+    prisma.stage.findMany({
+      where: { status: "BLOCKED", project: { status: { notIn: ["COMPLETED", "CANCELLED"] } } },
+      orderBy: { updatedAt: "desc" },
+      take: 5,
+      include: { project: { select: { id: true, name: true } } },
+    }),
+    prisma.stage.findMany({
+      where: { status: "WAITING_CLIENT", project: { status: { notIn: ["COMPLETED", "CANCELLED"] } } },
+      orderBy: { updatedAt: "desc" },
+      take: 5,
+      include: { project: { select: { id: true, name: true } } },
+    }),
+    // Clients invités qui n'ont jamais activé leur accès
+    prisma.user.count({ where: { role: "CLIENT", passwordHash: null } }),
   ])
 
   const totalPaid = paidAgg._sum.amount ?? 0
   const totalPending = pendingAgg._sum.amount ?? 0
-  const monthlyRecurring = activeMonthlyProjects.reduce((sum: number, p: { monthlyAmount: number | null }) => sum + (p.monthlyAmount ?? 0), 0)
+  const monthlyRecurring = activeMonthlyProjects.reduce(
+    (sum: number, p: { monthlyAmount: number | null }) => sum + (p.monthlyAmount ?? 0),
+    0,
+  )
+
+  const actionItems = [
+    ...blockedStages.map((s) => ({
+      id: `blocked-${s.id}`,
+      href: `/admin/projects/${s.project.id}`,
+      label: s.title,
+      context: s.project.name,
+      badge: STAGE_STATUS_LABELS.BLOCKED,
+      tone: "critical" as const,
+    })),
+    ...overdueProjects.map((p) => ({
+      id: `overdue-${p.id}`,
+      href: `/admin/projects/${p.id}`,
+      label: p.name,
+      context: p.client.name ?? p.client.email,
+      badge: `Échéance ${p.estimatedDelivery ? formatDate(p.estimatedDelivery) : ""}`.trim(),
+      tone: "critical" as const,
+    })),
+    ...waitingStages.map((s) => ({
+      id: `waiting-${s.id}`,
+      href: `/admin/projects/${s.project.id}`,
+      label: s.title,
+      context: s.project.name,
+      badge: STAGE_STATUS_LABELS.WAITING_CLIENT,
+      tone: "warning" as const,
+    })),
+  ]
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-8 text-white">Vue d&apos;ensemble</h1>
-
-      <div className="grid gap-6 md:grid-cols-3 mb-8">
-        <Card className="bg-white/5 border-white/10 text-white backdrop-blur-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">Projets Actifs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-[#7C3AED]">{activeProjects}</div>
-            <p className="text-xs text-zinc-500 mt-1">Sur un total de {totalProjects} projets</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/5 border-white/10 text-white backdrop-blur-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">Clients Actifs</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-[#7C3AED]">{totalClients}</div>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/5 border-white/10 text-white backdrop-blur-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">Encaissé (acomptes)</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-emerald-400">{formatEUR(totalPaid)}</div>
-            <p className="text-xs text-zinc-500 mt-1">Total des paiements Mollie confirmés</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/5 border-white/10 text-white backdrop-blur-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">Soldes en attente</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-amber-400">{formatEUR(totalPending)}</div>
-            <p className="text-xs text-zinc-500 mt-1">À encaisser à la livraison</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-white/5 border-white/10 text-white backdrop-blur-md">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-zinc-400">Récurrent mensuel</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold text-[#7C3AED]">{formatEUR(monthlyRecurring)}</div>
-            <p className="text-xs text-zinc-500 mt-1">Somme des suivis mensuels actifs</p>
-          </CardContent>
-        </Card>
-
-        <Card className="bg-red-500/5 border-red-500/20 text-white backdrop-blur-md">
-          <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-zinc-400">Projets en retard</CardTitle></CardHeader>
-          <CardContent><div className="text-3xl font-bold text-red-400">{overdueProjects.length}</div><p className="text-xs text-zinc-500 mt-1">Action requise aujourd&apos;hui</p></CardContent>
-        </Card>
-
-        <Link href="/admin/inbox" className="block">
-          <Card className="bg-[#7C3AED]/10 border-[#7C3AED]/30 text-white backdrop-blur-md hover:bg-[#7C3AED]/15 transition-colors h-full">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-zinc-400">Nouveaux — à traiter</CardTitle></CardHeader>
-            <CardContent><div className="text-3xl font-bold text-[#7C3AED]">{newEventsCount}</div><p className="text-xs text-zinc-500 mt-1">Questions, RDV, commandes</p></CardContent>
-          </Card>
-        </Link>
+    <div className="space-y-8">
+      <div>
+        <h1 className="text-3xl font-bold text-white">Vue d&apos;ensemble</h1>
+        <p className="text-sm text-zinc-400 mt-1">
+          {actionItems.length > 0 || newEventsCount > 0
+            ? "Voici ce qui demande votre attention aujourd'hui."
+            : "Rien ne bloque, tout est à jour."}
+        </p>
       </div>
 
-      <div className="mb-8 flex flex-wrap gap-3">
-        <Link href="/admin/inbox" className="rounded-lg bg-[#7C3AED] px-4 py-2 text-sm font-medium text-white hover:bg-[#6D28D9]">Boîte de réception</Link>
-        <Link href="/admin/projects" className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-white/5">Gérer les projets</Link>
-        <Link href="/admin/documents" className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-white/5">Vérifier les documents</Link>
-        <Link href="/admin/payments" className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-zinc-200 hover:bg-white/5">Suivre les paiements</Link>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard
+          label="Nouvelles demandes"
+          value={newEventsCount}
+          hint="Questions, RDV, commandes"
+          tone="accent"
+          href="/admin/inbox"
+        />
+        <StatCard
+          label="Projets actifs"
+          value={activeProjects}
+          hint={`Sur ${totalProjects} au total`}
+          href="/admin/projects?status=ACTIVE"
+        />
+        <StatCard label="Clients" value={totalClients} hint={inactiveClients > 0 ? `${inactiveClients} sans accès activé` : "Tous ont activé leur accès"} href="/admin/clients" />
+        <StatCard label="Encaissé" value={formatEUR(totalPaid)} hint="Paiements confirmés" tone="positive" href="/admin/payments?status=PAID" />
+        <StatCard label="À encaisser" value={formatEUR(totalPending)} hint="Soldes en attente" tone="warning" href="/admin/payments?status=PENDING" />
+        <StatCard label="Récurrent mensuel" value={formatEUR(monthlyRecurring)} hint="Suivis actifs" tone="accent" />
       </div>
 
-      {recentEvents.length > 0 && (
-        <>
-          <h2 className="text-xl font-bold mb-4 text-white">Dernières demandes</h2>
-          <Card className="mb-8 bg-white/5 border-white/10 text-white backdrop-blur-md">
-            <CardContent className="p-0">
-              <div className="divide-y divide-white/5">
-                {recentEvents.map((event) => (
-                  <Link key={event.id} href="/admin/inbox" className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
-                    <div>
-                      <p className="font-medium">{event.name || event.email || "—"}</p>
-                      <p className="text-sm text-zinc-500">{event.summary || EVENT_TYPE_LABEL[event.type] || event.type}</p>
-                    </div>
-                    <div className="text-xs px-2 py-1 rounded bg-[#7C3AED]/20 text-[#7C3AED]">
-                      {EVENT_TYPE_LABEL[event.type] ?? event.type}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </>
+      {/* Priority queue */}
+      {actionItems.length > 0 && (
+        <section>
+          <h2 className="text-xl font-bold text-white mb-3">À traiter en priorité</h2>
+          <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+            <div className="divide-y divide-white/10">
+              {actionItems.map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className="flex items-center justify-between gap-4 p-4 hover:bg-white/5 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-white truncate">{item.label}</p>
+                    <p className="text-xs text-zinc-500 truncate">{item.context}</p>
+                  </div>
+                  <span
+                    className={`text-[11px] px-2 py-1 rounded shrink-0 ${
+                      item.tone === "critical" ? "bg-red-500/20 text-red-300" : "bg-amber-500/20 text-amber-300"
+                    }`}
+                  >
+                    {item.badge}
+                  </span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
       )}
 
-      {overdueProjects.length > 0 && <Card className="mb-8 border-red-500/20 bg-red-500/5 text-white"><CardHeader><CardTitle className="text-base">À traiter en priorité</CardTitle></CardHeader><CardContent className="space-y-3">{overdueProjects.map((project) => <Link key={project.id} href={`/admin/projects/${project.id}`} className="flex items-center justify-between rounded-lg border border-white/5 p-3 hover:bg-white/5"><span><span className="block font-medium">{project.name}</span><span className="text-xs text-zinc-400">{project.client.name ?? project.client.email}</span></span><span className="text-xs text-red-300">Échéance dépassée</span></Link>)}</CardContent></Card>}
-
-      <h2 className="text-xl font-bold mb-4 text-white">Dernières Activités</h2>
-      <Card className="bg-white/5 border-white/10 text-white backdrop-blur-md">
-        <CardContent className="p-0">
-          <div className="divide-y divide-white/5">
-            {recentStages.length === 0 ? (
-              <div className="p-6 text-zinc-400 text-sm text-center">Aucune activité récente.</div>
-            ) : (
-              recentStages.map((stage: (typeof recentStages)[number]) => (
-                <div key={stage.id} className="flex items-center justify-between p-4 hover:bg-white/5 transition-colors">
-                  <div>
-                    <p className="font-medium">{stage.title}</p>
-                    <p className="text-sm text-zinc-500">Projet: {stage.project.name}</p>
+      {/* Recent requests */}
+      <section>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xl font-bold text-white">Dernières demandes</h2>
+          <Link href="/admin/inbox" className="text-xs text-[#C084FC] hover:underline">
+            Boîte de réception →
+          </Link>
+        </div>
+        <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+          {recentEvents.length === 0 ? (
+            <p className="p-6 text-sm text-zinc-400">Aucune demande reçue pour l&apos;instant.</p>
+          ) : (
+            <div className="divide-y divide-white/10">
+              {recentEvents.map((event) => (
+                <Link
+                  key={event.id}
+                  href={event.projectId ? `/admin/projects/${event.projectId}` : "/admin/inbox"}
+                  className="flex items-center justify-between gap-4 p-4 hover:bg-white/5 transition-colors"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-white truncate">{event.name || event.email || "Contact sans nom"}</p>
+                    <p className="text-xs text-zinc-500 truncate">
+                      {event.summary || EVENT_TYPE_LABELS[event.type] || event.type}
+                    </p>
                   </div>
-                  <div className="text-xs px-2 py-1 rounded bg-[#7C3AED]/20 text-[#7C3AED]">
-                    {stage.status}
+                  <div className="text-right shrink-0">
+                    <span className={`text-[11px] px-2 py-1 rounded ${EVENT_TYPE_COLORS[event.type] ?? "bg-white/10 text-zinc-300"}`}>
+                      {EVENT_TYPE_LABELS[event.type] ?? event.type}
+                    </span>
+                    <p className="text-[11px] text-zinc-500 mt-1">{formatDateTime(event.createdAt)}</p>
                   </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   )
 }
