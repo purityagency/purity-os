@@ -146,19 +146,21 @@ export default async function DashboardPage() {
             </svg>
             Nouveau message
           </Link>
-          <a
-            href="http://localhost:3000"
-            target="_blank"
-            rel="noopener noreferrer"
-            title="Voir mon site en direct"
-            className="flex items-center justify-center w-10 h-10 rounded-xl border border-white/10 text-zinc-300 hover:text-white hover:bg-white/5 transition-all"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-              <polyline points="15 3 21 3 21 9" />
-              <line x1="10" x2="21" y1="14" y2="3" />
-            </svg>
-          </a>
+          {project.liveUrl && (
+            <a
+              href={project.liveUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Voir mon site en direct"
+              className="flex items-center justify-center w-10 h-10 rounded-xl border border-white/10 text-zinc-300 hover:text-white hover:bg-white/5 transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" x2="21" y1="14" y2="3" />
+              </svg>
+            </a>
+          )}
         </div>
       </div>
 
@@ -389,24 +391,30 @@ export default async function DashboardPage() {
       <div className="p-6 rounded-2xl glass-panel relative overflow-hidden flex flex-col md:flex-row justify-between items-start md:items-center gap-6 border border-purple-500/20 bg-gradient-to-r from-purple-950/30 via-[#060309] to-black">
         <div className="space-y-2">
           <div className="flex items-center gap-2 text-xs font-bold text-purple-400 uppercase tracking-widest">
-            <span className="w-2 h-2 rounded-full bg-purple-400 animate-ping" />
-            Votre site est en cours de construction
+            <span className={`w-2 h-2 rounded-full bg-purple-400 ${project.liveUrl ? "animate-pulse" : "animate-ping"}`} />
+            {project.liveUrl ? "Votre site est en ligne" : "Votre site est en cours de construction"}
           </div>
-          <p className="text-xs text-zinc-400">Testez et visualisez votre site en direct comme le verront vos futurs clients.</p>
+          <p className="text-xs text-zinc-400">
+            {project.liveUrl
+              ? "Consultez votre site tel que le voient vos clients."
+              : "Le lien apparaîtra ici dès la mise en ligne de votre projet."}
+          </p>
         </div>
-        <a
-          href="http://localhost:3000"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-2 px-5 py-3 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-bold shadow-lg shadow-purple-500/25 transition-all active:scale-95 shrink-0"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
-            <polyline points="15 3 21 3 21 9" />
-            <line x1="10" x2="21" y1="14" y2="3" />
-          </svg>
-          Voir mon site en direct
-        </a>
+        {project.liveUrl && (
+          <a
+            href={project.liveUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 px-5 py-3 rounded-xl bg-[#7C3AED] hover:bg-[#6D28D9] text-white text-xs font-bold shadow-lg shadow-purple-500/25 transition-all active:scale-95 shrink-0"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" x2="21" y1="14" y2="3" />
+            </svg>
+            Voir mon site en direct
+          </a>
+        )}
       </div>
     </div>
   )

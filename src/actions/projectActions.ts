@@ -92,6 +92,7 @@ export async function updateProjectDetails(projectId: string, formData: FormData
 
   const name = String(formData.get("name") ?? "").trim()
   const estimatedDelivery = String(formData.get("estimatedDelivery") ?? "").trim()
+  const liveUrlRaw = String(formData.get("liveUrl") ?? "").trim()
 
   if (!name) throw new Error("Name is required")
   if (name.length > 200) throw new Error("Name too long")
@@ -102,12 +103,18 @@ export async function updateProjectDetails(projectId: string, formData: FormData
     if (Number.isNaN(deliveryDate.getTime())) throw new Error("Invalid delivery date")
   }
 
+  let liveUrl: string | null = null
+  if (liveUrlRaw) {
+    if (!/^https?:\/\/[^/\s]+/i.test(liveUrlRaw)) throw new Error("Invalid live URL")
+    liveUrl = liveUrlRaw
+  }
+
   const project = await prisma.project.findUnique({ where: { id: projectId }, select: { id: true } })
   if (!project) throw new Error("Project not found")
 
   await prisma.project.update({
     where: { id: projectId },
-    data: { name, estimatedDelivery: deliveryDate },
+    data: { name, estimatedDelivery: deliveryDate, liveUrl },
   })
 
   revalidatePath(`/admin/projects/${projectId}`)

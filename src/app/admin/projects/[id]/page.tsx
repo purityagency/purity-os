@@ -151,6 +151,18 @@ export default async function AdminProjectDetailsPage({ params }: { params: Prom
                     className="bg-white/5 border-white/10"
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="liveUrl">URL du site livré</Label>
+                  <Input
+                    id="liveUrl"
+                    name="liveUrl"
+                    type="url"
+                    defaultValue={project.liveUrl ?? ""}
+                    placeholder="https://client-exemple.be"
+                    className="bg-white/5 border-white/10"
+                  />
+                  <p className="text-[11px] text-zinc-500">Affiche le bouton &quot;Voir mon site&quot; dans l&apos;espace client.</p>
+                </div>
                 <Button type="submit" className="w-full bg-white/10 hover:bg-white/20 text-white">
                   Enregistrer
                 </Button>
