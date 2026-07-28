@@ -10,11 +10,13 @@ function escapeHtml(value: string) {
 
 export async function POST(request: Request) {
   try {
-    if (!verifyInternalSecret(request)) {
+    const rawText = await request.text().catch(() => "")
+    if (!verifyInternalSecret(request, rawText)) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 })
     }
 
-    const body = await request.json().catch(() => ({}))
+    let body: Record<string, any> = {}
+    try { body = JSON.parse(rawText) || {} } catch (e) { /* ignore */ }
     const email = String(body.email || "").trim().toLowerCase()
     const name = String(body.name || "").trim()
     const projectName = String(body.projectName || "Nouveau projet").trim()
