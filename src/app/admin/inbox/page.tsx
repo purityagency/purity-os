@@ -12,7 +12,7 @@ import {
   EVENT_STATUS_COLORS,
 } from "@/lib/adminFormat"
 
-const VALID_TYPES = ["LEAD", "BOOKING", "ORDER"] as const
+const VALID_TYPES = ["LEAD", "BOOKING", "ORDER", "SYSTEM", "AI"] as const
 const VALID_STATUSES = ["NEW", "SEEN", "DONE"] as const
 
 function FilterLink({ href, active, children }: { href: string; active: boolean; children: React.ReactNode }) {

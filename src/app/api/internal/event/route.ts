@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { verifyInternalSecret } from "@/lib/internalAuth"
 
-const VALID_TYPES = new Set(["LEAD", "BOOKING", "ORDER"])
+const VALID_TYPES = new Set(["LEAD", "BOOKING", "ORDER", "SYSTEM", "AI"])
 
 export async function POST(request: Request) {
   try {

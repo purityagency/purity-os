@@ -3,6 +3,11 @@ import { prisma } from "@/lib/prisma"
 import { issuePasswordSetToken } from "@/lib/passwordSetToken"
 import { sendEmail } from "@/lib/email"
 import { verifyInternalSecret } from "@/lib/internalAuth"
+import { eventBus } from "@/core/events"
+import { ProjectProvisioned } from "@/modules/onboarding/events/ProjectProvisioned"
+import { bootstrapEvents } from "@/core/events/registry"
+
+bootstrapEvents()
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char] ?? char)
@@ -70,6 +75,10 @@ export async function POST(request: Request) {
         monthlyAmount: Number.isFinite(monthlyAmount) ? monthlyAmount : null,
       },
     })
+
+    // Déclenchement du workflow d'Onboarding asynchrone (non-bloquant)
+    eventBus.publish(new ProjectProvisioned(project.id, sector))
+
 
     // Acompte déjà encaissé par Mollie côté site (le webhook n'appelle provision qu'après paiement confirmé)
     if (Number.isFinite(depositAmount) && depositAmount > 0) {

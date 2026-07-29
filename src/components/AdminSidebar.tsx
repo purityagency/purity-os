@@ -10,6 +10,7 @@ export function AdminSidebar({ session }: { session: Session }) {
   const navItems = [
     { name: "Vue d'ensemble", href: "/admin" },
     { name: "Boîte de réception", href: "/admin/inbox" },
+    { name: "Écosystème IA", href: "/admin/inbox?type=AI" },
     { name: "Clients", href: "/admin/clients" },
     { name: "Documents", href: "/admin/documents" },
     { name: "Paiements", href: "/admin/payments" },

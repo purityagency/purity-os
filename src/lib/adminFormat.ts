@@ -60,12 +60,16 @@ export const EVENT_TYPE_LABELS: Record<string, string> = {
   LEAD: "Question / Lead",
   BOOKING: "Rendez-vous",
   ORDER: "Commande",
+  SYSTEM: "Système / Sentinel",
+  AI: "IA COO / Pôle",
 }
 
 export const EVENT_TYPE_COLORS: Record<string, string> = {
   LEAD: "bg-sky-500/20 text-sky-300",
   BOOKING: "bg-amber-500/20 text-amber-300",
   ORDER: "bg-emerald-500/20 text-emerald-300",
+  SYSTEM: "bg-purple-500/20 text-purple-300",
+  AI: "bg-violet-500/20 text-violet-300",
 }
 
 export const EVENT_STATUS_LABELS: Record<string, string> = {
