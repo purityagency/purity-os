@@ -66,7 +66,7 @@ export function AdminSidebar({ session }: { session: Session }) {
           Connecté en tant que<br />
           <span className="text-white truncate block font-medium">{session?.user?.email}</span>
         </div>
-        <button 
+        <button
           onClick={() => signOut({ callbackUrl: '/login' })}
           className="w-full px-4 py-2 text-xs font-semibold rounded-lg bg-white/5 border border-white/10 text-white hover:bg-white/10 transition-colors"
         >
