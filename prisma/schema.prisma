@@ -162,3 +162,109 @@ model Event {
   @@index([email])
   @@index([projectId])
 }
+
+// ==========================================
+// PÔLE 01 : ACQUISITION (CRM & Automation)
+// ==========================================
+
+model Mission {
+  id          String   @id @default(cuid())
+  name        String   // ex: "BTP Wallonie Q3"
+  parameters  Json     // { sectors: [], locations: [], maxLeads: 50 }
+  status      String   @default("ACTIVE") // ACTIVE, COMPLETED, PAUSED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  leads       Lead[]
+
+  @@index([status, createdAt])
+}
+
+model Lead {
+  id          String   @id @default(cuid())
+  missionId   String
+  companyName String
+  websiteUrl  String?
+  googleMapsUrl String?
+  location    String?
+  source      String   // EXA, GOOGLE_PLACES, LINKEDIN
+  status      String   @default("NEW") // NEW, ENRICHED, DRAFTED, CONTACTED, BOUNCED, REPLIED, MEETING_BOOKED
+  
+  // Données d'enrichissement (Intelligence Analyst)
+  contactName  String?
+  contactEmail String?
+  contactRole  String?
+  auditData    Json?   // Lighthouse score, pain points, etc.
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  mission     Mission  @relation(fields: [missionId], references: [id])
+  emailDrafts EmailDraft[]
+
+  @@index([missionId, status])
+  @@index([status, updatedAt])
+}
+
+model EmailDraft {
+  id        String   @id @default(cuid())
+  leadId    String
+  subject   String
+  bodyHtml  String   @db.Text
+  tone      String
+  status    String   @default("PENDING_APPROVAL") // PENDING_APPROVAL, APPROVED, REJECTED, SENT
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId, status])
+  @@index([status, createdAt])
+}
+
+// ==========================================
+// PÔLE 02 : BRAND (Social, Content, Authority)
+// ==========================================
+
+model BrandCampaign {
+  id          String   @id @default(cuid())
+  name        String   // ex: "Lancement ProCall Office"
+  objective   String
+  status      String   @default("PLANNING") // PLANNING, ACTIVE, COMPLETED, PAUSED
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  drafts      ContentDraft[]
+
+  @@index([status, createdAt])
+}
+
+model ContentDraft {
+  id          String   @id @default(cuid())
+  campaignId  String
+  platform    String   // LINKEDIN, INSTAGRAM, TIKTOK
+  format      String   // REEL, CAROUSEL, POST
+  postText    String   @db.Text
+  mediaUrls   Json?    // ["https://..."]
+  status      String   @default("PENDING_GUARDIAN_APPROVAL") // PENDING_GUARDIAN_APPROVAL, PENDING_CEO_APPROVAL, APPROVED, REJECTED, PUBLISHED
+  scheduledAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  campaign    BrandCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, status])
+  @@index([status, createdAt])
+}
+
+model BrandMemory {
+  id          String   @id @default(cuid())
+  type        String   // TREND, POST_ANALYTICS, RULE
+  content     String   @db.Text // "Les hooks courts marchent mieux en B2B"
+  source      String?  // ID du post, ou "Google Trends"
+  relevance   Int      @default(100) // Score de 0 à 100
+  createdAt   DateTime @default(now())
+
+  @@index([type])
+}
+

@@ -5,7 +5,7 @@ export default withAuth(
   function middleware(req) {
     const token = req.nextauth.token
     const isAuth = !!token
-    const isAdmin = token?.role === "ADMIN"
+    const isAdmin = token?.role === "ADMIN" && token?.email === "admin@purity-agency.be"
     const pathname = req.nextUrl.pathname
 
     if (pathname.startsWith("/admin") && !isAdmin) {

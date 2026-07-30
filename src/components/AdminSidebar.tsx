@@ -7,14 +7,31 @@ import { signOut } from "next-auth/react"
 export function AdminSidebar({ session }: { session: Session }) {
   const pathname = usePathname()
 
-  const navItems = [
-    { name: "Vue d'ensemble", href: "/admin" },
-    { name: "Boîte de réception", href: "/admin/inbox" },
-    { name: "Écosystème IA", href: "/admin/inbox?type=AI" },
-    { name: "Clients", href: "/admin/clients" },
-    { name: "Documents", href: "/admin/documents" },
-    { name: "Paiements", href: "/admin/payments" },
-    { name: "Paramètres", href: "/admin/settings" },
+  const navGroups = [
+    {
+      title: "GÉNÉRAL",
+      items: [
+        { name: "Vue d'ensemble", href: "/admin" },
+        { name: "Boîte de réception", href: "/admin/inbox" },
+        { name: "Clients", href: "/admin/clients" },
+        { name: "Documents", href: "/admin/documents" },
+        { name: "Paiements", href: "/admin/payments" },
+      ]
+    },
+    {
+      title: "ÉCOSYSTÈME IA",
+      items: [
+        { name: "01: Acquisition", href: "/admin/acquisition" },
+        { name: "02: Brand & Authority", href: "/admin/brand" },
+        { name: "Logs IA", href: "/admin/inbox?type=AI" },
+      ]
+    },
+    {
+      title: "SYSTÈME",
+      items: [
+        { name: "Paramètres", href: "/admin/settings" },
+      ]
+    }
   ]
 
   return (
@@ -22,17 +39,26 @@ export function AdminSidebar({ session }: { session: Session }) {
       <div className="p-6">
         <div className="text-[#7C3AED] font-bold text-xl mb-1">Purity OS</div>
         <div className="text-xs text-zinc-500 uppercase font-semibold tracking-wider">Espace Agence</div>
-      <div className="mt-8 space-y-2 text-sm text-zinc-400">
-          {navItems.map((item) => {
-            const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
-            return (
-              <Link key={item.name} href={item.href} className="block">
-                <div className={`px-4 py-2 rounded-lg transition-colors cursor-pointer ${isActive ? 'bg-[#7C3AED]/20 text-[#7C3AED] font-medium' : 'hover:text-white hover:bg-white/5'}`}>
-                  {item.name}
-                </div>
-              </Link>
-            )
-          })}
+        <div className="mt-8 space-y-6 text-sm text-zinc-400">
+          {navGroups.map((group) => (
+            <div key={group.title}>
+              <div className="px-4 mb-2 text-[10px] font-bold tracking-widest text-zinc-600">
+                {group.title}
+              </div>
+              <div className="space-y-1">
+                {group.items.map((item) => {
+                  const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
+                  return (
+                    <Link key={item.name} href={item.href} className="block">
+                      <div className={`px-4 py-2 rounded-lg transition-colors cursor-pointer ${isActive ? 'bg-[#7C3AED]/20 text-[#7C3AED] font-medium' : 'hover:text-white hover:bg-white/5'}`}>
+                        {item.name}
+                      </div>
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
       <div className="mt-auto p-6 border-t border-white/10 text-sm text-zinc-400">
