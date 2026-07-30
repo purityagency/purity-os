@@ -268,3 +268,22 @@ model BrandMemory {
   @@index([type])
 }
 
+
+// ==========================================
+// AI NERVOUS SYSTEM (Agent Live State)
+// ==========================================
+
+model AgentActivity {
+  id            String   @id @default(cuid())
+  agentName     String   @unique // ex: "ChiefBrandAI"
+  department    String   // ex: "02_BRAND"
+  status        String   @default("IDLE") // IDLE, WORKING, ERROR
+  currentTask   String?  // Description courte de l'action en cours
+  lastLog       String?  @db.Text // Dernier log brut
+  history       Json?    // Historique des 20 dernières actions
+  updatedAt     DateTime @updatedAt
+
+  @@index([department])
+  @@index([status])
+}
+

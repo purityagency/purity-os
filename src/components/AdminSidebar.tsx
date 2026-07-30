@@ -21,9 +21,9 @@ export function AdminSidebar({ session }: { session: Session }) {
     {
       title: "ÉCOSYSTÈME IA",
       items: [
+        { name: "Live Matrix", href: "/admin/ecosystem" },
         { name: "01: Acquisition", href: "/admin/acquisition" },
         { name: "02: Brand & Authority", href: "/admin/brand" },
-        { name: "Logs IA", href: "/admin/inbox?type=AI" },
       ]
     },
     {
