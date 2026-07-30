@@ -1,60 +1,36 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { IntelligenceAnalyst } from '../../../../../../ai/01_ACQUISITION/Intelligence_Analyst/worker';
-import { CreativeCopywriter } from '../../../../../../ai/01_ACQUISITION/Creative_Copywriter/worker';
-import { AgentLogger } from '@/lib/AgentLogger';
 
-const analyst = new IntelligenceAnalyst();
-const copywriter = new CreativeCopywriter();
-const logger = new AgentLogger("Chief Acquisition AI", "01_ACQUISITION");
+// DÉSACTIVÉ TEMPORAIREMENT — ne pas réactiver sans lire ce commentaire en entier.
+//
+// Cette route importait IntelligenceAnalyst/CreativeCopywriter depuis
+// `ai/01_ACQUISITION/*` (hors de purity-os/). `vercel --prod` depuis ce
+// dossier n'upload que son propre arbre : ces fichiers n'existent pas dans
+// le bundle déployé, et le build échoue en entier (pas juste cette route).
+//
+// Un simple copier-coller des workers ne suffirait pas non plus : leur base
+// (ai/01_ACQUISITION/_Shared/AgentCore.ts) lit `secrets/.gemini-key` et les
+// fichiers de connaissance (BrandRules.md, etc.) via le système de fichiers
+// local (`process.cwd() + '../'`), en supposant tout le monorepo présent sur
+// disque. Sur Vercel, ce chemin n'existe pas — l'agent tournerait avec une
+// clé Gemini vide et zéro base de connaissances, en silence, sans jamais
+// crasher pour le signaler. GEMINI_API_KEY n'est de toute façon pas encore
+// configuré comme variable d'environnement sur ce projet Vercel.
+//
+// Ce qu'il faut faire avant de rouvrir cette route :
+//   1. Rapatrier IntelligenceAnalyst, CreativeCopywriter et AgentCore dans
+//      purity-os/src/ (ou un package partagé importé proprement, pas par
+//      chemin relatif hors-projet).
+//   2. Faire lire les fichiers de connaissance depuis la base (table dédiée,
+//      ou au minimum bundlés dans src/) plutôt que du filesystem local.
+//   3. Ajouter GEMINI_API_KEY aux variables d'environnement Vercel.
+//   4. Retester un déploiement `vercel --prod` complet avant de committer.
+//
+// Voir prisma/schema.prisma pour les modèles Mission/Lead/EmailDraft, déjà
+// en place et fonctionnels — seul ce déclencheur cron est bloqué.
 
-// Ce endpoint est conçu pour être appelé par un Cron (ex: Vercel Cron) toutes les X minutes.
-export async function GET(request: Request) {
-  try {
-    // Vérification du Cron (CRON_SECRET). Fail-closed : si le secret n'est
-    // pas configuré, la route refuse plutôt que de tourner sans protection —
-    // l'inverse (`if (secret && ...)`) laissait la route ouverte à quiconque
-    // tant que la variable d'env n'était pas définie.
-    const secret = process.env.CRON_SECRET;
-    const authHeader = request.headers.get('authorization');
-    if (!secret || authHeader !== `Bearer ${secret}`) {
-      return new NextResponse('Unauthorized', { status: 401 });
-    }
-
-    await logger.startTask("Démarrage de la boucle de supervision d'acquisition");
-
-    // 2. Traiter les Leads "NEW" (Analyse Lighthouse)
-    const newLeads = await prisma.lead.findMany({
-      where: { status: 'NEW' },
-      take: 5 // Batch processing
-    });
-
-    for (const lead of newLeads) {
-      // Le worker met à jour le statut en 'ENRICHED'
-      await analyst.analyzeLead(lead.id);
-    }
-
-    // 3. Traiter les Leads "ENRICHED" (Génération Email)
-    const enrichedLeads = await prisma.lead.findMany({
-      where: { status: 'ENRICHED' },
-      take: 5
-    });
-
-    for (const lead of enrichedLeads) {
-      // Le worker génère un EmailDraft et met à jour le statut en 'DRAFTED'
-      await copywriter.draftEmail(lead.id);
-    }
-
-    await logger.finishTask(`Boucle terminée. Traités: ${newLeads.length} NEW, ${enrichedLeads.length} ENRICHED.`);
-
-    return NextResponse.json({ 
-      success: true, 
-      processedNew: newLeads.length, 
-      processedEnriched: enrichedLeads.length 
-    });
-
-  } catch (error: any) {
-    await logger.logError(`Erreur critique de la boucle: ${error.message}`);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-  }
+export async function GET() {
+  return NextResponse.json(
+    { error: 'not_deployed', reason: 'agent workers not yet bundled for Vercel — see route.ts comment' },
+    { status: 501 },
+  );
 }
