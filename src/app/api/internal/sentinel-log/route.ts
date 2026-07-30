@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { verifyInternalSecret } from "@/lib/internalAuth"
+import { verifyInternalSecret, readSignedBody } from "@/lib/internalAuth"
 
 export async function POST(request: Request) {
   try {
-    if (!verifyInternalSecret(request)) {
+    const { rawText, body } = await readSignedBody(request)
+    if (!verifyInternalSecret(request, rawText)) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 })
     }
 
-    const body = await request.json().catch(() => ({}))
     const audit = body.audit || {}
     const source = String(body.source || "purity-agency-website")
 
