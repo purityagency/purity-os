@@ -6,10 +6,21 @@ import { IntelligenceAnalyst } from './IntelligenceAnalyst';
 import { CreativeCopywriter } from './CreativeCopywriter';
 import { LeadScoringAnalyst } from './LeadScoringAnalyst';
 
-const exa = new Exa(process.env.EXA_API_KEY || "dummy_key");
-const analyst = new IntelligenceAnalyst();
-const copywriter = new CreativeCopywriter();
-const scorer = new LeadScoringAnalyst();
+// Instanciation paresseuse — jamais au chargement du module. Un `new
+// IntelligenceAnalyst()` au niveau module s'exécute dès qu'un outil (build
+// Next.js, tsc, un test) IMPORTE ce fichier, même sans jamais appeler
+// executeMission(). Comme AgentCore lève une erreur si GEMINI_API_KEY est
+// absent (voir AgentCore.ts), ça faisait planter tout le build Vercel
+// pendant la collecte statique des routes — pas une hypothèse, observé en
+// prod le 2026-08-01 (voir plans/acquisition-pole-next-phase.md).
+let _exa: Exa | undefined;
+let _analyst: IntelligenceAnalyst | undefined;
+let _copywriter: CreativeCopywriter | undefined;
+let _scorer: LeadScoringAnalyst | undefined;
+
+function getExa(): Exa {
+  return (_exa ??= new Exa(process.env.EXA_API_KEY || "dummy_key"));
+}
 
 export class MarketScout extends AutonomousAgent {
   constructor() {
@@ -54,7 +65,7 @@ export class MarketScout extends AutonomousAgent {
 
         await this.logger.startTask(`Recherche Exa: "${query}"`);
 
-        const searchResponse = await exa.searchAndContents(query, {
+        const searchResponse = await getExa().searchAndContents(query, {
           type: "neural",
           useAutoprompt: true,
           numResults: 5,
@@ -108,9 +119,12 @@ export class MarketScout extends AutonomousAgent {
             // S'arrête volontairement à DRAFTED (PENDING_APPROVAL) — aucun
             // agent de ce pôle n'envoie un email sans validation humaine.
             try {
-              await analyst.analyzeLead(leadRecord.id);
-              await copywriter.draftEmail(leadRecord.id);
-              await scorer.scoreLead(leadRecord.id);
+              _analyst ??= new IntelligenceAnalyst();
+              _copywriter ??= new CreativeCopywriter();
+              _scorer ??= new LeadScoringAnalyst();
+              await _analyst.analyzeLead(leadRecord.id);
+              await _copywriter.draftEmail(leadRecord.id);
+              await _scorer.scoreLead(leadRecord.id);
             } catch (chainError) {
               await this.logger.logError(
                 `Chaîne Analyst→Copywriter→Scoring interrompue pour ${leadRecord.companyName}: ${chainError}`

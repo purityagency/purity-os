@@ -3,7 +3,13 @@ import { MarketScout } from './MarketScout';
 import { MissionOrder } from './types';
 import { AutonomousAgent } from './AgentCore';
 
-const scout = new MarketScout();
+// Instanciation paresseuse — voir le commentaire équivalent dans
+// MarketScout.ts. Un `new MarketScout()` au niveau module fait planter le
+// build Vercel dès que ce fichier est importé, même sans appel réel.
+let _scout: MarketScout | undefined;
+function getScout(): MarketScout {
+  return (_scout ??= new MarketScout());
+}
 
 // Secteurs réels des packs métier affichés sur services.html — jamais une
 // liste inventée. Zones réelles autour de Charleroi (siège de l'agence,
@@ -77,7 +83,7 @@ export class ChiefAcquisitionAI extends AutonomousAgent {
     await this.logger.finishTask(`Mission enregistrée (ID: ${missionRecord.id}). Délégation au Market Scout.`);
 
     // Version asynchrone fire-and-forget — utilisée par le déclenchement manuel.
-    scout.executeMission(missionOrder).catch(err => {
+    getScout().executeMission(missionOrder).catch(err => {
       this.logger.logError(`Erreur critique du Scout sur la mission ${missionRecord.id}: ${err}`);
     });
 
@@ -104,7 +110,7 @@ export class ChiefAcquisitionAI extends AutonomousAgent {
       }
     });
 
-    const leadsFound = await scout.executeMission({
+    const leadsFound = await getScout().executeMission({
       missionId: missionRecord.id,
       name: missionRecord.name,
       parameters: { sectors: [sector], locations: [zone], maxLeads },
