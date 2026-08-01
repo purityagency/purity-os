@@ -1,0 +1,4 @@
+{
+  "_comment": "Cron désactivé le 2026-08-01 — le pôle Acquisition tourne désormais sur le VPS dédié (voir plans/acquisition-pole-next-phase.md, étape 3, PM2 + node-cron, Europe/Brussels). La route /api/cron/acquisition reste disponible comme déclencheur manuel de secours (protégée par CRON_SECRET), mais plus jamais appelée automatiquement par Vercel — éviter la double consommation du quota journalier documentée comme risque réel à cette étape.",
+  "crons": []
+}

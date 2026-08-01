@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import { ChiefAcquisitionAI } from '../../ai/01_ACQUISITION/Chief_Acquisition_AI/worker';
+import { ChiefAcquisitionAI } from '../src/lib/agents/acquisition/ChiefAcquisitionAI';
 
 async function run() {
   const chief = new ChiefAcquisitionAI();

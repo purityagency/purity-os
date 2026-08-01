@@ -196,6 +196,11 @@ model Lead {
   contactRole  String?
   auditData    Json?   // Lighthouse score, pain points, etc.
 
+  // Score déterministe du Lead Scoring Analyst (0-100) — nullable : un lead
+  // pas encore scoré n'est pas un lead à zéro, c'est un lead sans donnée.
+  // Voir ai/01_ACQUISITION/Lead_Scoring_Analyst/README.md pour la méthode.
+  score       Int?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -204,6 +209,7 @@ model Lead {
 
   @@index([missionId, status])
   @@index([status, updatedAt])
+  @@index([score])
 }
 
 model EmailDraft {
@@ -280,7 +286,7 @@ model AgentActivity {
   status        String   @default("IDLE") // IDLE, WORKING, ERROR
   currentTask   String?  // Description courte de l'action en cours
   lastLog       String?  @db.Text // Dernier log brut
-  history       Json?    // Historique des 20 derni�res actions
+  history       Json?    // Historique des 20 derni�res actions
   updatedAt     DateTime @updatedAt
 
   @@index([department])
