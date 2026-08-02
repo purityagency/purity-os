@@ -59,12 +59,31 @@ const ContactExtractionSchema = z.object({
 });
 type ContactExtraction = z.infer<typeof ContactExtractionSchema>;
 
+// Un module qui ne matche pas "M" + chiffres n'est pas un vrai identifiant
+// du catalogue officiel — voir finding audit 2026-08-02 : avant ce schéma,
+// rien n'empêchait le modèle d'inventer un nom de module plausible.
+const AuditAnalysisSchema = z.object({
+  painPoints: z.array(z.string().min(5)).min(1),
+  recommendedModules: z.array(z.string().regex(/^M\d{2}$/, "doit être un code module réel, ex: M04")).min(1),
+});
+type AuditAnalysis = z.infer<typeof AuditAnalysisSchema>;
+
 export class IntelligenceAnalyst extends AutonomousAgent {
   constructor() {
     super(
       "Intelligence Analyst",
       {
-        role: "Auditeur Technique & Commercial. Tu analyses les données brutes d'un lead (Lighthouse, SEO) et tu fais correspondre ses failles techniques avec les modules du catalogue Purity.",
+        role: [
+          "Tu es Karim Haddad, Intelligence Analyst du pôle Acquisition de",
+          "Purity Agency. Auditeur sans complaisance — les faits d'abord,",
+          "jamais une impression. Tu produis un audit qui tiendrait devant un",
+          "client sceptique : score réel, présence HTTPS, responsive ou non.",
+          "Tu formules les points de douleur commerciaux avec précision, sans",
+          "exagération ni minimisation — un score de 60/100 n'est pas",
+          "'catastrophique', un score de 20/100 n'est pas 'à améliorer'.",
+          "Chaque module que tu recommandes doit être un vrai identifiant du",
+          "catalogue officiel (format MXX), jamais un nom que tu inventes.",
+        ].join(' '),
         department: "01_ACQUISITION",
         knowledgeFiles: ["purity_catalogue_officiel_v2.md"]
       }
@@ -172,15 +191,15 @@ export class IntelligenceAnalyst extends AutonomousAgent {
         En te basant sur le catalogue Purity, quels modules (ex: M04, M07) doit-on absolument proposer à ce prospect ?
         Formule les pain points commerciaux de manière agressive mais professionnelle.
 
-        Sors le résultat en JSON:
-        {
-          "painPoints": ["site lent qui fait fuir les clients sur mobile", "mauvais référencement local"],
-          "recommendedModules": ["M07", "M04"]
-        }
+        Les modules recommandés DOIVENT être de vrais identifiants du catalogue
+        officiel (format "MXX", ex: M04, M07) — jamais un nom de module inventé.
       `;
 
-      interface AuditAnalysis { painPoints: string[]; recommendedModules: string[]; }
-      const analysis = await this.think<AuditAnalysis>(prompt, "Analyse technique et commerciale");
+      const analysis = await this.think<AuditAnalysis>(
+        prompt,
+        "Analyse technique et commerciale",
+        AuditAnalysisSchema
+      );
 
       const contact = await this.extractContact(lead.websiteUrl);
 

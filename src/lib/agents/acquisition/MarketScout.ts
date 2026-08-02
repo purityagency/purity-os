@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { MissionOrder } from './types';
 import Exa from 'exa-js';
 import { prisma } from '@/lib/prisma';
@@ -22,12 +23,34 @@ function getExa(): Exa {
   return (_exa ??= new Exa(process.env.EXA_API_KEY || "dummy_key"));
 }
 
+const SearchStrategySchema = z.object({
+  queries: z.array(z.string().min(3)).min(1),
+});
+type SearchStrategy = z.infer<typeof SearchStrategySchema>;
+
+const EvalResponseSchema = z.object({
+  isGoodLead: z.boolean(),
+  companyName: z.string().min(1).nullable(),
+  reason: z.string(),
+});
+type EvalResponse = z.infer<typeof EvalResponseSchema>;
+
 export class MarketScout extends AutonomousAgent {
   constructor() {
     super(
       "Market Scout",
       {
-        role: "Spécialiste OSINT et Web Scraping. Tu formules les meilleures requêtes de recherche pour dénicher des prospects hyper-qualifiés et tu filtres le bruit.",
+        role: [
+          "Tu es Léa Dumont, Market Scout du pôle Acquisition de Purity Agency.",
+          "Méthodique, jamais pressée — tu considères qu'un lead mal vérifié coûte",
+          "plus cher à l'agence qu'un lead en moins dans le quota du jour.",
+          "Ta seule responsabilité : transformer les paramètres d'une mission",
+          "(secteurs, zones, quota) en entreprises réelles et vérifiées. Tu ne",
+          "confonds jamais un résultat de recherche brut avec un lead confirmé —",
+          "un nom trouvé par recherche reste une piste tant qu'il n'a pas une",
+          "URL réelle et cohérente avec le secteur demandé. Tu ne contactes",
+          "jamais personne toi-même, tu ne fais que qualifier et transmettre.",
+        ].join(' '),
         department: "01_ACQUISITION"
       }
     );
@@ -50,15 +73,13 @@ export class MarketScout extends AutonomousAgent {
         - Secteurs: ${order.parameters.sectors.join(', ')}
         - Villes: ${order.parameters.locations.join(', ')}
         - Tech requise: ${order.parameters.requiredTechStack?.join(', ') || 'N/A'}
-
-        Sors les résultats sous forme JSON:
-        {
-          "queries": ["requête 1", "requête 2"]
-        }
       `;
 
-      interface SearchStrategy { queries: string[] }
-      const strategy = await this.think<SearchStrategy>(prompt, "Formulation des requêtes de chasse");
+      const strategy = await this.think<SearchStrategy>(
+        prompt,
+        "Formulation des requêtes de chasse",
+        SearchStrategySchema
+      );
 
       for (const query of strategy.queries) {
         if (leadsFound >= order.parameters.maxLeads) break;
@@ -82,17 +103,23 @@ export class MarketScout extends AutonomousAgent {
             - Extrait: ${result.text?.substring(0, 300)}
 
             Ce site est-il un bon lead potentiel pour les secteurs ${order.parameters.sectors.join(', ')} ?
-            {
-              "isGoodLead": true/false,
-              "companyName": "Nom de l'entreprise extrait",
-              "reason": "Pourquoi ?"
-            }
+            Si tu ne peux pas extraire un nom d'entreprise fiable, réponds companyName: null
+            plutôt que d'inventer un nom.
           `;
 
-          interface EvalResponse { isGoodLead: boolean; companyName: string; reason: string; }
-          const evaluation = await this.think<EvalResponse>(evalPrompt, `Évaluation rapide de ${result.url}`);
+          const evaluation = await this.think<EvalResponse>(
+            evalPrompt,
+            `Évaluation rapide de ${result.url}`,
+            EvalResponseSchema
+          );
 
-          if (evaluation.isGoodLead) {
+          // Garde-fou code (pas seulement prompt) : un nom introuvable et
+          // aucun titre exploitable = pas de lead, plutôt qu'un
+          // `companyName` vide ou faux écrit en base (finding de l'audit
+          // 2026-08-02 : ce cas n'était pas gardé avant).
+          const companyName = evaluation.companyName || result.title?.split('-')[0]?.trim() || null;
+
+          if (evaluation.isGoodLead && companyName) {
             const existing = result.url
               ? await prisma.lead.findFirst({ where: { websiteUrl: result.url } })
               : null;
@@ -104,7 +131,7 @@ export class MarketScout extends AutonomousAgent {
             const leadRecord = await prisma.lead.create({
               data: {
                 missionId: order.missionId,
-                companyName: evaluation.companyName || result.title?.split('-')[0]?.trim() || result.url,
+                companyName,
                 websiteUrl: result.url,
                 location: order.parameters.locations[0],
                 source: 'EXA',
@@ -113,7 +140,7 @@ export class MarketScout extends AutonomousAgent {
             });
 
             leadsFound++;
-            await this.logger.finishTask(`Lead qualifié: ${evaluation.companyName} (${evaluation.reason})`);
+            await this.logger.finishTask(`Lead qualifié: ${companyName} (${evaluation.reason})`);
 
             // Chaîne automatiquement vers l'audit puis le brouillon d'email.
             // S'arrête volontairement à DRAFTED (PENDING_APPROVAL) — aucun
@@ -130,6 +157,8 @@ export class MarketScout extends AutonomousAgent {
                 `Chaîne Analyst→Copywriter→Scoring interrompue pour ${leadRecord.companyName}: ${chainError}`
               );
             }
+          } else if (!companyName) {
+            await this.logger.finishTask(`Rejet: ${result.url} — aucun nom d'entreprise fiable extrait.`);
           } else {
             await this.logger.finishTask(`Rejet: ${result.url} - ${evaluation.reason}`);
           }

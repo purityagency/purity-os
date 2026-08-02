@@ -1,12 +1,37 @@
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { AutonomousAgent } from './AgentCore';
+
+const EmailDraftSchema = z.object({
+  subject: z.string().min(5),
+  bodyHtml: z.string().min(30),
+});
+type EmailDraftResponse = z.infer<typeof EmailDraftSchema>;
+
+// Finding audit 2026-08-02 : "mentionne toujours la subvention" n'existait
+// qu'en texte de prompt, jamais vérifié en code. Un humain approuve vite,
+// pas ligne à ligne — sans ce contrôle, un email commercialement incomplet
+// pouvait partir à un vrai prospect. Vérifié sur le texte généré, jamais
+// sur une auto-déclaration du modèle (qui peut se tromper sur lui-même).
+const SUBSIDY_MENTION_PATTERN = /ch[eè]ques?[\s-]entreprises?/i;
 
 export class CreativeCopywriter extends AutonomousAgent {
   constructor() {
     super(
       "Creative Copywriter",
       {
-        role: "Concepteur-Rédacteur Liquid Glass. Tu rédiges des e-mails de prospection chirurgicaux, sans bullshit, en utilisant les vrais prix du catalogue Purity et les arguments 'Chèques Entreprises'.",
+        role: [
+          "Tu es Manon Verhoeven, Creative Copywriter du pôle Acquisition de",
+          "Purity Agency. Tu écris comme quelqu'un qui a fait ses devoirs sur",
+          "l'entreprise ciblée, jamais comme un robot poli qui recycle un",
+          "template. Chaque email cite un point de douleur précis de l'audit —",
+          "jamais une formule générique. Tu proposes exactement le module du",
+          "catalogue qui répond à ce point de douleur, prix exact, et tu",
+          "mentionnes systématiquement la subvention Chèques Entreprises",
+          "Wallonie qui en prend en charge une partie. Objet accrocheur mais",
+          "jamais putaclic — le ton reste \"Liquid Glass\" : premium, direct,",
+          "sans superlatif vide.",
+        ].join(' '),
         department: "01_ACQUISITION",
         knowledgeFiles: [
           "purity_catalogue_officiel_v2.md",
@@ -41,23 +66,27 @@ export class CreativeCopywriter extends AutonomousAgent {
 
         Règles strictes :
         1. Utilise les VRAIS prix de ces modules (trouve-les dans le catalogue Purity).
-        2. Mentionne toujours la subvention "Chèques Entreprises Wallonie" (qui prend en charge une partie du prix).
+        2. Mentionne toujours la subvention "Chèques Entreprises Wallonie" (qui prend en charge une partie du prix) — obligatoire, un email sans cette mention sera rejeté.
         3. Respecte les BrandRules et n'utilise JAMAIS les ForbiddenWords.
         4. Objet accrocheur (pas putaclic, très pro).
         5. Format HTML basique (<p>, <br>, <strong>).
-
-        Sors le résultat en JSON:
-        {
-          "subject": "...",
-          "bodyHtml": "..."
-        }
       `;
 
-      interface EmailDraftResponse { subject: string; bodyHtml: string; }
-      const result = await this.think<EmailDraftResponse>(prompt, "Génération de l'email de prospection");
+      let result = await this.think<EmailDraftResponse>(prompt, "Génération de l'email de prospection", EmailDraftSchema);
 
-      if (!result.subject || !result.bodyHtml) {
-        throw new Error("L'IA n'a pas retourné le format JSON attendu.");
+      // Garde-fou code, pas juste prompt (finding audit 2026-08-02) : on
+      // vérifie le texte réellement généré, une seule reformulation
+      // tentée, puis échec bruyant plutôt qu'un brouillon incomplet.
+      if (!SUBSIDY_MENTION_PATTERN.test(result.bodyHtml)) {
+        await this.logger.startTask('Mention Chèques Entreprises absente — reformulation forcée');
+        const retryPrompt = `${prompt}\n\nTa précédente tentative n'a PAS mentionné "Chèques Entreprises Wallonie" — corrige impérativement cette omission cette fois.`;
+        result = await this.think<EmailDraftResponse>(retryPrompt, "Reformulation forcée (mention obligatoire)", EmailDraftSchema);
+
+        if (!SUBSIDY_MENTION_PATTERN.test(result.bodyHtml)) {
+          throw new Error(
+            "Deux tentatives sans mention de Chèques Entreprises Wallonie — brouillon non créé plutôt que livré incomplet."
+          );
+        }
       }
 
       await prisma.emailDraft.create({

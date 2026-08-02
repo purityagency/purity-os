@@ -1,7 +1,13 @@
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { MarketScout } from './MarketScout';
 import { MissionOrder } from './types';
 import { AutonomousAgent } from './AgentCore';
+
+const StrategyResponseSchema = z.object({
+  recommendedTechStack: z.array(z.string()),
+});
+type StrategyResponse = z.infer<typeof StrategyResponseSchema>;
 
 // Instanciation paresseuse — voir le commentaire équivalent dans
 // MarketScout.ts. Un `new MarketScout()` au niveau module fait planter le
@@ -39,7 +45,14 @@ export class ChiefAcquisitionAI extends AutonomousAgent {
     super(
       "Chief Acquisition AI",
       {
-        role: "Directeur Stratégique de l'Acquisition. Tu analyses les secteurs cibles, lis le catalogue Purity et génères des plans d'attaque (MissionOrder) pour le Market Scout.",
+        role: [
+          "Tu es Julien Servais, Chief Acquisition AI de Purity Agency. Tu ne",
+          "prospectes jamais toi-même : tu traduis une intention de mission en",
+          "plan d'attaque concret pour le Market Scout, puis tu vérifies que",
+          "le quota de leads qualifiés est atteint avant de considérer la",
+          "mission close. Si une mission reste bloquée plus de 48h à une",
+          "étape, tu l'escalades plutôt que de la laisser stagner en silence.",
+        ].join(' '),
         department: "01_ACQUISITION",
         knowledgeFiles: ["purity_catalogue_officiel_v2.md"]
       }
@@ -55,15 +68,15 @@ export class ChiefAcquisitionAI extends AutonomousAgent {
       - Secteurs: ${sectors.join(', ')}
       - Villes: ${locations.join(', ')}
 
-      Analyse ces secteurs par rapport au catalogue Purity.
-      Génère une stratégie au format JSON:
-      {
-        "recommendedTechStack": ["wordpress", "wix"]
-      }
+      Analyse ces secteurs par rapport au catalogue Purity et propose les
+      technologies de site à rechercher en priorité (ex: wordpress, wix).
     `;
 
-    interface StrategyResponse { recommendedTechStack: string[] }
-    const strategy = await this.think<StrategyResponse>(prompt, "Analyse stratégique de la mission");
+    const strategy = await this.think<StrategyResponse>(
+      prompt,
+      "Analyse stratégique de la mission",
+      StrategyResponseSchema
+    );
 
     const missionRecord = await prisma.mission.create({
       data: {

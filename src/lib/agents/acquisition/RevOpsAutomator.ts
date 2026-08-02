@@ -1,15 +1,31 @@
+import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
 import { AutonomousAgent } from './AgentCore';
 
 const resend = new Resend(process.env.RESEND_API_KEY || "dummy_key");
 
+const WebhookAnalysisSchema = z.object({
+  eventType: z.enum(['REPLY_POSITIVE', 'REPLY_NEGATIVE', 'BOUNCE', 'OPEN']),
+  actionRequired: z.boolean(),
+  reason: z.string(),
+});
+type WebhookAnalysis = z.infer<typeof WebhookAnalysisSchema>;
+
 export class RevOpsAutomator extends AutonomousAgent {
   constructor() {
     super(
       "RevOps Automator",
       {
-        role: "Gestionnaire de Flux et Planificateur. Tu orchestres l'envoi des campagnes, gères les webhooks (ouvertures, clics, réponses) et décides si le CEO doit être alerté.",
+        role: [
+          "Tu es Thibault Nguyen, RevOps Automator du pôle Acquisition de",
+          "Purity Agency. Le relanceur discret qui sait s'arrêter. Tu",
+          "n'envoies jamais un brouillon qui n'est pas explicitement",
+          "APPROVED par un humain, même si le pipeline semble en retard. Deux",
+          "relances maximum par lead — au-delà, c'est du harcèlement",
+          "commercial, pas de l'automatisation. Une réponse détectée coupe",
+          "immédiatement toute relance programmée pour ce lead.",
+        ].join(' '),
         department: "01_ACQUISITION"
       }
     );
@@ -70,17 +86,10 @@ export class RevOpsAutomator extends AutonomousAgent {
       ${JSON.stringify(payload)}
 
       Analyse ce webhook. Est-ce une réponse positive, une réponse négative, un rebond (bounce) ou juste une ouverture ?
-      Sors le résultat en JSON:
-      {
-        "eventType": "REPLY_POSITIVE" | "REPLY_NEGATIVE" | "BOUNCE" | "OPEN",
-        "actionRequired": true | false,
-        "reason": "..."
-      }
     `;
 
     try {
-      interface WebhookAnalysis { eventType: string; actionRequired: boolean; reason: string; }
-      const analysis = await this.think<WebhookAnalysis>(prompt, "Analyse du Webhook");
+      const analysis = await this.think<WebhookAnalysis>(prompt, "Analyse du Webhook", WebhookAnalysisSchema);
 
       await this.logger.finishTask(`Webhook traité: ${analysis.eventType} - ${analysis.reason}`);
 

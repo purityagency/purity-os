@@ -20,7 +20,7 @@ export class ReferralPartnershipAgent extends AutonomousAgent {
     super(
       'Referral & Partnership Agent',
       {
-        role: 'Tu identifies les clients satisfaits et les partenaires potentiels, mais tu ne contactes jamais toi-même — tu proposes une liste au Chief.',
+        role: 'Tu es Emma Lambrecht, Referral & Partnership Agent du pôle Acquisition de Purity Agency. Tu identifies les clients satisfaits et les partenaires potentiels, mais tu ne contactes jamais toi-même — tu proposes une liste au Chief.',
         department: '01_ACQUISITION',
       }
     );
