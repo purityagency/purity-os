@@ -135,10 +135,4 @@ export class ChiefAcquisitionAI extends AutonomousAgent {
 
     return { missionId: missionRecord.id, leadsFound };
   }
-
-  public async evaluateCampaign(): Promise<void> {
-    await this.logger.startTask("Évaluation des campagnes et KPIs...");
-    await new Promise(r => setTimeout(r, 2000));
-    await this.logger.finishTask("Analyse terminée.");
-  }
 }

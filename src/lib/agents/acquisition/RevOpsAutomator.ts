@@ -3,7 +3,23 @@ import { prisma } from '@/lib/prisma';
 import { Resend } from 'resend';
 import { AutonomousAgent } from './AgentCore';
 
-const resend = new Resend(process.env.RESEND_API_KEY || "dummy_key");
+// Instanciation paresseuse — voir le commentaire équivalent dans MarketScout.ts.
+// Un `new Resend()` au niveau module fait planter le build Vercel dès que ce
+// fichier est importé, même sans appel réel.
+let _resend: Resend | undefined;
+function getResend(): Resend {
+  if (!_resend) {
+    const resendApiKey = process.env.RESEND_API_KEY;
+    if (!resendApiKey) {
+      throw new Error(
+        '[RevOpsAutomator] RESEND_API_KEY manquant — variable d\'environnement Vercel en ' +
+        'production, purity-os/.env en local. Aucun repli silencieux sur une clé factice.'
+      );
+    }
+    _resend = new Resend(resendApiKey);
+  }
+  return _resend;
+}
 
 const WebhookAnalysisSchema = z.object({
   eventType: z.enum(['REPLY_POSITIVE', 'REPLY_NEGATIVE', 'BOUNCE', 'OPEN']),
@@ -50,7 +66,7 @@ export class RevOpsAutomator extends AutonomousAgent {
     await this.logger.startTask(`Envoi de la campagne pour ${draft.lead.companyName}`);
 
     try {
-      const { data, error } = await resend.emails.send({
+      const { data, error } = await getResend().emails.send({
         from: 'Amir KEBIYEB <amir@purity-agency.be>',
         to: [draft.lead.contactEmail],
         subject: draft.subject,

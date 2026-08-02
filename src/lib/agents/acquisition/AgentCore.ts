@@ -57,6 +57,9 @@ export abstract class AutonomousAgent {
   constructor(
     protected agentName: string,
     protected context: AgentContext,
+    // ⚠️ MIGRATION OBLIGATOIRE avant le 2026-10-16 (retrait officiel Gemini 2.5
+    // par Google) — passer à 'gemini-3.5-flash' (ou la version stable GA la
+    // plus récente à ce moment-là). Tâche planifiée pour le 2026-10-15.
     modelName: string = 'gemini-2.5-flash'
   ) {
     this.logger = new AgentLogger(this.agentName, this.context.department);

@@ -2,7 +2,23 @@ import { prisma } from '@/lib/prisma';
 import { AutonomousAgent } from './AgentCore';
 import Exa from 'exa-js';
 
-const exa = new Exa(process.env.EXA_API_KEY || 'dummy_key');
+// Instanciation paresseuse — voir le commentaire équivalent dans MarketScout.ts.
+// Un `new Exa()` au niveau module fait planter le build Vercel dès que ce
+// fichier est importé, même sans appel réel.
+let _exa: Exa | undefined;
+function getExa(): Exa {
+  if (!_exa) {
+    const exaApiKey = process.env.EXA_API_KEY;
+    if (!exaApiKey) {
+      throw new Error(
+        '[ReferralPartnershipAgent] EXA_API_KEY manquant — variable d\'environnement Vercel en ' +
+        'production, purity-os/.env en local. Aucun repli silencieux sur une clé factice.'
+      );
+    }
+    _exa = new Exa(exaApiKey);
+  }
+  return _exa;
+}
 
 export interface ReferralCandidate {
   projectId: string;
@@ -53,7 +69,7 @@ export class ReferralPartnershipAgent extends AutonomousAgent {
   public async mapLocalPartners(sector: string, location: string): Promise<PartnerCandidate[]> {
     await this.logger.startTask(`Cartographie de partenaires pour ${sector} à ${location}`);
 
-    const response = await exa.search(
+    const response = await getExa().search(
       `comptable OR "chambre de commerce" OR agence complémentaire ${sector} ${location} Belgique`,
       { numResults: 5 }
     );

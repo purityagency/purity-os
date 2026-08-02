@@ -20,7 +20,17 @@ let _copywriter: CreativeCopywriter | undefined;
 let _scorer: LeadScoringAnalyst | undefined;
 
 function getExa(): Exa {
-  return (_exa ??= new Exa(process.env.EXA_API_KEY || "dummy_key"));
+  if (!_exa) {
+    const exaApiKey = process.env.EXA_API_KEY;
+    if (!exaApiKey) {
+      throw new Error(
+        '[MarketScout] EXA_API_KEY manquant — variable d\'environnement Vercel en production, ' +
+        'purity-os/.env en local. Aucun repli silencieux sur une clé factice.'
+      );
+    }
+    _exa = new Exa(exaApiKey);
+  }
+  return _exa;
 }
 
 const SearchStrategySchema = z.object({
