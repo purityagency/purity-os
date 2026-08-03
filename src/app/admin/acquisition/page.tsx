@@ -169,12 +169,21 @@ export default async function AdminAcquisitionPage() {
 
       {/* LEADS SECTION */}
       <section>
-        <div className="mb-4">
-          <h2 className="text-xl font-semibold text-white">Leads (par score)</h2>
-          <p className="text-xs text-zinc-400">
-            Score calculé par le Lead Scoring Analyst — contact vérifié, opportunité technique,
-            avancement pipeline. Un score vide n&apos;est pas un mauvais lead, juste pas encore scoré.
-          </p>
+        <div className="mb-4 flex items-start justify-between gap-4 flex-wrap">
+          <div>
+            <h2 className="text-xl font-semibold text-white">Leads (par score)</h2>
+            <p className="text-xs text-zinc-400">
+              Score calculé par le Lead Scoring Analyst — contact vérifié, opportunité technique,
+              avancement pipeline. Un score vide n&apos;est pas un mauvais lead, juste pas encore scoré.
+            </p>
+          </div>
+          <a
+            href="/api/admin/export/leads"
+            download
+            className="rounded-lg border border-white/10 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-white/5 transition-colors shrink-0"
+          >
+            Exporter CSV
+          </a>
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">

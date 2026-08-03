@@ -4,6 +4,8 @@ import Link from "next/link"
 import type { Session } from "next-auth"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
+import { GlobalSearch } from "./GlobalSearch"
+
 export function AdminSidebar({ session }: { session: Session }) {
   const pathname = usePathname()
 
@@ -39,7 +41,10 @@ export function AdminSidebar({ session }: { session: Session }) {
       <div className="p-6">
         <div className="text-[#7C3AED] font-bold text-xl mb-1">Purity OS</div>
         <div className="text-xs text-zinc-500 uppercase font-semibold tracking-wider">Espace Agence</div>
-        <div className="mt-8 space-y-6 text-sm text-zinc-400">
+        <div className="mt-5">
+          <GlobalSearch />
+        </div>
+        <div className="mt-6 space-y-6 text-sm text-zinc-400">
           {navGroups.map((group) => (
             <div key={group.title}>
               <div className="px-4 mb-2 text-[10px] font-bold tracking-widest text-zinc-600">

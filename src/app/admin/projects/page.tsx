@@ -53,9 +53,18 @@ export default async function AdminProjectsPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Projets</h1>
-        <p className="mt-1 text-sm text-zinc-400">Tous les dossiers en cours et terminés.</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Projets</h1>
+          <p className="mt-1 text-sm text-zinc-400">Tous les dossiers en cours et terminés.</p>
+        </div>
+        <a
+          href={`/api/admin/export/projects${statusFilter ? `?status=${statusFilter}` : ""}`}
+          download
+          className="rounded-lg border border-white/10 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-white/5 transition-colors shrink-0"
+        >
+          Exporter CSV
+        </a>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-6">

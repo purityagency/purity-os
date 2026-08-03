@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
+import { markPaymentPaid, markPaymentCancelled } from "@/actions/paymentActions"
 import Link from "next/link"
 import type { Prisma } from "@prisma/client"
 import {
@@ -38,9 +39,18 @@ export default async function AdminPaymentsPage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Paiements</h1>
-        <p className="mt-1 text-sm text-zinc-400">Acomptes encaissés et soldes à relancer.</p>
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-3xl font-bold text-white">Paiements</h1>
+          <p className="mt-1 text-sm text-zinc-400">Acomptes encaissés et soldes à relancer.</p>
+        </div>
+        <a
+          href={`/api/admin/export/payments${statusFilter ? `?status=${statusFilter}` : ""}`}
+          download
+          className="rounded-lg border border-white/10 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-white/5 transition-colors shrink-0"
+        >
+          Exporter CSV
+        </a>
       </div>
 
       <div className="grid grid-cols-2 gap-4 max-w-lg">
@@ -85,30 +95,46 @@ export default async function AdminPaymentsPage({
           </p>
         ) : (
           <div className="divide-y divide-white/10">
-            {payments.map((payment) => (
-              <Link
-                key={payment.id}
-                href={`/admin/projects/${payment.project.id}`}
-                className="flex items-center justify-between gap-4 p-5 hover:bg-white/5 transition-colors"
-              >
-                <div className="min-w-0">
-                  <p className="font-medium text-white truncate">{payment.project.name}</p>
-                  <p className="text-xs text-zinc-400 truncate">
-                    {payment.project.client.name || payment.project.client.email}
-                    {" · "}
-                    {PAYMENT_TYPE_LABELS[payment.type] ?? payment.type}
-                    {" · "}
-                    {formatDate(payment.createdAt)}
-                  </p>
+            {payments.map((payment) => {
+              const markPaid = markPaymentPaid.bind(null, payment.id, payment.project.id)
+              const markCancelled = markPaymentCancelled.bind(null, payment.id, payment.project.id)
+              return (
+                <div key={payment.id} className="flex items-center justify-between gap-4 p-5 hover:bg-white/5 transition-colors">
+                  <Link href={`/admin/projects/${payment.project.id}`} className="min-w-0 flex-1">
+                    <p className="font-medium text-white truncate">{payment.project.name}</p>
+                    <p className="text-xs text-zinc-400 truncate">
+                      {payment.project.client.name || payment.project.client.email}
+                      {" · "}
+                      {PAYMENT_TYPE_LABELS[payment.type] ?? payment.type}
+                      {" · "}
+                      {formatDate(payment.createdAt)}
+                    </p>
+                  </Link>
+                  <div className="flex items-center gap-3 shrink-0">
+                    {payment.status === "PENDING" && (
+                      <div className="flex gap-2">
+                        <form action={markPaid}>
+                          <button type="submit" className="h-7 px-2.5 text-xs rounded bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 transition-colors active:scale-[0.98]">
+                            Marquer payé
+                          </button>
+                        </form>
+                        <form action={markCancelled}>
+                          <button type="submit" className="h-7 px-2.5 text-xs rounded bg-white/5 hover:bg-white/10 text-zinc-400 transition-colors active:scale-[0.98]">
+                            Annuler
+                          </button>
+                        </form>
+                      </div>
+                    )}
+                    <div className="text-right">
+                      <p className="font-semibold text-white tabular-nums">{formatEUR(payment.amount)}</p>
+                      <span className={`text-[11px] px-2 py-0.5 rounded inline-block mt-1 ${PAYMENT_STATUS_COLORS[payment.status] ?? "bg-white/10 text-zinc-300"}`}>
+                        {PAYMENT_STATUS_LABELS[payment.status] ?? payment.status}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <p className="font-semibold text-white tabular-nums">{formatEUR(payment.amount)}</p>
-                  <span className={`text-[11px] px-2 py-0.5 rounded inline-block mt-1 ${PAYMENT_STATUS_COLORS[payment.status] ?? "bg-white/10 text-zinc-300"}`}>
-                    {PAYMENT_STATUS_LABELS[payment.status] ?? payment.status}
-                  </span>
-                </div>
-              </Link>
-            ))}
+              )
+            })}
           </div>
         )}
       </div>
