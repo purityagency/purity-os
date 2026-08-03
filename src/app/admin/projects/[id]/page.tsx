@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge"
 import { addStageToProject } from "@/actions/stageActions"
 import { updateProjectStatus, updateProjectDetails } from "@/actions/projectActions"
 import { markPaymentPaid, markPaymentCancelled } from "@/actions/paymentActions"
+import { InvoiceActions } from "@/components/InvoiceActions"
 import { TimelineInteractive } from "@/components/TimelineInteractive"
 import { ProjectChat } from "@/components/ProjectChat"
 import { ProjectDocuments } from "@/components/ProjectDocuments"
@@ -47,6 +48,7 @@ export default async function AdminProjectDetailsPage({ params }: { params: Prom
       messages: { orderBy: { createdAt: "asc" }, include: { author: true } },
       documents: { orderBy: { uploadedAt: "desc" } },
       payments: { orderBy: { createdAt: "desc" } },
+      invoices: { orderBy: { createdAt: "desc" } },
     }
   })
 
@@ -229,6 +231,40 @@ export default async function AdminProjectDetailsPage({ params }: { params: Prom
                   })
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-white/5 border-white/10 text-white backdrop-blur-md">
+            <CardHeader>
+              <CardTitle>Facturation</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <InvoiceActions
+                projectId={project.id}
+                available={[
+                  ...(project.depositAmount ? [{ kind: "DEPOSIT" as const, amount: project.depositAmount }] : []),
+                  ...(project.remainingAmount ? [{ kind: "BALANCE" as const, amount: project.remainingAmount }] : []),
+                  ...(project.totalPrice ? [{ kind: "FULL" as const, amount: project.totalPrice }] : []),
+                ]}
+              />
+              <div className="space-y-2 pt-2 border-t border-white/5">
+                {project.invoices.length === 0 ? (
+                  <p className="text-sm text-zinc-500">Aucune facture générée.</p>
+                ) : (
+                  project.invoices.map((invoice: (typeof project.invoices)[number]) => (
+                    <div key={invoice.id} className="flex items-center justify-between p-3 rounded-lg bg-black/20 border border-white/5 text-sm">
+                      <div>
+                        <div className="font-medium text-white">{invoice.invoiceNumber} — {formatEUR(invoice.totalAmount)}</div>
+                        <div className="text-xs text-zinc-500">{new Date(invoice.createdAt).toLocaleDateString('fr-BE')}</div>
+                      </div>
+                      <Badge className="bg-white/10 text-zinc-300">{invoice.status === "DRAFT" ? "Brouillon" : invoice.status}</Badge>
+                    </div>
+                  ))
+                )}
+              </div>
+              <p className="text-[11px] text-zinc-500">
+                Mention légale franchise de taxe (art. 56bis CTVA). Transmission Peppol pas encore configurée — nécessite un point d&apos;accès certifié (Billit, Exact Online...).
+              </p>
             </CardContent>
           </Card>
 

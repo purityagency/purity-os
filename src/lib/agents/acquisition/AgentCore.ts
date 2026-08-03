@@ -18,6 +18,30 @@ if (!geminiApiKey) {
 
 const google = createGoogleGenerativeAI({ apiKey: geminiApiKey });
 
+/**
+ * Un seul projet Google = un seul quota Gemini, partagé par TOUS les
+ * agents de ce pôle (10 req/min, 250 req/jour sur le tier gratuit — voir
+ * la conversation du 2026-08-03). Avant ce correctif, chaque agent
+ * appelait `generateObject` sans aucune coordination : un lot de résultats
+ * de recherche pouvait déclencher 10+ appels en quelques secondes et
+ * cogner le plafond RPM en silence. Cette file d'attente partagée force un
+ * espacement minimal entre CHAQUE appel Gemini, tous agents confondus.
+ */
+const MIN_INTERVAL_MS = 6_500; // ~9,2 req/min max, sous le plafond gratuit de 10
+let geminiCallQueue: Promise<void> = Promise.resolve();
+
+function throttleGeminiCall(): Promise<void> {
+  const next = geminiCallQueue.then(async () => {
+    await new Promise((resolve) => setTimeout(resolve, MIN_INTERVAL_MS));
+  });
+  geminiCallQueue = next.catch(() => {});
+  return next;
+}
+
+function isRateLimitError(error: any): boolean {
+  return error?.statusCode === 429 || /rate.?limit|quota|429/i.test(String(error?.message ?? ''));
+}
+
 export interface AgentContext {
   role: string;
   department: string;
@@ -89,10 +113,10 @@ export abstract class AutonomousAgent {
   ): Promise<T> {
     if (logTaskName) await this.logger.startTask(logTaskName);
 
-    try {
+    const callOnce = async () => {
+      await throttleGeminiCall();
       const model = google(this.modelName);
-
-      const object = schema
+      return schema
         ? (await generateObject({
             model,
             system: this.systemInstruction,
@@ -105,6 +129,22 @@ export abstract class AutonomousAgent {
             prompt,
             output: 'no-schema',
           })).object;
+    };
+
+    try {
+      let object: unknown;
+      try {
+        object = await callOnce();
+      } catch (error: any) {
+        // Un seul retry, avec une pause longue, uniquement sur une vraie
+        // erreur de quota — jamais sur une erreur de schéma ou de contenu.
+        if (isRateLimitError(error)) {
+          await new Promise((resolve) => setTimeout(resolve, 20_000));
+          object = await callOnce();
+        } else {
+          throw error;
+        }
+      }
 
       if (logTaskName) await this.logger.finishTask(`${logTaskName} - Réflexion terminée`);
       return object as T;

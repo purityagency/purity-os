@@ -9,6 +9,7 @@ import {
   EVENT_TYPE_LABELS,
   EVENT_TYPE_COLORS,
 } from "@/lib/adminFormat"
+import { POLES } from "@/lib/agentRoster"
 
 function StatCard({
   label,
@@ -79,6 +80,7 @@ export default async function AdminDashboard() {
     aiEventsCount,
     systemEventsCount,
     recentAiSystemEvents,
+    agentActivities,
   ] = await Promise.all([
     prisma.project.count(),
     prisma.project.count({ where: { status: { notIn: ["COMPLETED", "CANCELLED"] } } }),
@@ -118,7 +120,15 @@ export default async function AdminDashboard() {
       orderBy: { createdAt: "desc" },
       take: 5,
     }),
+    prisma.agentActivity.findMany({ select: { department: true, updatedAt: true } }),
   ])
+
+  const RECENT_MS = 24 * 60 * 60 * 1000
+  const activeDepartments = new Set(
+    agentActivities
+      .filter((a) => now.getTime() - new Date(a.updatedAt).getTime() < RECENT_MS)
+      .map((a) => a.department)
+  )
 
   const totalPaid = paidAgg._sum.amount ?? 0
   const totalPending = pendingAgg._sum.amount ?? 0
@@ -220,93 +230,49 @@ export default async function AdminDashboard() {
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            {
-              code: "00",
-              title: "CHIEF AGENCY AI",
-              role: "COO IA — Coordination centrale & Arbitrage CEO",
-              desc: "Arbitre, priorise, résout les conflits et redistribue les ressources pour Amir.",
-              tag: "COO IA",
-              status: "OPÉRATIONNEL",
-              color: "border-[#C084FC]/40 bg-[#7C3AED]/15",
-            },
-            {
-              code: "01",
-              title: "ACQUISITION",
-              role: "Trafic, SEO, Publicité & Prospection",
-              desc: "Génère du trafic qualifié, optimise le SEO et orchestre les campagnes publicitaires.",
-              tag: "ACQUISITION",
-              status: "ACTIF",
-              color: "border-sky-500/30 bg-sky-500/10",
-            },
-            {
-              code: "02",
-              title: "BRAND",
-              role: "Image de marque, Design visuel & Positionnement",
-              desc: "Maintient le design system Liquid Glass, l'identité visuelle et l'expérience Awwwards.",
-              tag: "BRAND",
-              status: "ACTIF",
-              color: "border-purple-500/30 bg-purple-500/10",
-            },
-            {
-              code: "03",
-              title: "DELIVERY",
-              role: "Production, Dev, QA, Sécurité & Livraison",
-              desc: "Assure la qualité de code, les tests automatisés et le monitoring Sentinel.",
-              tag: "DELIVERY",
-              status: "ACTIF",
-              color: "border-emerald-500/30 bg-emerald-500/10",
-            },
-            {
-              code: "04",
-              title: "FINANCE",
-              role: "Pilotage financier, Facturation & Rentabilité",
-              desc: "Gère les encaissements, devis, marges, et provisions sur les projets.",
-              tag: "FINANCE",
-              status: "ACTIF",
-              color: "border-amber-500/30 bg-amber-500/10",
-            },
-            {
-              code: "05",
-              title: "STRATEGY",
-              role: "Stratégie globale, Architecture & Recherche",
-              desc: "Veille technologique, architecture SSOT et feuille de route Purity ONE.",
-              tag: "STRATEGY",
-              status: "ACTIF",
-              color: "border-indigo-500/30 bg-indigo-500/10",
-            },
-          ].map((dept) => (
-            <div
-              key={dept.code}
-              className={`rounded-2xl border ${dept.color} p-5 backdrop-blur-xl flex flex-col justify-between transition-all hover:scale-[1.01]`}
-            >
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-mono font-bold px-2 py-1 rounded bg-white/10 text-white">
-                    PÔLE {dept.code}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-emerald-400">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    {dept.status}
-                  </span>
+          {POLES.map((pole) => {
+            // Actif = au moins un agent de ce pôle a une activité réelle
+            // depuis 24h. Un pôle sans code n'affiche jamais "actif" — voir
+            // plans/admin-apple-tier-rebuild.md étape 5 (correctif 2026-08-03,
+            // avant ça ce statut était codé en dur "ACTIF" pour tout le monde).
+            const isActive = activeDepartments.has(`${pole.id}_${pole.name.split(" ")[0].toUpperCase()}`) ||
+              [...activeDepartments].some((d) => d.startsWith(`${pole.id}_`))
+            const hasCode = pole.chief.coded || pole.agents.some((a) => a.coded)
+            const status = isActive ? "ACTIF" : hasCode ? "CODÉ, INACTIF" : "PAS ENCORE CODÉ"
+            const statusColor = isActive ? "text-emerald-400" : hasCode ? "text-amber-400" : "text-zinc-500"
+
+            return (
+              <div
+                key={pole.id}
+                className="rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl flex flex-col justify-between transition-all hover:scale-[1.01]"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-mono font-bold px-2 py-1 rounded bg-white/10 text-white">
+                      PÔLE {pole.id}
+                    </span>
+                    <span className={`inline-flex items-center gap-1.5 text-[11px] font-semibold ${statusColor}`}>
+                      {isActive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+                      {status}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-white text-base">{pole.name}</h3>
+                  <p className="text-xs font-medium text-[#C084FC] mt-0.5">{pole.chief.fullName} · {pole.chief.role}</p>
                 </div>
-                <h3 className="font-bold text-white text-base">{dept.title}</h3>
-                <p className="text-xs font-medium text-[#C084FC] mt-0.5">{dept.role}</p>
-                <p className="text-xs text-zinc-400 mt-2.5 leading-relaxed">{dept.desc}</p>
+                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
+                  <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">
+                    {pole.agents.filter((a) => a.coded).length + (pole.chief.coded ? 1 : 0)} agent(s) codé(s)
+                  </span>
+                  <Link
+                    href="/admin/ecosystem"
+                    className="text-xs font-semibold text-white hover:text-[#C084FC] transition-colors"
+                  >
+                    Voir l&apos;équipe →
+                  </Link>
+                </div>
               </div>
-              <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between">
-                <span className="text-[10px] text-zinc-500 uppercase tracking-wider font-semibold">
-                  Intégration Event Bus
-                </span>
-                <Link
-                  href="/admin/inbox?type=AI"
-                  className="text-xs font-semibold text-white hover:text-[#C084FC] transition-colors"
-                >
-                  Inspecter →
-                </Link>
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       </section>
 

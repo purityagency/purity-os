@@ -76,6 +76,11 @@ export class MarketScout extends AutonomousAgent {
   public async executeMission(order: MissionOrder): Promise<number> {
     await this.logger.startTask(`Scan web pour la mission: ${order.name}`);
     let leadsFound = 0;
+    let evaluationsUsed = 0;
+    // Plafond dur, indépendant du nombre de leads trouvés — un lot de
+    // résultats hors-cible ne doit jamais consommer un quota Gemini
+    // illimité juste pour être rejeté (finding 2026-08-03, voir AgentCore).
+    const MAX_EVALUATIONS_PER_RUN = 15;
 
     try {
       const prompt = `
@@ -105,6 +110,13 @@ export class MarketScout extends AutonomousAgent {
 
         for (const result of searchResponse.results) {
           if (leadsFound >= order.parameters.maxLeads) break;
+          if (evaluationsUsed >= MAX_EVALUATIONS_PER_RUN) {
+            await this.logger.finishTask(
+              `Plafond de ${MAX_EVALUATIONS_PER_RUN} évaluations atteint — scan arrêté proprement (${leadsFound} lead(s) trouvé(s)).`
+            );
+            return leadsFound;
+          }
+          evaluationsUsed++;
 
           const evalPrompt = `
             Voici un site trouvé par recherche:

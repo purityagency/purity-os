@@ -64,6 +64,7 @@ model Project {
   documents        Document[]
   payments         Payment[]
   events           Event[]
+  invoices         Invoice[]
 
   @@index([clientId])
   @@index([status, updatedAt])
@@ -129,6 +130,7 @@ model Payment {
   createdAt DateTime @default(now())
 
   project   Project  @relation(fields: [projectId], references: [id])
+  invoice   Invoice?
 
   @@index([projectId, createdAt])
   @@index([status, createdAt])
@@ -225,6 +227,36 @@ model EmailDraft {
   lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([leadId, status])
+  @@index([status, createdAt])
+}
+
+// ==========================================
+// PÔLE 04 : FINANCE (Facturation)
+// ==========================================
+
+// Purity Agency est sous régime de la franchise de taxe (art. 56bis CTVA) —
+// TVA non applicable sur ses propres factures, mention légale obligatoire
+// en lieu et place d'un taux. Transmission Peppol (obligatoire B2B en
+// Belgique depuis le 2026-01-01) nécessite un point d'accès certifié
+// (Billit, Exact Online...) — pas encore souscrit, voir InvoiceAgent.ts.
+model Invoice {
+  id            String    @id @default(cuid())
+  projectId     String
+  paymentId     String?   @unique
+  invoiceNumber String    @unique // séquentiel par année, ex: 2026-0001
+  clientName    String
+  clientEmail   String
+  lineItems     Json      // [{ description, quantity, unitPrice, total }]
+  totalAmount   Float
+  legalMention  String    // mention légale réelle (franchise ou taux), jamais inventée
+  status        String    @default("DRAFT") // DRAFT, ISSUED, PAID
+  issuedAt      DateTime?
+  createdAt     DateTime  @default(now())
+
+  project       Project   @relation(fields: [projectId], references: [id])
+  payment       Payment?  @relation(fields: [paymentId], references: [id])
+
+  @@index([projectId, createdAt])
   @@index([status, createdAt])
 }
 
