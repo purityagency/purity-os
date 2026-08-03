@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
-import { approveAndSendDraft, rejectDraft, launchMission } from "@/actions/acquisitionActions"
-import Link from "next/link"
+import { launchMission } from "@/actions/acquisitionActions"
+import { DraftActions } from "./DraftActions"
 
 export default async function AdminAcquisitionPage() {
   await requireAdminSession()
@@ -147,40 +147,21 @@ export default async function AdminAcquisitionPage() {
             <p className="p-6 text-sm text-zinc-400">Aucun brouillon en attente.</p>
           ) : (
             <div className="divide-y divide-white/10">
-              {pendingDrafts.map((draft) => {
-                const approve = approveAndSendDraft.bind(null, draft.id)
-                const reject = rejectDraft.bind(null, draft.id)
-                return (
-                  <div key={draft.id} className="p-5 flex flex-col gap-3 hover:bg-white/5 transition-colors">
-                    <div className="flex justify-between items-start gap-4">
-                      <div className="min-w-0">
-                        <p className="font-semibold text-white">{draft.lead.companyName}</p>
-                        <p className="text-sm text-zinc-300 mt-1">Sujet : {draft.subject}</p>
-                        {!draft.lead.contactEmail && (
-                          <p className="text-xs text-amber-400 mt-1">Aucun e-mail de contact — envoi impossible</p>
-                        )}
-                      </div>
-                      <div className="flex gap-2 shrink-0">
-                        <form action={reject}>
-                          <button type="submit" className="px-3 py-1 text-xs rounded bg-white/10 hover:bg-white/20 text-white transition-colors active:scale-[0.98]">
-                            Rejeter
-                          </button>
-                        </form>
-                        <form action={approve}>
-                          <button
-                            type="submit"
-                            disabled={!draft.lead.contactEmail}
-                            className="px-3 py-1 text-xs rounded bg-[#7C3AED] hover:bg-[#6D28D9] text-white transition-colors active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none"
-                          >
-                            Valider & Envoyer
-                          </button>
-                        </form>
-                      </div>
+              {pendingDrafts.map((draft) => (
+                <div key={draft.id} className="p-5 flex flex-col gap-3 hover:bg-white/5 transition-colors">
+                  <div className="flex justify-between items-start gap-4">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-white">{draft.lead.companyName}</p>
+                      <p className="text-sm text-zinc-300 mt-1">Sujet : {draft.subject}</p>
+                      {!draft.lead.contactEmail && (
+                        <p className="text-xs text-amber-400 mt-1">Aucun e-mail de contact — envoi impossible</p>
+                      )}
                     </div>
-                    <div className="p-3 rounded-lg border border-white/10 bg-black/20 text-sm text-zinc-300 prose prose-invert max-w-none" dangerouslySetInnerHTML={{__html: draft.bodyHtml}} />
+                    <DraftActions draftId={draft.id} hasContactEmail={!!draft.lead.contactEmail} />
                   </div>
-                )
-              })}
+                  <div className="p-3 rounded-lg border border-white/10 bg-black/20 text-sm text-zinc-300 prose prose-invert max-w-none" dangerouslySetInnerHTML={{__html: draft.bodyHtml}} />
+                </div>
+              ))}
             </div>
           )}
         </div>

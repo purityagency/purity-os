@@ -3,9 +3,12 @@
 import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { requireAdminSession } from "@/lib/session"
-import { NotFoundError, ValidationError } from "@/lib/errors"
+import { AppError, NotFoundError, ValidationError } from "@/lib/errors"
 import { sendEmail } from "@/lib/email"
+import { withAgentSignature } from "@/lib/emailSignature"
 import { ChiefAcquisitionAI } from "@/lib/agents/acquisition/ChiefAcquisitionAI"
+
+export type ActionResult = { ok: true; message: string } | { ok: false; message: string }
 
 /**
  * Lance une nouvelle Mission depuis l'admin. Le bouton "+ Nouvelle Mission"
@@ -45,9 +48,12 @@ export async function launchMission(formData: FormData) {
  * Valide un brouillon d'e-mail de prospection et l'envoie réellement au lead.
  * Porte d'approbation humaine du pipeline Acquisition : rien ne part sans ce
  * clic. Échoue explicitement si le lead n'a pas d'e-mail de contact — jamais
- * d'envoi silencieux vers une adresse absente.
+ * d'envoi silencieux vers une adresse absente. Retourne un résultat explicite
+ * (au lieu de throw/void) pour que l'UI affiche un vrai succès/échec — avant
+ * ce correctif (finding 2026-08-03), rien ne confirmait jamais l'envoi et un
+ * échec Resend pouvait être marqué SENT quand même (voir email.ts).
  */
-export async function approveAndSendDraft(draftId: string) {
+export async function approveAndSendDraft(draftId: string, _prevState: ActionResult | null): Promise<ActionResult> {
   await requireAdminSession()
 
   const draft = await prisma.emailDraft.findUnique({
@@ -56,17 +62,22 @@ export async function approveAndSendDraft(draftId: string) {
   })
   if (!draft) throw new NotFoundError("Brouillon")
   if (draft.status !== "PENDING_APPROVAL") {
-    throw new ValidationError("Ce brouillon a déjà été traité")
+    return { ok: false, message: "Ce brouillon a déjà été traité." }
   }
   if (!draft.lead.contactEmail) {
-    throw new ValidationError("Ce lead n'a pas d'e-mail de contact — impossible d'envoyer")
+    return { ok: false, message: "Ce lead n'a pas d'e-mail de contact — impossible d'envoyer." }
   }
 
-  await sendEmail({
-    to: draft.lead.contactEmail,
-    subject: draft.subject,
-    html: draft.bodyHtml,
-  })
+  try {
+    await sendEmail({
+      to: draft.lead.contactEmail,
+      subject: draft.subject,
+      html: withAgentSignature(draft.bodyHtml),
+    })
+  } catch (e) {
+    const message = e instanceof AppError ? e.message : "Échec d'envoi inattendu — voir les logs serveur."
+    return { ok: false, message: `Email NON envoyé : ${message}` }
+  }
 
   await prisma.$transaction([
     prisma.emailDraft.update({ where: { id: draft.id }, data: { status: "SENT" } }),
@@ -74,18 +85,20 @@ export async function approveAndSendDraft(draftId: string) {
   ])
 
   revalidatePath("/admin/acquisition")
+  return { ok: true, message: `Email envoyé à ${draft.lead.contactEmail}.` }
 }
 
-export async function rejectDraft(draftId: string) {
+export async function rejectDraft(draftId: string, _prevState: ActionResult | null): Promise<ActionResult> {
   await requireAdminSession()
 
   const draft = await prisma.emailDraft.findUnique({ where: { id: draftId }, select: { id: true, status: true } })
   if (!draft) throw new NotFoundError("Brouillon")
   if (draft.status !== "PENDING_APPROVAL") {
-    throw new ValidationError("Ce brouillon a déjà été traité")
+    return { ok: false, message: "Ce brouillon a déjà été traité." }
   }
 
   await prisma.emailDraft.update({ where: { id: draft.id }, data: { status: "REJECTED" } })
 
   revalidatePath("/admin/acquisition")
+  return { ok: true, message: "Brouillon rejeté." }
 }
