@@ -259,15 +259,38 @@ solo ?). Poser la question avant d'écrire le code.
 Étape 7 : en attente de confirmation Amir, pas dans le flux automatique.
 ```
 
-## État d'avancement (mis à jour au fil de l'exécution)
+## État d'avancement (mis à jour au fil de l'exécution — 2026-08-03)
 
-- Étape 0 : PAS COMMENCÉ
-- Étape 1 : PAS COMMENCÉ
-- Étape 2 : PAS COMMENCÉ
-- Étape 3 : PAS COMMENCÉ
-- Étape 4 : PAS COMMENCÉ
-- Étape 5 : PAS COMMENCÉ
-- Étape 6 : PAS COMMENCÉ
-- Étape 7 : EN ATTENTE DE CONFIRMATION
-- Étape 8 : PAS COMMENCÉ
-- Étape 9 : PAS COMMENCÉ
+- Étape 0 : FAIT PARTIELLEMENT — pas de refonte de tokens de design formelle,
+  mais bug bloquant corrigé à la place (turbopack.root faisait 404 /login en
+  dev) + tabular-nums vérifié présent sur les montants.
+- Étape 1 : FAIT AUTREMENT — page Brand retirée du menu, remplacée par
+  02: Finance (la vraie pole 02 selon ai/). La route /admin/brand existe
+  encore mais n'est plus dans la nav.
+- Étape 2 : FAIT, TESTÉ — Cmd/Ctrl+K, testé en navigateur réel.
+- Étape 3 : FAIT, TESTÉ — export leads vérifié avec vraies données belges.
+  Bug de qualité de données repéré au passage : un lead a la chaîne "null"
+  comme contactName (à corriger dans l'extraction de l'Intelligence Analyst).
+- Étape 4 : FAIT — boutons inline sur /admin/payments (non testé au clic
+  faute de paiement PENDING en base, réutilise des actions déjà éprouvées).
+- Étape 5 : FAIT, TESTÉ — /admin/ecosystem rebâti (organigramme réel, vrais
+  noms/postes français, polling stoppé en arrière-plan), dashboard sans
+  statuts inventés.
+- Étape 6 : FAIT, TESTÉ — digest déclenché manuellement, vrai email envoyé.
+- Étape 7 : EN ATTENTE DE CONFIRMATION AMIR (multi-admin).
+- Étape 8 : PASSE RAPIDE FAITE — desktop + mobile vérifiés sur les pages
+  principales, zéro erreur console fraîche. Passe exhaustive page par page
+  (focus clavier systématique, hit areas mesurées) reste à approfondir.
+- Étape 9 : build production propre, poussé sur main (commits df501cb +
+  cfa593e), déploiement Vercel en cours de vérification.
+
+## Fait en plus, hors plan initial (session 2026-08-03)
+
+- Pôle Finance : premier agent réel (Bruno Dechamps, InvoiceAgent) — modèle
+  Invoice + migration Neon, génération testée bout-en-bout, page
+  /admin/finance, boutons dans la fiche projet. Peppol explicitement bloqué
+  (pas de point d'accès certifié souscrit).
+- Throttle Gemini partagé (~9 req/min) + plafond 15 évaluations/scan — les
+  causes réelles de l'épuisement de quota.
+- Nettoyage de 1008 events Sentinel spam + correctif à la source (site).
+- agentRoster.ts : source unique noms/postes réels des 6 pôles.
