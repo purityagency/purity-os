@@ -147,21 +147,118 @@ export default async function AdminAcquisitionPage() {
             <p className="p-6 text-sm text-zinc-400">Aucun brouillon en attente.</p>
           ) : (
             <div className="divide-y divide-white/10">
-              {pendingDrafts.map((draft) => (
-                <div key={draft.id} className="p-5 flex flex-col gap-3 hover:bg-white/5 transition-colors">
-                  <div className="flex justify-between items-start gap-4">
-                    <div className="min-w-0">
-                      <p className="font-semibold text-white">{draft.lead.companyName}</p>
-                      <p className="text-sm text-zinc-300 mt-1">Sujet : {draft.subject}</p>
-                      {!draft.lead.contactEmail && (
-                        <p className="text-xs text-amber-400 mt-1">Aucun e-mail de contact — envoi impossible</p>
-                      )}
+              {pendingDrafts.map((draft) => {
+                const auditData = (draft.lead.auditData as any) || {}
+                const painPoints = auditData.painPoints || []
+                const recommendedModules = auditData.recommendedModules || []
+
+                return (
+                  <div key={draft.id} className="p-5 flex flex-col gap-4 hover:bg-white/5 transition-colors">
+                    {/* Header: Company, Info Badges & Actions */}
+                    <div className="flex justify-between items-start gap-4 flex-wrap">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold text-base text-white">{draft.lead.companyName}</h3>
+                          
+                          {/* Score Badge */}
+                          {draft.lead.score !== null && (
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                              draft.lead.score >= 70 ? 'bg-emerald-500/20 text-emerald-300' :
+                              draft.lead.score >= 40 ? 'bg-amber-500/20 text-amber-300' :
+                              'bg-zinc-500/20 text-zinc-300'
+                            }`}>
+                              Score: {draft.lead.score}
+                            </span>
+                          )}
+
+                          {/* Source Badge */}
+                          <span className="text-[10px] bg-white/10 text-zinc-300 px-1.5 py-0.5 rounded">
+                            {draft.lead.source}
+                          </span>
+
+                          {/* Location Badge */}
+                          {draft.lead.location && (
+                            <span className="text-[10px] bg-[#7C3AED]/20 text-violet-300 px-1.5 py-0.5 rounded">
+                              📍 {draft.lead.location}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Contact details */}
+                        <div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-400">
+                          {draft.lead.contactName && (
+                            <span>
+                              Contact : <strong className="text-zinc-200">{draft.lead.contactName}</strong>
+                              {draft.lead.contactRole && <span className="text-zinc-500"> ({draft.lead.contactRole})</span>}
+                            </span>
+                          )}
+
+                          {draft.lead.contactEmail ? (
+                            <span className="flex items-center gap-1 text-emerald-400">
+                              ✉ <code className="font-mono bg-emerald-500/10 px-1 rounded text-emerald-300">{draft.lead.contactEmail}</code>
+                            </span>
+                          ) : (
+                            <span className="text-amber-400 font-semibold">⚠ Aucun e-mail de contact</span>
+                          )}
+                        </div>
+
+                        {/* External Links */}
+                        <div className="mt-2 flex gap-3 text-xs">
+                          {draft.lead.websiteUrl && (
+                            <a
+                              href={draft.lead.websiteUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-violet-400 hover:text-violet-300 underline"
+                            >
+                              Site Web ↗
+                            </a>
+                          )}
+                          {draft.lead.googleMapsUrl && (
+                            <a
+                              href={draft.lead.googleMapsUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-zinc-400 hover:text-zinc-300 underline"
+                            >
+                              Google Maps ↗
+                            </a>
+                          )}
+                        </div>
+                      </div>
+
+                      <DraftActions draftId={draft.id} hasContactEmail={!!draft.lead.contactEmail} />
                     </div>
-                    <DraftActions draftId={draft.id} hasContactEmail={!!draft.lead.contactEmail} />
+
+                    {/* Audit Summary Box */}
+                    {(painPoints.length > 0 || recommendedModules.length > 0) && (
+                      <div className="p-3 rounded-lg border border-white/5 bg-white/5 text-xs text-zinc-400 space-y-1">
+                        {painPoints.length > 0 && (
+                          <p>
+                            <span className="text-zinc-300 font-medium">Faiblesses détectées :</span>{" "}
+                            {painPoints.join(" · ")}
+                          </p>
+                        )}
+                        {recommendedModules.length > 0 && (
+                          <p>
+                            <span className="text-zinc-300 font-medium">Modules recommandés :</span>{" "}
+                            <span className="text-violet-300">{recommendedModules.join(" · ")}</span>
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Email Content Draft */}
+                    <div className="space-y-1.5">
+                      <p className="text-xs font-semibold text-zinc-400">Sujet : <span className="text-zinc-200">{draft.subject}</span></p>
+                      <div
+                        className="p-4 rounded-lg border border-white/10 bg-black/30 text-sm text-zinc-300 prose prose-invert max-w-none font-sans"
+                        dangerouslySetInnerHTML={{ __html: draft.bodyHtml }}
+                      />
+                    </div>
                   </div>
-                  <div className="p-3 rounded-lg border border-white/10 bg-black/20 text-sm text-zinc-300 prose prose-invert max-w-none" dangerouslySetInnerHTML={{__html: draft.bodyHtml}} />
-                </div>
-              ))}
+                )
+              })}
             </div>
           )}
         </div>

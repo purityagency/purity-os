@@ -58,18 +58,32 @@ export class CreativeCopywriter extends AutonomousAgent {
       const modules = auditData.recommendedModules?.join(", ") || "Refonte globale";
 
       const prompt = `
-        Rédige un e-mail de prospection très court, percutant et "Liquid Glass" (premium, direct, sans bullshit) pour l'entreprise "${lead.companyName}".
+        Tu es Manon Verhoeven, Creative Copywriter chez Purity Agency (une agence web d'avant-garde basée à Charleroi, Belgique).
+        Rédige un e-mail de prospection ultra-personnalisé, court, percutant et humain pour l'entreprise "${lead.companyName}".
+        Tu t'adresses à un artisan, commerçant ou dirigeant de PME en Wallonie. Le ton doit être direct, extrêmement pro, sans fioritures et axé sur la psychologie du client (peur de perdre des clients face aux concurrents, gain de temps, clarté).
 
-        Contexte du lead :
-        - Problèmes détectés : ${painPoints}
-        - Modules Purity recommandés par l'analyste : ${modules}
+        Détails du destinataire :
+        - Entreprise : ${lead.companyName}
+        - Localisation : ${lead.location || "Wallonie"}
+        - Site Web : ${lead.websiteUrl || "Pas de site actuel"}
+        - Nom du contact : ${lead.contactName || "non spécifié"}
+        - Rôle du contact : ${lead.contactRole || "dirigeant"}
+        - Faiblesses identifiées lors de notre audit : ${painPoints}
+        - Modules Purity recommandés : ${modules}
 
-        Règles strictes :
-        1. Utilise les VRAIS prix de ces modules (trouve-les dans le catalogue Purity).
-        2. Mentionne toujours la subvention "Chèques Entreprises Wallonie" (qui prend en charge une partie du prix) — obligatoire, un email sans cette mention sera rejeté.
-        3. Respecte les BrandRules et n'utilise JAMAIS les ForbiddenWords.
-        4. Objet accrocheur (pas putaclic, très pro).
-        5. Format HTML basique (<p>, <br>, <strong>).
+        Directives de rédaction psychologique et humaine :
+        1. **Salutation humaine** : Si le nom du contact est connu, commence par "Bonjour ${lead.contactName},". Sinon, utilise "Bonjour," ou "Bonjour ${lead.companyName},".
+        2. **Pas d'introduction clichée** : Bannis totalement les formules d'accroche génériques comme "J'espère que vous allez bien", "Je me permets de vous écrire" ou "Je suis Manon de Purity". Commence DIRECTEMENT par une observation factuelle sur leur présence en ligne (ex: "En observant la visibilité locale de ${lead.companyName} à ${lead.location || "Charleroi"}...", "En analysant le site web de ${lead.companyName}...").
+        3. **L'impact psychologique** : Relie chaque faiblesse identifiée à sa conséquence financière réelle (ex: un site lent = perte de clients sur mobile, une fiche Google non optimisée = les clients vont chez le concurrent voisin, pas de prise de RDV en ligne = perte de prospects le soir ou le week-end).
+        4. **Proposition de valeur concrète** : Présente les modules recommandés en gras avec leurs vrais prix du catalogue Purity (que tu trouveras dans purity_catalogue_officiel_v2.md, ex: **Réservation en Ligne (390 €)**, **Site Vitrine (1 490 €)**, **Pilote Automatique Business (990 €)**).
+        5. **Le levier financier (Wallonie)** : Explique de manière simple et rassurante que la Région Wallonne offre la subvention "Chèques Entreprises Wallonie" qui finance jusqu'à 50 % du montant HTVA. Traduis cela en chiffres réels (ex: le module à 1 490 € revient à seulement 745 € après subvention).
+        6. **Clarté "Liquid Glass"** : Pas de jargon complexe ni de superlatifs inutiles ("révolutionnaire", etc.). Sois factuel, asymétrique et direct.
+        7. **CTA à faible friction (Fitts's Law)** : Une seule question claire pour ouvrir la discussion (ex: "Seriez-vous disponible 10 minutes ce jeudi pour en parler de vive voix ?", "Est-ce qu'on peut s'appeler 10 minutes cette semaine ?").
+        8. **Signature professionnelle** : Termine simplement par "Manon Verhoeven — Purity Agency".
+
+        Règles techniques :
+        - Évite absolument les mots interdits de ForbiddenWords.md (ex: "Dans le monde d'aujourd'hui", "En conclusion", "N'hésitez pas à nous contacter", "Nous sommes fiers de vous annoncer", "Révolutionnaire", "Plongez dans l'univers de", "Booster").
+        - Génère uniquement le sujet de l'email et le corps au format HTML basique (<p>, <br>, <strong>).
       `;
 
       let result = await this.think<EmailDraftResponse>(prompt, "Génération de l'email de prospection", EmailDraftSchema);
