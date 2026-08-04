@@ -97,18 +97,25 @@ export class InvoiceAgent {
   }
 
   /**
-   * Transmission Peppol réelle — nécessite un point d'accès certifié
-   * (Billit, Exact Online...), jamais un XML UBL fait main (voir skill
-   * peppol-einvoicing-be : une UBL mal formée est rejetée silencieusement
-   * par le logiciel du destinataire, pas juste "moche"). Aucun accès
-   * configuré à ce jour — erreur explicite plutôt qu'un faux "envoyé".
+   * Transmission Peppol réelle — nécessite un point d'accès certifié,
+   * jamais un XML UBL fait main (voir skill peppol-einvoicing-be : une UBL
+   * mal formée est rejetée silencieusement par le logiciel du destinataire,
+   * pas juste "moche").
+   *
+   * Décision 2026-08-05 : Billit, plan gratuit (0€/mois, "factures de vente
+   * uniquement" — exactement notre cas, Purity ne reçoit pas de factures
+   * fournisseurs via Peppol). Compte pas encore créé — nécessite le numéro
+   * BCE de Purity Agency, donc une action humaine (Amir), pas automatisable.
+   * L'accès API sur le plan gratuit n'est pas confirmé : une fois le compte
+   * créé, vérifier la doc développeur Billit avant de coder l'appel API —
+   * si absent sur le gratuit, l'envoi reste manuel (copier les données de
+   * cette facture DRAFT dans l'interface Billit) jusqu'à décision contraire.
    */
   public async sendViaPeppol(_invoiceId: string): Promise<never> {
     throw new Error(
-      "[InvoiceAgent] Aucun point d'accès Peppol configuré (Billit, Exact Online...) — " +
-      "la facturation électronique B2B est obligatoire en Belgique depuis le 2026-01-01, " +
-      "mais générer le XML UBL à la main serait rejeté par les logiciels destinataires. " +
-      "Un abonnement à un point d'accès certifié est nécessaire avant d'implémenter cette fonction."
+      "[InvoiceAgent] Compte Billit (plan gratuit, factures de vente) pas encore créé — " +
+      "nécessite le numéro BCE de Purity Agency, action humaine uniquement. " +
+      "Une fois créé, vérifier si l'API est disponible sur le plan gratuit avant d'automatiser."
     );
   }
 }
