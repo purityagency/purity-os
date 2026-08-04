@@ -42,15 +42,16 @@ export class CreativeCopywriter extends AutonomousAgent {
     );
   }
 
-  public async draftEmail(leadId: string): Promise<void> {
+  public async draftEmail(leadId: string, customTone?: string, regeneratingDraftId?: string): Promise<void> {
     const lead = await prisma.lead.findUnique({ where: { id: leadId } });
 
-    if (!lead || lead.status !== 'ENRICHED') {
+    if (!lead || (lead.status !== 'ENRICHED' && !regeneratingDraftId)) {
       await this.logger.logError(`Lead non valide ou pas encore ENRICHED: ${leadId}`);
       return;
     }
 
-    await this.logger.startTask(`Rédaction du brouillon d'e-mail pour ${lead.companyName}`);
+    const chosenTone = customTone || "Liquid Glass (Premium)";
+    await this.logger.startTask(`Rédaction du brouillon d'e-mail pour ${lead.companyName} (Ton: ${chosenTone})`);
 
     try {
       const auditData: any = lead.auditData || {};
@@ -60,7 +61,13 @@ export class CreativeCopywriter extends AutonomousAgent {
       const prompt = `
         Tu es Manon Verhoeven, Creative Copywriter chez Purity Agency (une agence web d'avant-garde basée à Charleroi, Belgique).
         Rédige un e-mail de prospection ultra-personnalisé, court, percutant et humain pour l'entreprise "${lead.companyName}".
-        Tu t'adresses à un artisan, commerçant ou dirigeant de PME en Wallonie. Le ton doit être direct, extrêmement pro, sans fioritures et axé sur la psychologie du client (peur de perdre des clients face aux concurrents, gain de temps, clarté).
+        Tu t'adresses à un artisan, commerçant ou dirigeant de PME en Wallonie. Le ton doit être adapté aux consignes de style suivantes :
+
+        Style et Ton requis : "${chosenTone}"
+        - Si "Liquid Glass (Premium)" : premium, direct, sans superlatif vide, très factuel et élégant.
+        - Si "Direct & Cash" : court, pragmatique, axé sur le ROI direct et le manque à gagner, ton d'égal à égal.
+        - Si "Subtil & Conseil" : axé sur l'accompagnement, l'analyse gratuite et l'apport de valeur en conseil, ton chaleureux et expert.
+        - Si "Cyber-Futuriste" : axé sur la puissance des agents IA et de l'automatisation, style technique de pointe 2026-2027.
 
         Détails du destinataire :
         - Entreprise : ${lead.companyName}
@@ -103,20 +110,32 @@ export class CreativeCopywriter extends AutonomousAgent {
         }
       }
 
-      await prisma.emailDraft.create({
-        data: {
-          leadId: lead.id,
-          subject: result.subject,
-          bodyHtml: result.bodyHtml,
-          tone: "Premium / Liquid Glass",
-          status: "PENDING_APPROVAL"
-        }
-      });
+      if (regeneratingDraftId) {
+        await prisma.emailDraft.update({
+          where: { id: regeneratingDraftId },
+          data: {
+            subject: result.subject,
+            bodyHtml: result.bodyHtml,
+            tone: chosenTone,
+            status: "PENDING_APPROVAL"
+          }
+        });
+      } else {
+        await prisma.emailDraft.create({
+          data: {
+            leadId: lead.id,
+            subject: result.subject,
+            bodyHtml: result.bodyHtml,
+            tone: chosenTone,
+            status: "PENDING_APPROVAL"
+          }
+        });
 
-      await prisma.lead.update({
-        where: { id: lead.id },
-        data: { status: 'DRAFTED' }
-      });
+        await prisma.lead.update({
+          where: { id: lead.id },
+          data: { status: 'DRAFTED' }
+        });
+      }
 
       await this.logger.finishTask(`Brouillon généré pour ${lead.companyName}. En attente de validation CEO.`);
 

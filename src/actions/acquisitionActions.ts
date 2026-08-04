@@ -8,6 +8,8 @@ import { sendEmail } from "@/lib/email"
 import { withAgentSignature } from "@/lib/emailSignature"
 import { ChiefAcquisitionAI } from "@/lib/agents/acquisition/ChiefAcquisitionAI"
 
+import { CreativeCopywriter } from "@/lib/agents/acquisition/CreativeCopywriter"
+
 export type ActionResult = { ok: true; message: string } | { ok: false; message: string }
 
 /**
@@ -101,4 +103,47 @@ export async function rejectDraft(draftId: string, _prevState: ActionResult | nu
 
   revalidatePath("/admin/acquisition")
   return { ok: true, message: "Brouillon rejeté." }
+}
+
+export async function updateDraftAction(
+  draftId: string,
+  subject: string,
+  bodyHtml: string
+): Promise<ActionResult> {
+  await requireAdminSession()
+
+  try {
+    await prisma.emailDraft.update({
+      where: { id: draftId },
+      data: { subject, bodyHtml }
+    })
+    revalidatePath("/admin/acquisition")
+    return { ok: true, message: "Brouillon mis à jour avec succès." }
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Erreur de mise à jour."
+    return { ok: false, message }
+  }
+}
+
+export async function regenerateDraftAction(
+  draftId: string,
+  tone: string
+): Promise<ActionResult> {
+  await requireAdminSession()
+
+  const draft = await prisma.emailDraft.findUnique({
+    where: { id: draftId },
+    select: { id: true, leadId: true }
+  })
+  if (!draft) throw new NotFoundError("Brouillon")
+
+  try {
+    const copywriter = new CreativeCopywriter()
+    await copywriter.draftEmail(draft.leadId, tone, draft.id)
+    revalidatePath("/admin/acquisition")
+    return { ok: true, message: `Brouillon régénéré avec succès (ton: ${tone}).` }
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Erreur de régénération."
+    return { ok: false, message }
+  }
 }
