@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { approveAndSendDraft, rejectDraft, updateDraftAction, regenerateDraftAction } from "@/actions/acquisitionActions"
+import { sanitizeEmailHtml } from "@/lib/sanitizeHtml"
 
 interface Lead {
   id: string
@@ -237,7 +238,7 @@ export function DraftComposer({ draft }: { draft: Draft }) {
                     <span className="text-white/40 text-[10px] font-mono block mb-1.5">Corps du message :</span>
                     <div 
                       className="text-xs text-white/80 space-y-2 prose prose-invert max-w-none"
-                      dangerouslySetInnerHTML={{ __html: bodyHtml }}
+                      dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(bodyHtml) }}
                     />
                   </div>
                 </div>

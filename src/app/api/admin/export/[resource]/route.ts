@@ -5,9 +5,17 @@ import { NextResponse } from "next/server"
 
 export const dynamic = "force-dynamic"
 
+/**
+ * Contre l'injection de formule CSV/Excel (OWASP CSV Injection) : une
+ * cellule scrapée automatiquement (nom d'entreprise, etc.) qui commence par
+ * =, +, -, @, tab ou CR est interprétée comme une formule par Excel/Sheets
+ * à l'ouverture — préfixe d'une apostrophe pour forcer l'affichage en texte
+ * (finding 2026-08-05).
+ */
 function csvEscape(value: unknown): string {
   if (value == null) return ""
-  const s = String(value)
+  let s = String(value)
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`
   if (/[",\n\r;]/.test(s)) return `"${s.replace(/"/g, '""')}"`
   return s
 }

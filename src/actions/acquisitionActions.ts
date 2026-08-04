@@ -6,6 +6,7 @@ import { requireAdminSession } from "@/lib/session"
 import { AppError, NotFoundError, ValidationError } from "@/lib/errors"
 import { sendEmail } from "@/lib/email"
 import { withAgentSignature } from "@/lib/emailSignature"
+import { sanitizeEmailHtml } from "@/lib/sanitizeHtml"
 import { ChiefAcquisitionAI } from "@/lib/agents/acquisition/ChiefAcquisitionAI"
 
 import { CreativeCopywriter } from "@/lib/agents/acquisition/CreativeCopywriter"
@@ -74,7 +75,7 @@ export async function approveAndSendDraft(draftId: string, _prevState: ActionRes
     await sendEmail({
       to: draft.lead.contactEmail,
       subject: draft.subject,
-      html: withAgentSignature(draft.bodyHtml),
+      html: withAgentSignature(sanitizeEmailHtml(draft.bodyHtml)),
     })
   } catch (e) {
     const message = e instanceof AppError ? e.message : "Échec d'envoi inattendu — voir les logs serveur."
