@@ -7,6 +7,8 @@ import { sanitizeEmailHtml } from "@/lib/sanitizeHtml"
 interface AuditData {
   painPoints?: string[]
   recommendedModules?: string[]
+  linkedinDraft?: { message: string; signalUsed: string }
+  adsBrief?: { headline: string; primaryText: string; targetingNotes: string }
   [key: string]: unknown
 }
 
@@ -250,6 +252,36 @@ export function DraftComposer({ draft }: { draft: Draft }) {
                 </div>
               )}
             </div>
+
+            {/* Simulated Drafts (LinkedIn & Ads) */}
+            {(draft.lead.auditData?.linkedinDraft || draft.lead.auditData?.adsBrief) && (
+              <div className="mt-6 pt-4 border-t border-white/5 space-y-4">
+                <span className="text-[10px] uppercase tracking-wider text-white/40 font-mono block">Simulations multi-canal (Phase 4)</span>
+                
+                {draft.lead.auditData.linkedinDraft && (
+                  <div className="rounded-lg bg-[#0A66C2]/10 border border-[#0A66C2]/20 p-4 space-y-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-mono text-[#0A66C2] bg-[#0A66C2]/20 px-2 py-0.5 rounded">LinkedIn</span>
+                      <span className="text-[10px] text-white/40">Signal: {draft.lead.auditData.linkedinDraft.signalUsed}</span>
+                    </div>
+                    <p className="text-xs text-white/80 font-mono whitespace-pre-wrap">{draft.lead.auditData.linkedinDraft.message}</p>
+                  </div>
+                )}
+
+                {draft.lead.auditData.adsBrief && (
+                  <div className="rounded-lg bg-pink-500/10 border border-pink-500/20 p-4 space-y-2">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] font-mono text-pink-400 bg-pink-500/20 px-2 py-0.5 rounded">Ads Brief</span>
+                      <span className="text-[10px] text-white/40">Ciblage: {draft.lead.auditData.adsBrief.targetingNotes}</span>
+                    </div>
+                    <div>
+                      <p className="text-xs font-bold text-white mb-1">{draft.lead.auditData.adsBrief.headline}</p>
+                      <p className="text-xs text-white/80">{draft.lead.auditData.adsBrief.primaryText}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Boutons d'Action (Modifier, Sauvegarder, Annuler, Rejeter, Envoyer) */}

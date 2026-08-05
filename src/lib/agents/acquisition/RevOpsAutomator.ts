@@ -94,7 +94,7 @@ export class RevOpsAutomator extends AutonomousAgent {
     }
   }
 
-  public async handleWebhook(payload: any): Promise<void> {
+  public async handleWebhook(payload: unknown): Promise<void> {
     await this.logger.startTask("Traitement du webhook (Bounce/Reply/Open)...");
 
     const prompt = `

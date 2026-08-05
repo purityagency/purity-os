@@ -1,8 +1,12 @@
 import { z } from 'zod';
+import * as fs from 'fs';
+import * as path from 'path';
 import { prisma } from '@/lib/prisma';
 import { MarketScout } from './MarketScout';
 import { MissionOrder } from './types';
 import { AutonomousAgent } from './AgentCore';
+
+type TargetingFeedbackEntry = { action: 'APPROVED' | 'REJECTED'; companyName: string };
 
 const StrategyResponseSchema = z.object({
   recommendedTechStack: z.array(z.string()),
@@ -62,11 +66,34 @@ export class ChiefAcquisitionAI extends AutonomousAgent {
   public async launchMission(name: string, sectors: string[], locations: string[], maxLeads: number = 50) {
     await this.logger.startTask(`Stratégie pour la mission: ${name}`);
 
+    let learningContext = "";
+    try {
+      const feedbackPath = path.join(process.cwd(), 'data/daily-logs/targeting-feedback.json');
+      if (fs.existsSync(feedbackPath)) {
+        const content = fs.readFileSync(feedbackPath, 'utf8');
+        if (content) {
+          const feedback: TargetingFeedbackEntry[] = JSON.parse(content);
+          const recentRejections = feedback.filter((f) => f.action === 'REJECTED').slice(-10);
+          const recentApprovals = feedback.filter((f) => f.action === 'APPROVED').slice(-10);
+          learningContext = `
+            Historique récent d'apprentissage (Learning Loop) :
+            - Leads validés récemment : ${recentApprovals.map((f) => f.companyName).join(', ') || 'Aucun'}
+            - Leads rejetés récemment : ${recentRejections.map((f) => f.companyName).join(', ') || 'Aucun'}
+            Ajuste tes propositions de technologies et tes directives de ciblage en évitant les profils similaires aux leads rejetés.
+          `;
+        }
+      }
+    } catch (e) {
+      this.logger.logError(`Impossible de lire le feedback d'apprentissage : ${e}`);
+    }
+
     const prompt = `
       Nouvelle intention de mission:
       - Nom: ${name}
       - Secteurs: ${sectors.join(', ')}
       - Villes: ${locations.join(', ')}
+
+      ${learningContext}
 
       Analyse ces secteurs par rapport au catalogue Purity et propose les
       technologies de site à rechercher en priorité (ex: wordpress, wix).

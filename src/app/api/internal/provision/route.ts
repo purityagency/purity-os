@@ -6,6 +6,7 @@ import { verifyInternalSecret } from "@/lib/internalAuth"
 import { eventBus } from "@/core/events"
 import { ProjectProvisioned } from "@/modules/onboarding/events/ProjectProvisioned"
 import { bootstrapEvents } from "@/core/events/registry"
+import { getBaseUrl } from "@/lib/utils"
 
 bootstrapEvents()
 
@@ -20,8 +21,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "unauthorized" }, { status: 401 })
     }
 
-    let body: Record<string, any> = {}
-    try { body = JSON.parse(rawText) || {} } catch (e) { /* ignore */ }
+    let body: Record<string, unknown> = {}
+    try { body = JSON.parse(rawText) || {} } catch { /* ignore */ }
     const email = String(body.email || "").trim().toLowerCase()
     const name = String(body.name || "").trim()
     const projectName = String(body.projectName || "Nouveau projet").trim()
@@ -123,7 +124,7 @@ export async function POST(request: Request) {
     // Lien "définir votre mot de passe" — seul chemin pour accéder au compte,
     // écrase systématiquement tout mot de passe déjà présent sur ce compte.
     const rawToken = await issuePasswordSetToken(user.id)
-    const portalUrl = process.env.PORTAL_BASE_URL || process.env.NEXTAUTH_URL || ""
+    const portalUrl = getBaseUrl()
     const safeName = escapeHtml(user.name ?? "")
     const safeProjectName = escapeHtml(projectName)
     const safeToken = encodeURIComponent(rawToken)

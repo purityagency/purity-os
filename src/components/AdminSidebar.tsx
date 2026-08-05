@@ -43,21 +43,22 @@ export function AdminSidebar({ session }: { session: Session }) {
         { name: "Boîte de réception", href: "/admin/inbox", IconComponent: InboxIcon },
         { name: "Clients", href: "/admin/clients", IconComponent: UsersIcon },
         { name: "Projets & Livrables", href: "/admin/projects", IconComponent: ProjectsIcon },
-        { name: "Paiements & Factures", href: "/admin/payments", IconComponent: PaymentsIcon },
+        { name: "Factures", href: "/admin/invoices", IconComponent: DocumentsIcon },
+        { name: "Paiements & Trésorerie", href: "/admin/payments", IconComponent: PaymentsIcon },
         { name: "Coffre Documents", href: "/admin/documents", IconComponent: DocumentsIcon },
       ]
     },
     {
       title: "MATRICE DES 7 PÔLES IA",
       items: [
-        { name: "Arbre & Organigramme IA", poleBadge: "ALL", href: "/admin/ecosystem", IconComponent: EcosystemIcon },
-        { name: "Direction & COO Kernel", poleBadge: "P00", href: "/admin", IconComponent: OverviewIcon },
-        { name: "Acquisition & Prospection", poleBadge: "P01", href: "/admin/acquisition", IconComponent: AcquisitionIcon },
-        { name: "Brand & Influence Studio", poleBadge: "P02", href: "/admin/brand", IconComponent: BrandIcon },
-        { name: "Opérations & SecOps", poleBadge: "P03", href: "/admin/settings", IconComponent: SettingsIcon },
-        { name: "Production Digitale", poleBadge: "P04", href: "/admin/projects", IconComponent: ProjectsIcon },
-        { name: "Ventes & Relation Client", poleBadge: "P05", href: "/admin/clients", IconComponent: UsersIcon },
-        { name: "Finance & Stratégie Data", poleBadge: "P06", href: "/admin/finance", IconComponent: FinanceIcon },
+        { name: "Arbre & Organigramme IA", poleBadge: "ALL", href: "/admin/ai/ecosystem", IconComponent: EcosystemIcon },
+        { name: "Direction & COO Kernel", poleBadge: "P00", href: "/admin/ai/coo", IconComponent: OverviewIcon },
+        { name: "Acquisition & Prospection", poleBadge: "P01", href: "/admin/ai/acquisition", IconComponent: AcquisitionIcon },
+        { name: "Finance & Administration", poleBadge: "P02", href: "/admin/ai/finance", IconComponent: FinanceIcon },
+        { name: "Ops & Conformité", poleBadge: "P03", href: "/admin/ai/ops", IconComponent: SettingsIcon },
+        { name: "Production Digitale", poleBadge: "P04", href: "/admin/ai/production", IconComponent: ProjectsIcon },
+        { name: "Ventes & Clients", poleBadge: "P05", href: "/admin/ai/ventes", IconComponent: UsersIcon },
+        { name: "Stratégie & Data", poleBadge: "P06", href: "/admin/ai/strategie", IconComponent: SparklesIcon },
       ]
     },
     {
@@ -137,7 +138,7 @@ export function AdminSidebar({ session }: { session: Session }) {
       <div className="p-3 border-t border-white/5 space-y-2 bg-black/30 shrink-0">
         <div className="flex items-center justify-between text-[9px] font-mono text-zinc-500">
           <span className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
             Sentinel 100% OK
           </span>
           <span className="text-zinc-600">BE-WAL</span>

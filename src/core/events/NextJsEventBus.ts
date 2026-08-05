@@ -4,7 +4,7 @@ import { EventBus, EventHandler } from './EventBus';
 import { logger } from '../logger';
 
 export class NextJsEventBus implements EventBus {
-  private handlers = new Map<string, EventHandler<any>[]>();
+  private handlers = new Map<string, EventHandler<DomainEvent>[]>();
 
   publish(event: DomainEvent): void {
     const currentHandlers = this.handlers.get(event.eventName) || [];
@@ -23,7 +23,7 @@ export class NextJsEventBus implements EventBus {
 
   subscribe<T extends DomainEvent>(eventName: string, handler: EventHandler<T>): void {
     const currentHandlers = this.handlers.get(eventName) || [];
-    this.handlers.set(eventName, [...currentHandlers, handler]);
+    this.handlers.set(eventName, [...currentHandlers, handler as EventHandler<DomainEvent>]);
   }
 }
 

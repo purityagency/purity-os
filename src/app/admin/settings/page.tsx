@@ -102,9 +102,11 @@ export default async function AdminSettingsPage() {
 
         {/* KPI Ribbon Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
-          <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Santé Système</span>
-            <span className="text-base font-bold text-emerald-400 tabular-nums">100% Opérationnel</span>
+          <div className={`p-2.5 rounded-xl border ${allConfigured ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-amber-500/20 bg-amber-500/5'}`}>
+            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Santé Système (Sentinel)</span>
+            <span className={`text-base font-bold tabular-nums ${allConfigured ? 'text-emerald-400' : 'text-amber-400'}`}>
+              {allConfigured ? '100% Opérationnel' : 'Alerte Active'}
+            </span>
           </div>
           <div className="p-2.5 rounded-xl border border-white/10 bg-white/[0.02]">
             <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Base Clients & Projets</span>

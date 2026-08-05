@@ -6,6 +6,7 @@ import { sanitizeEmailInput } from "@/lib/auth"
 import { requireAdminSession } from "@/lib/session"
 import { issuePasswordSetToken } from "@/lib/passwordSetToken"
 import { sendEmail } from "@/lib/email"
+import { getBaseUrl } from "@/lib/utils"
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char] ?? char)
@@ -53,7 +54,7 @@ export async function createProjectWithClient(formData: FormData) {
   })
 
   const token = await issuePasswordSetToken(user.id)
-  const baseUrl = process.env.PORTAL_BASE_URL || process.env.NEXTAUTH_URL || "http://localhost:3001"
+  const baseUrl = getBaseUrl()
   // Le compte + projet sont déjà créés en base à ce stade : un échec d'envoi
   // (domaine Resend non vérifié, réseau...) ne doit pas faire planter l'action
   // et laisser l'admin croire que rien n'a été créé. On logge fort (console +

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { revalidatePath } from "next/cache"
 import { requireSession } from "@/lib/session"
 import { sendEmail } from "@/lib/email"
+import { getBaseUrl } from "@/lib/utils"
 
 export async function sendMessage(projectId: string, formData: FormData) {
   const session = await requireSession()
@@ -35,7 +36,7 @@ export async function sendMessage(projectId: string, formData: FormData) {
   revalidatePath(`/dashboard`)
 
   // Notification : le client écrit → prévenir l'équipe. L'équipe répond → prévenir le client.
-  const portalUrl = process.env.NEXTAUTH_URL || ""
+  const portalUrl = getBaseUrl()
   if (isAdmin) {
     if (project.client.email) {
       await sendEmail({

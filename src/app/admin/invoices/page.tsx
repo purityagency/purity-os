@@ -39,7 +39,7 @@ export default async function AdminFinancePage() {
           <div>
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">Finance & Administration · Pôle 04</span>
+              <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">Finance & Administration · Pôle 02</span>
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight mt-0.5 flex items-center gap-2">
               <FinanceIcon className="w-6 h-6 text-emerald-400" />

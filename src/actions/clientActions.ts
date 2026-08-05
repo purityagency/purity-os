@@ -6,6 +6,7 @@ import { requireAdminSession } from "@/lib/session"
 import { NotFoundError, ValidationError } from "@/lib/errors"
 import { issuePasswordSetToken } from "@/lib/passwordSetToken"
 import { sendEmail } from "@/lib/email"
+import { getBaseUrl } from "@/lib/utils"
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char] ?? char)
@@ -28,7 +29,7 @@ export async function resendClientInvite(userId: string) {
   if (user.role !== "CLIENT") throw new ValidationError("Ce compte n'est pas un compte client")
 
   const rawToken = await issuePasswordSetToken(user.id)
-  const baseUrl = process.env.PORTAL_BASE_URL || process.env.NEXTAUTH_URL || ""
+  const baseUrl = getBaseUrl()
 
   try {
     await sendEmail({

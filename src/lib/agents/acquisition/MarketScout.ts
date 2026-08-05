@@ -3,9 +3,8 @@ import { MissionOrder } from './types';
 import Exa from 'exa-js';
 import { prisma } from '@/lib/prisma';
 import { AutonomousAgent } from './AgentCore';
-import { IntelligenceAnalyst } from './IntelligenceAnalyst';
-import { CreativeCopywriter } from './CreativeCopywriter';
-import { LeadScoringAnalyst } from './LeadScoringAnalyst';
+import { eventBus } from '@/core/events';
+import { LeadCapturedEvent } from './events';
 
 // Instanciation paresseuse — jamais au chargement du module. Un `new
 // IntelligenceAnalyst()` au niveau module s'exécute dès qu'un outil (build
@@ -15,9 +14,7 @@ import { LeadScoringAnalyst } from './LeadScoringAnalyst';
 // pendant la collecte statique des routes — pas une hypothèse, observé en
 // prod le 2026-08-01 (voir plans/acquisition-pole-next-phase.md).
 let _exa: Exa | undefined;
-let _analyst: IntelligenceAnalyst | undefined;
-let _copywriter: CreativeCopywriter | undefined;
-let _scorer: LeadScoringAnalyst | undefined;
+
 
 function getExa(): Exa {
   if (!_exa) {
@@ -164,21 +161,8 @@ export class MarketScout extends AutonomousAgent {
             leadsFound++;
             await this.logger.finishTask(`Lead qualifié: ${companyName} (${evaluation.reason})`);
 
-            // Chaîne automatiquement vers l'audit puis le brouillon d'email.
-            // S'arrête volontairement à DRAFTED (PENDING_APPROVAL) — aucun
-            // agent de ce pôle n'envoie un email sans validation humaine.
-            try {
-              _analyst ??= new IntelligenceAnalyst();
-              _copywriter ??= new CreativeCopywriter();
-              _scorer ??= new LeadScoringAnalyst();
-              await _analyst.analyzeLead(leadRecord.id);
-              await _copywriter.draftEmail(leadRecord.id);
-              await _scorer.scoreLead(leadRecord.id);
-            } catch (chainError) {
-              await this.logger.logError(
-                `Chaîne Analyst→Copywriter→Scoring interrompue pour ${leadRecord.companyName}: ${chainError}`
-              );
-            }
+            // Découplage de l'orchestration : émission de l'événement LeadCaptured
+            eventBus.publish(new LeadCapturedEvent(leadRecord.id));
           } else if (!companyName) {
             await this.logger.finishTask(`Rejet: ${result.url} — aucun nom d'entreprise fiable extrait.`);
           } else {

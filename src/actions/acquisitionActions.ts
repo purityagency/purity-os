@@ -10,6 +10,8 @@ import { sanitizeEmailHtml } from "@/lib/sanitizeHtml"
 import { ChiefAcquisitionAI } from "@/lib/agents/acquisition/ChiefAcquisitionAI"
 
 import { CreativeCopywriter } from "@/lib/agents/acquisition/CreativeCopywriter"
+import { eventBus } from "@/core/events"
+import { DraftReviewedEvent } from "@/lib/agents/acquisition/events"
 
 export type ActionResult = { ok: true; message: string } | { ok: false; message: string }
 
@@ -88,6 +90,8 @@ export async function approveAndSendDraft(draftId: string, _prevState: ActionRes
     prisma.lead.update({ where: { id: draft.leadId }, data: { status: "CONTACTED" } }),
   ])
 
+  eventBus.publish(new DraftReviewedEvent(draft.lead.id, draft.lead.companyName, "APPROVED"))
+
   revalidatePath("/admin/acquisition")
   return { ok: true, message: `Email envoyé à ${draft.lead.contactEmail}.` }
 }
@@ -103,6 +107,15 @@ export async function rejectDraft(draftId: string, _prevState: ActionResult | nu
   }
 
   await prisma.emailDraft.update({ where: { id: draft.id }, data: { status: "REJECTED" } })
+
+  // Note: here we don't have companyName fetched, so we need to fetch it
+  const draftWithLead = await prisma.emailDraft.findUnique({
+    where: { id: draft.id },
+    include: { lead: true }
+  })
+  if (draftWithLead) {
+    eventBus.publish(new DraftReviewedEvent(draftWithLead.lead.id, draftWithLead.lead.companyName, "REJECTED"))
+  }
 
   revalidatePath("/admin/acquisition")
   return { ok: true, message: "Brouillon rejeté." }

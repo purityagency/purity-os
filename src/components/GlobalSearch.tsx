@@ -25,24 +25,25 @@ export function GlobalSearch() {
         e.preventDefault()
         setOpen((v) => !v)
       }
-      if (e.key === "Escape") setOpen(false)
+      if (e.key === "Escape") closeSearch()
     }
     document.addEventListener("keydown", onKeyDown)
     return () => document.removeEventListener("keydown", onKeyDown)
   }, [])
 
+  function closeSearch() {
+    setOpen(false)
+    setQuery("")
+    setResults(EMPTY)
+    setActiveIndex(0)
+  }
+
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 15)
-    else {
-      setQuery("")
-      setResults(EMPTY)
-      setActiveIndex(0)
-    }
   }, [open])
 
   useEffect(() => {
     if (query.trim().length < 2) {
-      setResults(EMPTY)
       return
     }
     const controller = new AbortController()
@@ -65,11 +66,11 @@ export function GlobalSearch() {
   const flatItems = [
     ...results.clients.map((c) => ({ type: "client" as const, href: `/admin/clients/${c.id}`, label: c.name || c.email, sub: c.email, icon: "👤" })),
     ...results.projects.map((p) => ({ type: "project" as const, href: `/admin/projects/${p.id}`, label: p.name, sub: p.client.name || p.client.email, icon: "📐" })),
-    ...results.leads.map((l) => ({ type: "lead" as const, href: `/admin/acquisition`, label: l.companyName, sub: `Statut: ${l.status}`, icon: "🎯" })),
+    ...results.leads.map((l) => ({ type: "lead" as const, href: `/admin/ai/acquisition`, label: l.companyName, sub: `Statut: ${l.status}`, icon: "🎯" })),
   ]
 
   function go(href: string) {
-    setOpen(false)
+    closeSearch()
     router.push(href)
   }
 
@@ -103,7 +104,7 @@ export function GlobalSearch() {
 
       {open && (
         <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
-          <div className="fixed inset-0 bg-black/75 backdrop-blur-md animate-fade-in" onClick={() => setOpen(false)} />
+          <div className="fixed inset-0 bg-black/75 backdrop-blur-md animate-fade-in" onClick={closeSearch} />
           <div className="relative w-full max-w-xl rounded-2xl border border-white/15 bg-[#0a050f]/95 backdrop-blur-2xl shadow-2xl shadow-violet-950/40 overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center px-4 border-b border-white/10 bg-white/[0.02]">
               <span className="text-zinc-400 mr-3 text-sm">🔍</span>
@@ -173,7 +174,7 @@ export function GlobalSearch() {
                             icon="🎯"
                             label={l.companyName}
                             sub={`Statut: ${l.status}`}
-                            onClick={() => go(`/admin/acquisition`)}
+                            onClick={() => go(`/admin/ai/acquisition`)}
                           />
                         ))}
                       </GroupSection>

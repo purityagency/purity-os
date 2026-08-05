@@ -7,6 +7,7 @@ import { requireAdminSession } from "@/lib/session"
 import { NotFoundError, ValidationError } from "@/lib/errors"
 import { issuePasswordSetToken } from "@/lib/passwordSetToken"
 import { sendEmail } from "@/lib/email"
+import { getBaseUrl } from "@/lib/utils"
 
 function escapeHtml(value: string) {
   return value.replace(/[&<>'"]/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[char] ?? char)
@@ -103,7 +104,7 @@ export async function convertEventToProject(eventId: string, formData: FormData)
   // ne jamais réinitialiser silencieusement le mot de passe d'un client existant.
   if (!existingUser?.passwordHash) {
     const rawToken = await issuePasswordSetToken(user.id)
-    const baseUrl = process.env.PORTAL_BASE_URL || process.env.NEXTAUTH_URL || ""
+    const baseUrl = getBaseUrl()
     await sendEmail({
       to: email,
       subject: "Votre espace client Purity Agency est prêt",

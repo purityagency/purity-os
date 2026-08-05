@@ -4,6 +4,7 @@ import { sanitizeEmailInput } from "@/lib/auth"
 import { issueEmailVerifyToken } from "@/lib/emailVerifyToken"
 import { sendEmail } from "@/lib/email"
 import { rateLimit } from "@/lib/rateLimit"
+import { getBaseUrl } from "@/lib/utils"
 
 export async function POST(request: Request) {
   if (rateLimit(request, "resend-verification", 5, 15 * 60 * 1000)) {
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
   }
 
   const rawToken = await issueEmailVerifyToken(user.id)
-  const portalUrl = process.env.NEXTAUTH_URL || ""
+  const portalUrl = getBaseUrl()
   await sendEmail({
     to: user.email,
     subject: "Confirmez votre adresse e-mail — Purity Agency",

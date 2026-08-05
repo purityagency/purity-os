@@ -38,8 +38,9 @@ function throttleGeminiCall(): Promise<void> {
   return next;
 }
 
-function isRateLimitError(error: any): boolean {
-  return error?.statusCode === 429 || /rate.?limit|quota|429/i.test(String(error?.message ?? ''));
+function isRateLimitError(error: unknown): boolean {
+  const err = error as { statusCode?: number; message?: string } | undefined;
+  return err?.statusCode === 429 || /rate.?limit|quota|429/i.test(String(err?.message ?? ''));
 }
 
 export interface AgentContext {
@@ -143,7 +144,7 @@ export abstract class AutonomousAgent {
       let object: unknown;
       try {
         object = await callOnce();
-      } catch (error: any) {
+      } catch (error: unknown) {
         // Un seul retry, avec une pause longue, uniquement sur une vraie
         // erreur de quota — jamais sur une erreur de schéma ou de contenu.
         if (isRateLimitError(error)) {
@@ -156,8 +157,9 @@ export abstract class AutonomousAgent {
 
       if (logTaskName) await this.logger.finishTask(`${logTaskName} - Réflexion terminée`);
       return object as T;
-    } catch (error: any) {
-      if (logTaskName) await this.logger.logError(`Erreur LLM (${logTaskName}): ${error.message}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (logTaskName) await this.logger.logError(`Erreur LLM (${logTaskName}): ${message}`);
       throw error;
     }
   }
