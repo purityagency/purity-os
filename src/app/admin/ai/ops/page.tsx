@@ -5,15 +5,20 @@ import { AlertTriangleIcon, DocumentsIcon } from "@/components/icons"
 export default async function AdminOpsPage() {
   await requireAdminSession()
 
-  // No specific tables for compliance/risks yet, relying on general system activity
-  const [totalUsers, totalDocuments, recentEvents] = await Promise.all([
+  // Fetch macro data
+  const [totalUsers, totalDocuments, recentEvents, systemEvents] = await Promise.all([
     prisma.user.count(),
     prisma.document.count(),
     prisma.event.findMany({ take: 20, orderBy: { createdAt: "desc" } }),
+    prisma.event.findMany({ 
+      where: { type: "SYSTEM" },
+      take: 10,
+      orderBy: { createdAt: "desc" }
+    }),
   ])
 
   // Mocked 0s for missing schema elements per the agreed plan
-  const openRisks = 0
+  const openRisks = systemEvents.length
   const complianceScore = 100
   const backupStatus = "OK"
   const systemUptime = "99.9%"
@@ -55,9 +60,9 @@ export default async function AdminOpsPage() {
             <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Uptime Système</span>
             <span className="text-base font-bold text-white tabular-nums">{systemUptime}</span>
           </div>
-          <div className="p-2.5 rounded-xl border border-white/10 bg-white/[0.02]">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Risques Ouverts</span>
-            <span className="text-base font-bold text-white tabular-nums">{openRisks}</span>
+          <div className="p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Risques / Incidents</span>
+            <span className="text-base font-bold text-amber-400 tabular-nums">{openRisks}</span>
           </div>
         </div>
       </div>
@@ -103,14 +108,28 @@ export default async function AdminOpsPage() {
               <div className="flex items-center gap-1.5">
                 <AlertTriangleIcon className="w-4 h-4 text-amber-400" />
                 <h2 className="text-xs font-bold uppercase tracking-wider text-white font-mono">
-                  Alertes Sécurité
+                  Incidents & Alertes
                 </h2>
               </div>
             </div>
 
-            <div className="p-4 border border-dashed border-white/5 rounded-xl bg-black/20 text-center">
-              <p className="text-[11px] text-zinc-500 font-mono">Aucune alerte de sécurité active.</p>
-            </div>
+            {systemEvents.length === 0 ? (
+              <div className="p-4 border border-dashed border-white/5 rounded-xl bg-black/20 text-center">
+                <p className="text-[11px] text-zinc-500 font-mono">Aucune alerte de sécurité active.</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {systemEvents.map(event => (
+                  <div key={event.id} className="p-3 border border-amber-500/20 bg-amber-500/5 rounded-xl">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="text-xs font-bold text-amber-400">{event.name}</span>
+                      <span className="text-[10px] text-zinc-500">{new Date(event.createdAt).toLocaleTimeString()}</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 line-clamp-2">{event.summary}</p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
           <div className="p-3 rounded-lg border border-white/5 bg-black/40 text-[10px] text-zinc-500 font-mono">
             Agent Conformité (Ops AI)

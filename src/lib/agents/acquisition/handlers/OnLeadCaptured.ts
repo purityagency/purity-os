@@ -25,8 +25,14 @@ export async function onLeadCaptured(event: LeadCapturedEvent): Promise<void> {
     const analyst = new IntelligenceAnalyst();
     await analyst.analyzeLead(event.leadId);
 
-    const copywriter = new CreativeCopywriter();
-    await copywriter.draftEmail(event.leadId);
+    // Ne pas appeler le Copywriter (et gaspiller de l'API LLM) si aucun email n'a été trouvé
+    const enrichedLead = await prisma.lead.findUnique({ where: { id: event.leadId } });
+    if (enrichedLead?.contactEmail) {
+      const copywriter = new CreativeCopywriter();
+      await copywriter.draftEmail(event.leadId);
+    } else {
+      logger.info(`[Handler] Aucun email trouvé pour le lead ${event.leadId}, brouillon annulé (Zéro gaspillage).`);
+    }
 
     const scorer = new LeadScoringAnalyst();
     await scorer.scoreLead(event.leadId);

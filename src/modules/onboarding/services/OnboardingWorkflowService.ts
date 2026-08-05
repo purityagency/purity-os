@@ -4,9 +4,9 @@ import { GenerateKanbanStagesStep, OnboardingContext } from '../steps/GenerateKa
 import { CreateStoragePrefixStep } from '../steps/CreateStoragePrefixStep';
 import { ScheduleKickoffStep } from '../steps/ScheduleKickoffStep';
 import { EmbedAiMemoryStep } from '../steps/EmbedAiMemoryStep';
-import { MockStorageProvider } from '../providers/MockStorageProvider';
-import { MockCalendarProvider } from '../providers/MockCalendarProvider';
-import { MockAIProvider } from '../providers/MockAIProvider';
+import { S3StorageProvider } from '../providers/S3StorageProvider';
+import { GoogleCalendarProvider } from '../providers/GoogleCalendarProvider';
+import { OpenAIProvider } from '../providers/OpenAIProvider';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/core/logger';
 
@@ -48,11 +48,11 @@ const reportStepFailure: WorkflowFailureReporter<OnboardingContext> = async ({
 
 export class OnboardingWorkflowService {
   async runOnboarding(projectId: string, sector: string | null): Promise<void> {
-    // Providers encore simulés : ils journalisent et ne font rien d'autre.
-    // À remplacer avant d'annoncer l'onboarding comme livré au client.
-    const storageProvider = new MockStorageProvider();
-    const calendarProvider = new MockCalendarProvider();
-    const aiProvider = new MockAIProvider();
+    // Implémentations réelles : échouent bruyamment si les clés d'API sont absentes
+    // Respect de la règle "Zéro donnée fictive"
+    const storageProvider = new S3StorageProvider();
+    const calendarProvider = new GoogleCalendarProvider();
+    const aiProvider = new OpenAIProvider();
 
     const steps = [
       new GenerateKanbanStagesStep(),

@@ -39,6 +39,7 @@ export function AdminSidebar({ session }: { session: Session }) {
     {
       title: "PILOTAGE CENTRAL",
       items: [
+        { name: "Orchestration & Flotte", poleBadge: "CTRL", href: "/admin/ai/orchestration", IconComponent: SparklesIcon },
         { name: "Vue d'ensemble", href: "/admin", IconComponent: OverviewIcon },
         { name: "Boîte de réception", href: "/admin/inbox", IconComponent: InboxIcon },
         { name: "Clients", href: "/admin/clients", IconComponent: UsersIcon },
