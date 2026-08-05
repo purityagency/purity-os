@@ -21,7 +21,7 @@ export function GlobalSearch() {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault()
         setOpen((v) => !v)
       }
@@ -32,7 +32,7 @@ export function GlobalSearch() {
   }, [])
 
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 10)
+    if (open) setTimeout(() => inputRef.current?.focus(), 15)
     else {
       setQuery("")
       setResults(EMPTY)
@@ -53,9 +53,9 @@ export function GlobalSearch() {
         setResults(data)
         setActiveIndex(0)
       } catch {
-        // Requête annulée (nouvelle frappe) — pas une vraie erreur à afficher.
+        // Aborted request
       }
-    }, 250)
+    }, 200)
     return () => {
       clearTimeout(timeout)
       controller.abort()
@@ -63,9 +63,9 @@ export function GlobalSearch() {
   }, [query])
 
   const flatItems = [
-    ...results.clients.map((c) => ({ type: "client" as const, href: `/admin/clients/${c.id}`, label: c.name || c.email, sub: c.email })),
-    ...results.projects.map((p) => ({ type: "project" as const, href: `/admin/projects/${p.id}`, label: p.name, sub: p.client.name || p.client.email })),
-    ...results.leads.map((l) => ({ type: "lead" as const, href: `/admin/acquisition`, label: l.companyName, sub: l.status })),
+    ...results.clients.map((c) => ({ type: "client" as const, href: `/admin/clients/${c.id}`, label: c.name || c.email, sub: c.email, icon: "👤" })),
+    ...results.projects.map((p) => ({ type: "project" as const, href: `/admin/projects/${p.id}`, label: p.name, sub: p.client.name || p.client.email, icon: "📐" })),
+    ...results.leads.map((l) => ({ type: "lead" as const, href: `/admin/acquisition`, label: l.companyName, sub: `Statut: ${l.status}`, icon: "🎯" })),
   ]
 
   function go(href: string) {
@@ -90,62 +90,105 @@ export function GlobalSearch() {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-xs text-zinc-400 hover:bg-white/10 transition-colors"
+        className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl border border-white/10 bg-black/30 hover:bg-white/5 hover:border-violet-500/30 text-xs text-zinc-400 hover:text-zinc-200 transition-all group cursor-pointer shadow-inner"
       >
-        <span>Rechercher…</span>
-        <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/10">⌘K</span>
+        <div className="flex items-center gap-2">
+          <span className="text-zinc-500 group-hover:text-violet-400 transition-colors">🔍</span>
+          <span>Rechercher…</span>
+        </div>
+        <kbd className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-zinc-400 group-hover:bg-violet-500/20 group-hover:text-violet-300 transition-all border border-white/5">
+          ⌘K
+        </kbd>
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center pt-24 px-4">
-          <div className="fixed inset-0 bg-black/60" onClick={() => setOpen(false)} />
-          <div className="relative w-full max-w-lg rounded-2xl border border-white/10 bg-[#0a050f] shadow-2xl overflow-hidden">
-            <input
-              ref={inputRef}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={onKeyDown}
-              placeholder="Chercher un client, un projet, un lead…"
-              className="w-full px-4 py-3.5 bg-transparent text-sm text-white placeholder:text-zinc-500 focus:outline-none border-b border-white/10"
-            />
-            {query.trim().length >= 2 && (
-              <div className="max-h-80 overflow-y-auto py-2">
+        <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 px-4">
+          <div className="fixed inset-0 bg-black/75 backdrop-blur-md animate-fade-in" onClick={() => setOpen(false)} />
+          <div className="relative w-full max-w-xl rounded-2xl border border-white/15 bg-[#0a050f]/95 backdrop-blur-2xl shadow-2xl shadow-violet-950/40 overflow-hidden z-10 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center px-4 border-b border-white/10 bg-white/[0.02]">
+              <span className="text-zinc-400 mr-3 text-sm">🔍</span>
+              <input
+                ref={inputRef}
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="Chercher un client, un projet, un lead qualifié…"
+                className="w-full py-4 bg-transparent text-sm text-white placeholder:text-zinc-500 focus:outline-none"
+              />
+              <kbd className="text-[10px] font-mono text-zinc-500 px-1.5 py-0.5 rounded border border-white/10 bg-white/5">
+                ESC
+              </kbd>
+            </div>
+
+            {query.trim().length >= 2 ? (
+              <div className="max-h-96 overflow-y-auto p-2 space-y-3">
                 {flatItems.length === 0 ? (
-                  <p className="px-4 py-6 text-sm text-zinc-500 text-center">Aucun résultat.</p>
+                  <p className="px-4 py-8 text-xs text-zinc-500 text-center">Aucun résultat trouvé pour &quot;{query}&quot;.</p>
                 ) : (
                   <>
-                    {results.clients.length > 0 && <GroupLabel label="Clients" />}
-                    {results.clients.map((c) => (
-                      <ResultRow
-                        key={c.id}
-                        active={flatItems[activeIndex]?.href === `/admin/clients/${c.id}`}
-                        label={c.name || c.email}
-                        sub={c.email}
-                        onClick={() => go(`/admin/clients/${c.id}`)}
-                      />
-                    ))}
-                    {results.projects.length > 0 && <GroupLabel label="Projets" />}
-                    {results.projects.map((p) => (
-                      <ResultRow
-                        key={p.id}
-                        active={flatItems[activeIndex]?.href === `/admin/projects/${p.id}`}
-                        label={p.name}
-                        sub={p.client.name || p.client.email}
-                        onClick={() => go(`/admin/projects/${p.id}`)}
-                      />
-                    ))}
-                    {results.leads.length > 0 && <GroupLabel label="Leads (Acquisition)" />}
-                    {results.leads.map((l) => (
-                      <ResultRow
-                        key={l.id}
-                        active={false}
-                        label={l.companyName}
-                        sub={l.status}
-                        onClick={() => go(`/admin/acquisition`)}
-                      />
-                    ))}
+                    {results.clients.length > 0 && (
+                      <GroupSection title="Clients" count={results.clients.length}>
+                        {results.clients.map((c) => {
+                          const item = flatItems.find(i => i.href === `/admin/clients/${c.id}`)
+                          const active = flatItems[activeIndex] === item
+                          return (
+                            <ResultRow
+                              key={c.id}
+                              active={active}
+                              icon="👤"
+                              label={c.name || c.email}
+                              sub={c.email}
+                              onClick={() => go(`/admin/clients/${c.id}`)}
+                            />
+                          )
+                        })}
+                      </GroupSection>
+                    )}
+
+                    {results.projects.length > 0 && (
+                      <GroupSection title="Projets" count={results.projects.length}>
+                        {results.projects.map((p) => {
+                          const item = flatItems.find(i => i.href === `/admin/projects/${p.id}`)
+                          const active = flatItems[activeIndex] === item
+                          return (
+                            <ResultRow
+                              key={p.id}
+                              active={active}
+                              icon="📐"
+                              label={p.name}
+                              sub={p.client.name || p.client.email}
+                              onClick={() => go(`/admin/projects/${p.id}`)}
+                            />
+                          )
+                        })}
+                      </GroupSection>
+                    )}
+
+                    {results.leads.length > 0 && (
+                      <GroupSection title="Leads (Acquisition)" count={results.leads.length}>
+                        {results.leads.map((l) => (
+                          <ResultRow
+                            key={l.id}
+                            active={false}
+                            icon="🎯"
+                            label={l.companyName}
+                            sub={`Statut: ${l.status}`}
+                            onClick={() => go(`/admin/acquisition`)}
+                          />
+                        ))}
+                      </GroupSection>
+                    )}
                   </>
                 )}
+              </div>
+            ) : (
+              <div className="p-6 text-center text-xs text-zinc-500 space-y-2">
+                <p>Saisissez au moins 2 caractères pour lancer la recherche SSOT.</p>
+                <div className="flex items-center justify-center gap-4 text-[10px] font-mono text-zinc-600 pt-2">
+                  <span>↑↓ Naviguer</span>
+                  <span>↵ Ouvrir</span>
+                  <span>ESC Fermer</span>
+                </div>
               </div>
             )}
           </div>
@@ -155,16 +198,26 @@ export function GlobalSearch() {
   )
 }
 
-function GroupLabel({ label }: { label: string }) {
-  return <p className="px-4 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-zinc-500">{label}</p>
+function GroupSection({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <div className="flex items-center justify-between px-3 py-1">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 font-mono">{title}</span>
+        <span className="text-[10px] font-mono text-zinc-600">{count}</span>
+      </div>
+      <div className="space-y-0.5">{children}</div>
+    </div>
+  )
 }
 
 function ResultRow({
+  icon,
   label,
   sub,
   active,
   onClick,
 }: {
+  icon: string
   label: string
   sub: string
   active: boolean
@@ -173,12 +226,17 @@ function ResultRow({
   return (
     <button
       onClick={onClick}
-      className={`w-full flex items-center justify-between gap-3 px-4 py-2 text-left transition-colors ${
-        active ? "bg-white/10" : "hover:bg-white/5"
+      className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-left transition-all cursor-pointer ${
+        active
+          ? "bg-violet-600/20 text-white border border-violet-500/30 shadow-sm"
+          : "text-zinc-300 hover:bg-white/5 border border-transparent"
       }`}
     >
-      <span className="text-sm text-white truncate">{label}</span>
-      <span className="text-xs text-zinc-500 truncate shrink-0 max-w-[40%]">{sub}</span>
+      <div className="flex items-center gap-2.5 min-w-0">
+        <span className="text-sm shrink-0">{icon}</span>
+        <span className="text-xs font-medium truncate">{label}</span>
+      </div>
+      <span className="text-[10px] font-mono text-zinc-500 truncate shrink-0 max-w-[45%]">{sub}</span>
     </button>
   )
 }
