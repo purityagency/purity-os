@@ -35,13 +35,13 @@ function LeadCard({ lead }: { lead: Lead }) {
 
   return (
     <div
-      className="group rounded border border-white/5 bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.04] transition-all duration-200 cursor-pointer p-2 space-y-1.5"
+      className="group rounded border border-white/[0.05] bg-[#0a0510] hover:border-violet-500/30 hover:bg-white/[0.03] transition-all duration-300 cursor-pointer p-1.5 space-y-1"
       onClick={() => setExpanded(e => !e)}
       role="button"
       aria-expanded={expanded}
     >
-      <div className="flex items-start justify-between gap-2">
-        <p className="text-[10px] font-semibold text-white truncate leading-tight">{lead.companyName}</p>
+      <div className="flex items-start justify-between gap-1">
+        <p className="text-[10px] font-semibold text-white truncate leading-tight flex-1">{lead.companyName}</p>
         <ScoreBadge score={lead.score} />
       </div>
 
@@ -103,37 +103,32 @@ export function PipelineKanban({ leads }: { leads: Lead[] }) {
       </div>
 
       {/* Kanban columns */}
-      <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 overflow-x-auto pb-2">
+      <div className="flex gap-2 overflow-x-auto pb-2 h-full items-start" style={{ scrollbarWidth: 'none' }}>
         {STAGES.map(stage => {
           const stageLeads = byStage(stage.key)
           return (
-            <div key={stage.key} className={`rounded-lg border ${stage.border} ${stage.bg} p-2 min-w-[160px] flex flex-col gap-1.5`}>
+            <div key={stage.key} className={`rounded-lg border ${stage.border} ${stage.bg} p-1.5 w-[200px] shrink-0 flex flex-col gap-1 max-h-full`}>
               {/* Column header */}
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between mb-1 px-1">
                 <div className="flex items-center gap-1.5">
                   <span className={`w-1.5 h-1.5 rounded-full ${stage.dot}`} />
-                  <span className={`text-[10px] font-semibold uppercase tracking-wider ${stage.color}`}>
+                  <span className={`text-[9px] font-semibold uppercase tracking-wider ${stage.color}`}>
                     {stage.label}
                   </span>
                 </div>
-                <span className={`text-[10px] font-bold font-mono ${stage.color} bg-black/20 px-1.5 py-0.5 rounded`}>
+                <span className={`text-[9px] font-bold font-mono ${stage.color} bg-black/40 px-1.5 rounded`}>
                   {stageLeads.length}
                 </span>
               </div>
 
               {/* Lead cards */}
-              <div className="space-y-2 flex-1">
+              <div className="space-y-1.5 overflow-y-auto pr-1" style={{ scrollbarWidth: 'none' }}>
                 {stageLeads.length === 0 ? (
-                  <div className="text-[10px] text-zinc-600 text-center py-4 italic">Vide</div>
+                  <div className="text-[9px] text-zinc-600 text-center py-2 italic">Vide</div>
                 ) : (
-                  stageLeads.slice(0, 8).map(lead => (
+                  stageLeads.map(lead => (
                     <LeadCard key={lead.id} lead={lead} />
                   ))
-                )}
-                {stageLeads.length > 8 && (
-                  <p className="text-[10px] text-zinc-500 text-center py-1">
-                    +{stageLeads.length - 8} autres
-                  </p>
                 )}
               </div>
             </div>

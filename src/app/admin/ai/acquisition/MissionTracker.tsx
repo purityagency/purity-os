@@ -25,33 +25,33 @@ function MissionCard({ mission }: { mission: Mission }) {
   const style = STATUS_STYLE[mission.status] ?? STATUS_STYLE.PAUSED
 
   return (
-    <div className="py-2 border-b border-white/5 space-y-2 hover:bg-white/[0.02] px-1 -mx-1 transition-colors group">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex items-center gap-2">
-          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${mission.status === "ACTIVE" ? "bg-emerald-500 animate-pulse" : "bg-zinc-600"}`} />
-          <p className="font-mono font-semibold text-[10px] text-white truncate">{mission.name}</p>
+    <div className="py-1.5 border-b border-white/5 space-y-1 hover:bg-white/[0.02] px-1 -mx-1 transition-colors group">
+      <div className="flex items-start justify-between gap-1">
+        <div className="min-w-0 flex items-center gap-1.5">
+          <span className={`w-1.5 h-1.5 shrink-0 ${mission.status === "ACTIVE" ? "bg-emerald-500 animate-pulse rounded-sm" : "bg-zinc-600 rounded-sm"}`} />
+          <p className="font-mono font-bold text-[10px] text-white/90 truncate">{mission.name}</p>
         </div>
-        <span className={`shrink-0 text-[9px] uppercase tracking-wider font-mono ${style.classes}`}>
+        <span className={`shrink-0 text-[8px] uppercase tracking-wider font-mono ${style.classes}`}>
           [{style.label}]
         </span>
       </div>
       
       {params?.sectors && (
-        <div className="pl-3.5 text-[9px] font-mono text-zinc-500 truncate">
-          &gt; target: {params.sectors.join(", ")}
-          {params.locations ? ` | ${params.locations.join(", ")}` : ""}
+        <div className="pl-3 text-[8px] font-mono text-zinc-500 truncate">
+          &gt; TARGET: {params.sectors.join(", ")}
+          {params.locations ? ` | LOC: ${params.locations.join(", ")}` : ""}
         </div>
       )}
 
       {/* Progress bar terminal style */}
-      <div className="pl-3.5 space-y-1">
-        <div className="flex items-center justify-between text-[9px] font-mono text-zinc-500">
-          <span>{mission._count.leads} src'd</span>
+      <div className="pl-3 space-y-0.5">
+        <div className="flex items-center justify-between text-[8px] font-mono text-zinc-500">
+          <span>{mission._count.leads} SRC'D</span>
           <span>{progress}% [{maxLeads}]</span>
         </div>
-        <div className="h-0.5 bg-white/5 w-full">
+        <div className="h-[1px] bg-white/5 w-full">
           <div
-            className="h-full bg-emerald-500/80 transition-all duration-700"
+            className="h-full bg-violet-500/80 transition-all duration-700 shadow-[0_0_5px_rgba(124,58,237,0.5)]"
             style={{ width: `${progress}%` }}
           />
         </div>

@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
 import { launchMission } from "@/actions/acquisitionActions"
 import { MissionTracker } from "./MissionTracker"
-import { AcquisitionTabs } from "./AcquisitionTabs"
+import { PipelineKanban } from "./PipelineKanban"
 
 export default async function AdminAcquisitionPage() {
   await requireAdminSession()
@@ -138,12 +138,10 @@ export default async function AdminAcquisitionPage() {
 
       {/* Main Fit-to-Screen Split Area (Flex 1) */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0 overflow-hidden">
-        {/* Left: Tabs (3/4 width) - Internal Scroll */}
-        <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
-          <AcquisitionTabs
-            pendingDrafts={pendingDrafts}
-            allLeads={allLeads}
-          />
+        <div className="lg:col-span-3 flex flex-col h-full overflow-hidden relative">
+          <div className="flex-1 min-h-0 relative">
+            <PipelineKanban leads={allLeads} />
+          </div>
         </div>
 
         {/* Right: Missions Sidebar (1/4 width) - Internal Scroll */}
