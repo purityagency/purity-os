@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
 import { launchMission } from "@/actions/acquisitionActions"
+import Link from "next/link"
 import { MissionTracker } from "./MissionTracker"
 import { PipelineKanban } from "./PipelineKanban"
 
@@ -113,10 +114,12 @@ export default async function AdminAcquisitionPage() {
             <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Missions</span>
             <span className="text-base font-bold text-white tabular-nums">{activeMissionsCount} actives</span>
           </div>
-          <div className="p-2.5 rounded-xl border border-white/10 bg-white/[0.02]">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Leads Sourcés</span>
+          
+          <Link href="/admin/ai/acquisition/crm" className="p-2.5 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-violet-500/50 transition-all cursor-pointer group">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate group-hover:text-violet-300 transition-colors">Leads Sourcés ↗</span>
             <span className="text-base font-bold text-white tabular-nums">{totalLeads} total</span>
-          </div>
+          </Link>
+
           <div className="p-2.5 rounded-xl border border-violet-500/20 bg-violet-500/5">
             <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Score Qualité</span>
             <span className="text-base font-bold text-violet-400 tabular-nums">{avgScore}/100</span>
@@ -125,10 +128,12 @@ export default async function AdminAcquisitionPage() {
             <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Engagement</span>
             <span className="text-base font-bold text-emerald-400 tabular-nums">{conversionRate}%</span>
           </div>
-          <div className="p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Brouillons</span>
+
+          <Link href="/admin/ai/acquisition/drafts" className="p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 hover:border-amber-500/50 transition-all cursor-pointer group">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-amber-500/70 block truncate group-hover:text-amber-400 transition-colors">Brouillons ↗</span>
             <span className="text-base font-bold text-amber-400 tabular-nums">{pendingDrafts.length} à valider</span>
-          </div>
+          </Link>
+
           <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
             <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">RDV Confirmés</span>
             <span className="text-base font-bold text-emerald-400 tabular-nums">{meetingCount} RDV</span>
