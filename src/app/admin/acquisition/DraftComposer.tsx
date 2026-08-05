@@ -4,6 +4,12 @@ import { useState, useTransition } from "react"
 import { approveAndSendDraft, rejectDraft, updateDraftAction, regenerateDraftAction } from "@/actions/acquisitionActions"
 import { sanitizeEmailHtml } from "@/lib/sanitizeHtml"
 
+interface AuditData {
+  painPoints?: string[]
+  recommendedModules?: string[]
+  [key: string]: unknown
+}
+
 interface Lead {
   id: string
   companyName: string
@@ -13,7 +19,7 @@ interface Lead {
   contactRole: string | null
   location: string | null
   score: number | null
-  auditData: any
+  auditData: AuditData | null | undefined
 }
 
 interface Draft {

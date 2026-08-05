@@ -61,7 +61,11 @@ export class CreativeCopywriter extends AutonomousAgent {
     await this.logger.startTask(`Rédaction du brouillon d'e-mail pour ${lead.companyName} (Ton: ${chosenTone})`);
 
     try {
-      const auditData: any = lead.auditData || {};
+      interface AuditData {
+        painPoints?: string[]
+        recommendedModules?: string[]
+      }
+      const auditData = (lead.auditData as AuditData | null) || {};
       const painPoints = auditData.painPoints?.join(", ") || "Optimisation générale";
       const modules = auditData.recommendedModules?.join(", ") || "Refonte globale";
 

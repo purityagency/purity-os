@@ -58,6 +58,7 @@ export async function launchMission(formData: FormData) {
  */
 export async function approveAndSendDraft(draftId: string, _prevState: ActionResult | null): Promise<ActionResult> {
   await requireAdminSession()
+  void _prevState
 
   const draft = await prisma.emailDraft.findUnique({
     where: { id: draftId },
@@ -93,6 +94,7 @@ export async function approveAndSendDraft(draftId: string, _prevState: ActionRes
 
 export async function rejectDraft(draftId: string, _prevState: ActionResult | null): Promise<ActionResult> {
   await requireAdminSession()
+  void _prevState
 
   const draft = await prisma.emailDraft.findUnique({ where: { id: draftId }, select: { id: true, status: true } })
   if (!draft) throw new NotFoundError("Brouillon")

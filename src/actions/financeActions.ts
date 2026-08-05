@@ -15,6 +15,7 @@ export async function generateInvoice(
   _prevState: FinanceActionResult | null
 ): Promise<FinanceActionResult> {
   await requireAdminSession()
+  void _prevState
 
   try {
     const invoice = await invoiceAgent.generateInvoice(projectId, kind)
