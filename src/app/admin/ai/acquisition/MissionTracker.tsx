@@ -25,39 +25,34 @@ function MissionCard({ mission }: { mission: Mission }) {
   const style = STATUS_STYLE[mission.status] ?? STATUS_STYLE.PAUSED
 
   return (
-    <div className="p-3.5 rounded-xl border border-white/5 bg-black/20 space-y-3 hover:border-white/10 transition-all">
+    <div className="py-2 border-b border-white/5 space-y-2 hover:bg-white/[0.02] px-1 -mx-1 transition-colors group">
       <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="font-semibold text-xs text-white truncate">{mission.name}</p>
-          {params?.sectors && (
-            <p className="text-[10px] text-zinc-500 truncate mt-0.5">
-              {params.sectors.join(", ")}
-              {params.locations ? ` · ${params.locations.join(", ")}` : ""}
-            </p>
-          )}
+        <div className="min-w-0 flex items-center gap-2">
+          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${mission.status === "ACTIVE" ? "bg-emerald-500 animate-pulse" : "bg-zinc-600"}`} />
+          <p className="font-mono font-semibold text-[10px] text-white truncate">{mission.name}</p>
         </div>
-        <span className={`shrink-0 text-[10px] px-2 py-0.5 rounded font-mono font-semibold ${style.classes}`}>
-          {style.label}
+        <span className={`shrink-0 text-[9px] uppercase tracking-wider font-mono ${style.classes}`}>
+          [{style.label}]
         </span>
       </div>
-
-      {/* Progress bar */}
-      <div className="space-y-1">
-        <div className="flex items-center justify-between text-[10px] text-zinc-500">
-          <span>{mission._count.leads} leads sourcés</span>
-          <span className="font-mono">{progress}% / {maxLeads}</span>
+      
+      {params?.sectors && (
+        <div className="pl-3.5 text-[9px] font-mono text-zinc-500 truncate">
+          &gt; target: {params.sectors.join(", ")}
+          {params.locations ? ` | ${params.locations.join(", ")}` : ""}
         </div>
-        <div className="h-1 rounded-full bg-white/5 overflow-hidden">
+      )}
+
+      {/* Progress bar terminal style */}
+      <div className="pl-3.5 space-y-1">
+        <div className="flex items-center justify-between text-[9px] font-mono text-zinc-500">
+          <span>{mission._count.leads} src'd</span>
+          <span>{progress}% [{maxLeads}]</span>
+        </div>
+        <div className="h-0.5 bg-white/5 w-full">
           <div
-            className="h-full rounded-full transition-all duration-700"
-            style={{
-              width: `${progress}%`,
-              background: progress >= 80
-                ? "linear-gradient(90deg, #7C3AED, #6D28D9)"
-                : progress >= 40
-                ? "linear-gradient(90deg, #f59e0b, #d97706)"
-                : "linear-gradient(90deg, #3b82f6, #2563eb)",
-            }}
+            className="h-full bg-emerald-500/80 transition-all duration-700"
+            style={{ width: `${progress}%` }}
           />
         </div>
       </div>

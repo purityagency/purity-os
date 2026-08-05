@@ -35,13 +35,13 @@ function LeadCard({ lead }: { lead: Lead }) {
 
   return (
     <div
-      className="group rounded-lg border border-white/5 bg-black/30 hover:border-white/10 hover:bg-black/50 transition-all duration-200 cursor-pointer p-3 space-y-2"
+      className="group rounded border border-white/5 bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.04] transition-all duration-200 cursor-pointer p-2 space-y-1.5"
       onClick={() => setExpanded(e => !e)}
       role="button"
       aria-expanded={expanded}
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-semibold text-white truncate leading-tight">{lead.companyName}</p>
+        <p className="text-[10px] font-semibold text-white truncate leading-tight">{lead.companyName}</p>
         <ScoreBadge score={lead.score} />
       </div>
 
@@ -107,7 +107,7 @@ export function PipelineKanban({ leads }: { leads: Lead[] }) {
         {STAGES.map(stage => {
           const stageLeads = byStage(stage.key)
           return (
-            <div key={stage.key} className={`rounded-xl border ${stage.border} ${stage.bg} p-3 min-w-[160px] flex flex-col gap-2`}>
+            <div key={stage.key} className={`rounded-lg border ${stage.border} ${stage.bg} p-2 min-w-[160px] flex flex-col gap-1.5`}>
               {/* Column header */}
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-1.5">
