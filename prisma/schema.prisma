@@ -122,12 +122,20 @@ model Document {
 }
 
 model Payment {
-  id        String   @id @default(cuid())
-  projectId String
-  amount    Float
-  status    String   @default("PENDING") // "PENDING", "PAID", "CANCELLED"
-  type      String   // "DEPOSIT", "BALANCE", "QUOTE", "INVOICE", "PAYMENT"
-  createdAt DateTime @default(now())
+  id                String   @id @default(cuid())
+  projectId         String
+  amount            Float
+  status            String   @default("PENDING") // "PENDING", "PAID", "CANCELLED"
+  type              String   // "DEPOSIT", "BALANCE", "QUOTE", "INVOICE", "PAYMENT"
+  createdAt         DateTime @default(now())
+
+  // Mollie — providerPaymentId est l'identifiant Mollie ("tr_xxx"), utilisé
+  // par le webhook pour retrouver ce Payment. checkoutUrl est l'URL de
+  // paiement hébergée renvoyée à la création, affichée au client tant que
+  // le paiement n'est pas confirmé.
+  provider          String?  // "MOLLIE"
+  providerPaymentId String?  @unique
+  checkoutUrl       String?
 
   project   Project  @relation(fields: [projectId], references: [id])
   invoice   Invoice?

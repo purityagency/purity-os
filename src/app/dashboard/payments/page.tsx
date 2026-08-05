@@ -2,6 +2,7 @@ import { getServerSession } from "next-auth/next"
 import { authOptions } from "@/modules/auth/authOptions"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
+import { startMolliePayment } from "@/actions/paymentActions"
 
 export default async function PaymentsPage() {
   const session = await getServerSession(authOptions)
@@ -64,24 +65,36 @@ export default async function PaymentsPage() {
               <p className="text-sm text-zinc-500 italic py-4">Aucune transaction enregistrée pour l&apos;instant.</p>
             ) : (
               <div className="divide-y divide-white/5">
-                {project.payments.map((p) => (
-                  <div key={p.id} className="py-3.5 flex justify-between items-center text-sm">
-                    <div>
-                      <div className="font-semibold text-white">{p.type || "Paiement commande"}</div>
-                      <div className="text-xs text-zinc-500 mt-0.5">
-                        {new Date(p.createdAt).toLocaleDateString("fr-FR")} — Ref: {p.id.substring(0, 8)}
+                {project.payments.map((p) => {
+                  const pay = startMolliePayment.bind(null, p.id)
+                  return (
+                    <div key={p.id} className="py-3.5 flex justify-between items-center text-sm gap-3">
+                      <div>
+                        <div className="font-semibold text-white">{p.type || "Paiement commande"}</div>
+                        <div className="text-xs text-zinc-500 mt-0.5">
+                          {new Date(p.createdAt).toLocaleDateString("fr-FR")} — Ref: {p.id.substring(0, 8)}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        {p.status === "PENDING" && (
+                          <form action={pay}>
+                            <button type="submit" className="rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 text-xs font-bold px-3 py-1.5 transition-colors cursor-pointer">
+                              Payer maintenant
+                            </button>
+                          </form>
+                        )}
+                        <div className="text-right">
+                          <div className="font-bold text-white">{p.amount} €</div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
+                            p.status === "PAID" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                          }`}>
+                            {p.status}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <div className="font-bold text-white">{p.amount} €</div>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${
-                        p.status === "PAID" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-amber-500/10 border-amber-500/20 text-amber-400"
-                      }`}>
-                        {p.status}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
