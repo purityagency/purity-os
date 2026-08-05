@@ -33,15 +33,15 @@ export const POLES: Pole[] = [
     name: "Acquisition",
     chief: { agentName: "Chief Acquisition AI", fullName: "Julien Servais", role: "Directeur Acquisition", coded: true },
     agents: [
-      { agentName: "Market Scout", fullName: "Léa Dumont", role: "Chargée de prospection", coded: true },
-      { agentName: "Intelligence Analyst", fullName: "Karim Haddad", role: "Analyste Audit & Intelligence", coded: true },
-      { agentName: "Creative Copywriter", fullName: "Manon Verhoeven", role: "Rédactrice commerciale", coded: true },
-      { agentName: "RevOps Automator", fullName: "Thibault Nguyen", role: "Chargé des opérations commerciales", coded: true },
-      { agentName: "Lead Scoring Analyst", fullName: "Yassine Bouzid", role: "Analyste Scoring", coded: true },
-      { agentName: "Referral Partnership Agent", fullName: "Emma Lambrecht", role: "Chargée Partenariats & Recommandations", coded: true },
-      { agentName: "Ads Strategist", fullName: "Sofia Marchetti", role: "Stratège Publicité", coded: true },
-      { agentName: "LinkedIn Outreach Specialist", fullName: "Adam Peeters", role: "Chargé de prospection LinkedIn", coded: true },
-      { agentName: "SEO Local Scout", fullName: "Chloé Renard", role: "Chargée SEO Local", coded: true },
+      { agentName: "Market Scout",                fullName: "Léa Dumont",       role: "Chargée de prospection",                    coded: true  },
+      { agentName: "Intelligence Analyst",         fullName: "Karim Haddad",     role: "Analyste Audit & Intelligence",             coded: true  },
+      { agentName: "Creative Copywriter",          fullName: "Manon Verhoeven",  role: "Rédactrice commerciale",                    coded: true  },
+      { agentName: "RevOps Automator",             fullName: "Thibault Nguyen",  role: "Chargé des opérations commerciales",        coded: true  },
+      { agentName: "Lead Scoring Analyst",         fullName: "Yassine Bouzid",   role: "Analyste Scoring",                          coded: true  },
+      { agentName: "Referral Partnership Agent",   fullName: "Emma Lambrecht",   role: "Chargée Partenariats & Recommandations",    coded: true  },
+      { agentName: "Ads Strategist",               fullName: "Sofia Marchetti",  role: "Stratège Publicité",                        coded: true  },
+      { agentName: "LinkedIn Outreach Specialist", fullName: "Adam Peeters",     role: "Chargé de prospection LinkedIn",            coded: true  },
+      { agentName: "SEO Local Scout",              fullName: "Chloé Renard",     role: "Chargée SEO Local",                         coded: true  },
     ],
   },
   {
@@ -49,15 +49,15 @@ export const POLES: Pole[] = [
     name: "Finance & Administration",
     chief: { agentName: "Chief Finance AI", fullName: "Nathalie Coppens", role: "Directrice Finance", coded: false },
     agents: [
-      { agentName: "Invoice Agent", fullName: "Bruno Dechamps", role: "Chargé de facturation", coded: true },
-      { agentName: "Cashflow Analyst", fullName: "Aïcha Benali", role: "Analyste Trésorerie", coded: false },
-      { agentName: "Compliance Bookkeeper", fullName: "Wouter Van Damme", role: "Comptable Conformité", coded: false },
-      { agentName: "Payment Reconciliation Agent", fullName: "Sara Michiels", role: "Rapprochement Paiements", coded: false },
-      { agentName: "Subscription Lifecycle Agent", fullName: "Loïc Fontaine", role: "Suivi Abonnements", coded: false },
-      { agentName: "Expense Auditor", fullName: "Ines Delvaux", role: "Audit des dépenses", coded: false },
-      { agentName: "Pricing Analyst", fullName: "Maxime Colin", role: "Analyste Tarification", coded: false },
-      { agentName: "Grant & Subsidy Scout", fullName: "Fatima Ouahbi", role: "Chargée Subventions", coded: false },
-      { agentName: "Financial Reporting Agent", fullName: "Pieter Claes", role: "Reporting Financier", coded: false },
+      { agentName: "Invoice Agent",                fullName: "Bruno Dechamps",   role: "Chargé de facturation",                     coded: true  },
+      { agentName: "Cashflow Analyst",             fullName: "Aïcha Benali",     role: "Analyste Trésorerie",                       coded: false },
+      { agentName: "Compliance Bookkeeper",        fullName: "Wouter Van Damme", role: "Comptable Conformité",                       coded: false },
+      { agentName: "Payment Reconciliation Agent", fullName: "Sara Michiels",    role: "Rapprochement Paiements",                   coded: false },
+      { agentName: "Subscription Lifecycle Agent", fullName: "Loïc Fontaine",    role: "Suivi Abonnements",                         coded: false },
+      { agentName: "Expense Auditor",              fullName: "Ines Delvaux",     role: "Audit des dépenses",                        coded: false },
+      { agentName: "Pricing Analyst",              fullName: "Maxime Colin",     role: "Analyste Tarification",                     coded: false },
+      { agentName: "Grant & Subsidy Scout",        fullName: "Fatima Ouahbi",    role: "Chargée Subventions",                       coded: false },
+      { agentName: "Financial Reporting Agent",    fullName: "Pieter Claes",     role: "Reporting Financier",                       coded: false },
     ],
   },
   {
@@ -89,6 +89,7 @@ export const POLES: Pole[] = [
     agents: [],
   },
 ]
+
 
 export function findIdentity(agentName: string): { identity: AgentIdentity; pole: Pole } | null {
   for (const pole of POLES) {

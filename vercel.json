@@ -1,5 +1,4 @@
 {
-  "_comment": "Cron Acquisition désactivé le 2026-08-01 — le pôle tourne sur le VPS dédié (PM2 + node-cron, Europe/Brussels), /api/cron/acquisition reste un déclencheur manuel de secours. Le daily-digest (ajouté 2026-08-03) est indépendant : un seul email récap à Amir le matin, uniquement s'il y a quelque chose à signaler. Horaire UTC : 06:23 UTC ≈ 8h23 Bruxelles en été (7h23 en hiver — dérive DST acceptable pour un digest).",
   "crons": [
     { "path": "/api/cron/daily-digest", "schedule": "23 6 * * *" }
   ]
