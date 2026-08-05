@@ -30,11 +30,25 @@ export async function resendClientInvite(userId: string) {
   const rawToken = await issuePasswordSetToken(user.id)
   const baseUrl = process.env.PORTAL_BASE_URL || process.env.NEXTAUTH_URL || ""
 
-  await sendEmail({
-    to: user.email,
-    subject: "Votre accès à l'espace client Purity Agency",
-    html: `<p>Bonjour ${escapeHtml(user.name ?? "")},</p><p>Voici votre lien pour définir votre mot de passe et accéder à votre espace client :</p><p><a href="${baseUrl}/set-password?token=${encodeURIComponent(rawToken)}">Définir mon mot de passe</a></p><p>Ce lien expire dans 48h.</p>`,
-  })
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: "Votre accès à l'espace client Purity Agency",
+      html: `<p>Bonjour ${escapeHtml(user.name ?? "")},</p><p>Voici votre lien pour définir votre mot de passe et accéder à votre espace client :</p><p><a href="${baseUrl}/set-password?token=${encodeURIComponent(rawToken)}">Définir mon mot de passe</a></p><p>Ce lien expire dans 48h.</p>`,
+    })
+  } catch (err) {
+    console.error("[resendClientInvite] envoi email échoué", err)
+    await prisma.event.create({
+      data: {
+        type: "SYSTEM",
+        name: user.name,
+        email: user.email,
+        summary: `Renvoi du lien d'accès échoué pour ${user.email}`,
+        payload: { error: err instanceof Error ? err.message : String(err) },
+      },
+    }).catch(() => {})
+    throw err
+  }
 
   revalidatePath(`/admin/clients/${userId}`)
 }

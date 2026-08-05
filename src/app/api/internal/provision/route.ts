@@ -127,11 +127,27 @@ export async function POST(request: Request) {
     const safeName = escapeHtml(user.name ?? "")
     const safeProjectName = escapeHtml(projectName)
     const safeToken = encodeURIComponent(rawToken)
-    await sendEmail({
-      to: user.email,
-      subject: "Votre espace client Purity Agency est prêt",
-      html: `<p>Bonjour ${safeName},</p><p>Votre projet <strong>${safeProjectName}</strong> a été créé. Définissez votre mot de passe pour accéder à votre espace client et suivre son avancement :</p><p><a href="${portalUrl}/set-password?token=${safeToken}">Définir mon mot de passe</a></p><p>Ce lien expire dans 48h.</p>`,
-    })
+    // Projet + paiement déjà créés en base à ce stade (paiement Mollie réel
+    // encaissé) : un échec d'envoi ne doit jamais faire répondre 500 ici, sinon
+    // le webhook appelant pourrait retenter et dupliquer le provisioning.
+    try {
+      await sendEmail({
+        to: user.email,
+        subject: "Votre espace client Purity Agency est prêt",
+        html: `<p>Bonjour ${safeName},</p><p>Votre projet <strong>${safeProjectName}</strong> a été créé. Définissez votre mot de passe pour accéder à votre espace client et suivre son avancement :</p><p><a href="${portalUrl}/set-password?token=${safeToken}">Définir mon mot de passe</a></p><p>Ce lien expire dans 48h.</p>`,
+      })
+    } catch (err) {
+      console.error("[internal-provision] envoi email échoué", err)
+      await prisma.event.create({
+        data: {
+          type: "SYSTEM",
+          name: user.name,
+          email: user.email,
+          summary: `Compte créé pour "${projectName}" mais l'email d'accès n'est pas parti — à renvoyer depuis la fiche client`,
+          payload: { error: err instanceof Error ? err.message : String(err) },
+        },
+      }).catch(() => {})
+    }
 
     return NextResponse.json({ ok: true, projectId: project.id, userId: user.id }, { status: 200 })
   } catch (error) {
