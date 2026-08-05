@@ -61,9 +61,9 @@ export function AcquisitionTabs({ pendingDrafts, allLeads }: Props) {
   const draftsCount = pendingDrafts.length
 
   return (
-    <div className="space-y-4">
+    <div className="h-full flex flex-col space-y-3 overflow-hidden">
       {/* Tab bar */}
-      <div className="flex items-center gap-1 bg-white/[0.03] border border-white/5 rounded-xl p-1 w-fit">
+      <div className="flex items-center gap-1 bg-white/[0.03] border border-white/5 rounded-xl p-1 w-fit shrink-0">
         {TABS.map(tab => {
           const isActive = activeTab === tab.id
           const Icon = tab.Icon
@@ -73,7 +73,7 @@ export function AcquisitionTabs({ pendingDrafts, allLeads }: Props) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as typeof activeTab)}
-              className={`relative flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                 isActive
                   ? "bg-violet-600 text-white shadow-lg shadow-violet-500/20"
                   : "text-zinc-400 hover:text-white hover:bg-white/5"
@@ -84,7 +84,7 @@ export function AcquisitionTabs({ pendingDrafts, allLeads }: Props) {
               <Icon className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-zinc-500"}`} />
               <span>{tab.label}</span>
               {showBadge && (
-                <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold font-mono leading-none ${
+                <span className={`ml-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold font-mono leading-none ${
                   isActive ? "bg-white/20 text-white" : "bg-amber-500 text-black"
                 }`}>
                   {draftsCount}
@@ -95,15 +95,15 @@ export function AcquisitionTabs({ pendingDrafts, allLeads }: Props) {
         })}
       </div>
 
-      {/* Tab content */}
-      <div>
+      {/* Tab content scrollable container */}
+      <div className="flex-1 overflow-y-auto pr-1">
         {/* Pipeline Kanban */}
         {activeTab === "pipeline" && (
-          <section className="border border-white/10 rounded-xl bg-white/[0.01] p-5 backdrop-blur-md">
-            <div className="mb-4">
-              <h2 className="text-lg font-bold text-white">Vue Pipeline</h2>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                Tous les leads par étape — cliquez sur une carte pour voir le détail.
+          <section className="border border-white/10 rounded-xl bg-white/[0.01] p-4 backdrop-blur-md">
+            <div className="mb-3">
+              <h2 className="text-sm font-bold text-white">Vue Pipeline Kanban</h2>
+              <p className="text-[11px] text-zinc-400">
+                Tous les leads par étape — cliquez sur une carte pour voir les détails.
               </p>
             </div>
             <PipelineKanban leads={allLeads} />
@@ -112,19 +112,22 @@ export function AcquisitionTabs({ pendingDrafts, allLeads }: Props) {
 
         {/* Brouillons */}
         {activeTab === "drafts" && (
-          <section>
-            <div className="mb-4">
-              <h2 className="text-xl font-bold text-white">Brouillons à Valider ({draftsCount})</h2>
-              <p className="text-xs text-zinc-400 mt-0.5">
-                Cliquez sur Modifier pour ajuster la formulation ou changer de ton.
-              </p>
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-white">Brouillons à Valider ({draftsCount})</h2>
+                <p className="text-[11px] text-zinc-400">
+                  Validez ou modifiez les emails générés par Manon Verhoeven (Creative Copywriter).
+                </p>
+              </div>
             </div>
-            <div className="space-y-4">
+
+            <div className="space-y-3">
               {draftsCount === 0 ? (
-                <div className="p-12 text-center border border-dashed border-white/10 rounded-xl bg-white/[0.01]">
-                  <MailIcon className="w-8 h-8 mx-auto text-zinc-600 mb-3" />
-                  <p className="text-sm text-zinc-400">Aucun brouillon en attente de validation.</p>
-                  <p className="text-xs text-zinc-600 mt-1">Les nouveaux brouillons apparaissent ici après enrichissement des leads.</p>
+                <div className="p-8 text-center border border-dashed border-white/10 rounded-xl bg-white/[0.01]">
+                  <MailIcon className="w-6 h-6 mx-auto text-zinc-600 mb-2" />
+                  <p className="text-xs text-zinc-400">Aucun brouillon en attente de validation.</p>
+                  <p className="text-[10px] text-zinc-600 mt-0.5">Les nouveaux brouillons apparaissent ici après enrichissement.</p>
                 </div>
               ) : (
                 pendingDrafts.map((draft) => (
@@ -137,19 +140,12 @@ export function AcquisitionTabs({ pendingDrafts, allLeads }: Props) {
 
         {/* Base CRM */}
         {activeTab === "leads" && (
-          <section>
-            <div className="mb-4 flex items-start justify-between gap-4 flex-wrap">
+          <section className="space-y-3">
+            <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white">Base de Leads</h2>
-                <p className="text-xs text-zinc-400 mt-0.5">Pilotez le pipeline d&apos;acquisition qualifié par nos agents IA.</p>
+                <h2 className="text-sm font-bold text-white">Base CRM de Leads</h2>
+                <p className="text-[11px] text-zinc-400">Recherche et filtres avancés sur la base qualifiée.</p>
               </div>
-              <a
-                href="/api/admin/export/leads"
-                download
-                className="rounded-lg border border-white/10 px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-white/5 transition-colors shrink-0"
-              >
-                ↓ CSV
-              </a>
             </div>
             <LeadsExplorer initialLeads={allLeads} />
           </section>

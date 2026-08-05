@@ -1,9 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
 import { launchMission } from "@/actions/acquisitionActions"
-import { DraftComposer } from "./DraftComposer"
-import { LeadsExplorer } from "./LeadsExplorer"
-import { PipelineKanban } from "./PipelineKanban"
 import { MissionTracker } from "./MissionTracker"
 import { AcquisitionTabs } from "./AcquisitionTabs"
 
@@ -25,7 +22,7 @@ export default async function AdminAcquisitionPage() {
     orderBy: { createdAt: "desc" }
   })
 
-  // Cast JSON field to satisfy TypeScript (runtime shape is identical)
+  // Cast JSON field to satisfy TypeScript
   const pendingDrafts = pendingDraftsRaw.map((d) => ({
     ...d,
     lead: {
@@ -54,164 +51,110 @@ export default async function AdminAcquisitionPage() {
   const avgScore = avgScoreResult._avg.score ? Math.round(avgScoreResult._avg.score) : 0
   const engagedCount = contactedCount + repliedCount + meetingCount
   const conversionRate = totalLeads > 0 ? Math.round((engagedCount / totalLeads) * 100) : 0
-  const meetingRate = totalLeads > 0 ? Math.round((meetingCount / totalLeads) * 100) : 0
-
-  const kpis = [
-    {
-      label: "Missions Actives",
-      value: activeMissionsCount,
-      color: "text-white",
-      trend: null,
-    },
-    {
-      label: "Total Leads Sourcés",
-      value: totalLeads,
-      color: "text-white",
-      trend: null,
-    },
-    {
-      label: "Score Qualité Moyen",
-      value: `${avgScore}/100`,
-      color: "text-violet-400",
-      trend: avgScore >= 50 ? "up" : avgScore > 0 ? "neutral" : null,
-    },
-    {
-      label: "Taux d'Engagement",
-      value: `${conversionRate}%`,
-      color: "text-emerald-400",
-      trend: conversionRate >= 10 ? "up" : "neutral",
-    },
-    {
-      label: "Brouillons en Attente",
-      value: pendingDrafts.length,
-      color: pendingDrafts.length > 0 ? "text-amber-400" : "text-zinc-400",
-      trend: null,
-    },
-    {
-      label: "RDV Confirmés",
-      value: meetingCount,
-      color: meetingCount > 0 ? "text-emerald-400" : "text-zinc-400",
-      trend: meetingCount > 0 ? "up" : null,
-    },
-  ]
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight">Acquisition <span className="text-zinc-600 text-lg font-mono">(Pôle 01)</span></h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Pipeline IA de prospection — {totalLeads} leads · {pendingDrafts.length} brouillon{pendingDrafts.length !== 1 ? "s" : ""} en attente · {meetingCount} RDV
-          </p>
-        </div>
-        <a
-          href="/api/admin/export/leads"
-          download
-          className="rounded-lg border border-white/10 px-4 py-2 text-xs font-semibold text-zinc-300 hover:bg-white/5 transition-colors shrink-0"
-        >
-          ↓ Exporter CSV
-        </a>
-      </div>
-
-      {/* KPI Ribbon — 6 cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {kpis.map((kpi) => (
-          <div key={kpi.label} className="p-4 border border-white/5 bg-white/[0.01] backdrop-blur-md rounded-xl">
-            <span className="text-[10px] uppercase font-mono tracking-wider text-zinc-500 block truncate">{kpi.label}</span>
-            <div className="flex items-center gap-1.5 mt-1">
-              <span className={`text-xl font-bold tabular-nums ${kpi.color}`}>{kpi.value}</span>
-              {kpi.trend === "up" && <span className="text-emerald-400 text-xs">↑</span>}
-              {kpi.trend === "neutral" && <span className="text-zinc-500 text-xs">→</span>}
+    <div className="h-[calc(100vh-90px)] flex flex-col space-y-4 overflow-hidden">
+      {/* Top Header & Compact KPI Bar (Fixed) */}
+      <div className="shrink-0 space-y-3 border-b border-white/5 pb-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">Acquisition · Pôle 01</span>
             </div>
+            <h1 className="text-2xl font-bold text-white tracking-tight mt-0.5">Pipeline Prospection IA</h1>
           </div>
-        ))}
+
+          <div className="flex items-center gap-2">
+            {/* Launch Mission Modal Trigger */}
+            <details className="relative group">
+              <summary className="cursor-pointer list-none px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-md shadow-violet-600/20">
+                + Lancer Scan AI
+              </summary>
+              <div className="absolute right-0 top-10 z-30 w-80 p-4 rounded-xl border border-white/10 bg-[#0d0714] backdrop-blur-2xl shadow-2xl space-y-3">
+                <p className="font-bold text-xs text-white">Lancer une nouvelle mission de prospection</p>
+                <form action={launchMission} className="space-y-2.5">
+                  <div>
+                    <label className="block text-[10px] font-mono uppercase text-zinc-500 mb-1" htmlFor="mission-name">Nom Mission</label>
+                    <input id="mission-name" name="name" type="text" required placeholder="ex: Hôtels Namur" className="w-full rounded-lg bg-black/40 border border-white/10 px-2.5 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono uppercase text-zinc-500 mb-1" htmlFor="mission-quota">Quota (1-50)</label>
+                    <input id="mission-quota" name="maxLeads" type="number" min={1} max={50} defaultValue={10} required className="w-full rounded-lg bg-black/40 border border-white/10 px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-violet-500" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono uppercase text-zinc-500 mb-1" htmlFor="mission-sectors">Secteur(s)</label>
+                    <input id="mission-sectors" name="sectors" type="text" required placeholder="ex: HoReCa" className="w-full rounded-lg bg-black/40 border border-white/10 px-2.5 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500" />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-mono uppercase text-zinc-500 mb-1" htmlFor="mission-locations">Ville(s)</label>
+                    <input id="mission-locations" name="locations" type="text" required placeholder="ex: Namur" className="w-full rounded-lg bg-black/40 border border-white/10 px-2.5 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500" />
+                  </div>
+                  <button type="submit" className="w-full py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-xs font-semibold text-white transition-all cursor-pointer">
+                    Exécuter le Scan
+                  </button>
+                </form>
+              </div>
+            </details>
+
+            <a
+              href="/api/admin/export/leads"
+              download
+              className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-white/5 transition-colors shrink-0"
+            >
+              ↓ Exporter CSV
+            </a>
+          </div>
+        </div>
+
+        {/* Compact KPI Strip (1 tight row) */}
+        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-xs">
+          <div className="p-2.5 rounded-xl border border-white/10 bg-white/[0.02]">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Missions</span>
+            <span className="text-base font-bold text-white tabular-nums">{activeMissionsCount} actives</span>
+          </div>
+          <div className="p-2.5 rounded-xl border border-white/10 bg-white/[0.02]">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Leads Sourcés</span>
+            <span className="text-base font-bold text-white tabular-nums">{totalLeads} total</span>
+          </div>
+          <div className="p-2.5 rounded-xl border border-violet-500/20 bg-violet-500/5">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Score Qualité</span>
+            <span className="text-base font-bold text-violet-400 tabular-nums">{avgScore}/100</span>
+          </div>
+          <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Engagement</span>
+            <span className="text-base font-bold text-emerald-400 tabular-nums">{conversionRate}%</span>
+          </div>
+          <div className="p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Brouillons</span>
+            <span className="text-base font-bold text-amber-400 tabular-nums">{pendingDrafts.length} à valider</span>
+          </div>
+          <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">RDV Confirmés</span>
+            <span className="text-base font-bold text-emerald-400 tabular-nums">{meetingCount} RDV</span>
+          </div>
+        </div>
       </div>
 
-      {/* Main layout: tabs + sidebar */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-        {/* Left: Tabs content (2/3) */}
-        <div className="lg:col-span-2">
+      {/* Main Fit-to-Screen Split Area (Flex 1) */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-0 overflow-hidden">
+        {/* Left: Tabs (2/3 width) - Internal Scroll */}
+        <div className="lg:col-span-2 flex flex-col h-full overflow-hidden">
           <AcquisitionTabs
             pendingDrafts={pendingDrafts}
             allLeads={allLeads}
           />
         </div>
 
-        {/* Right: Mission Tracker (1/3) */}
-        <div className="space-y-6">
-          <section className="border border-white/10 rounded-xl bg-white/[0.01] p-5 backdrop-blur-md">
-            <h2 className="text-base font-bold text-white mb-4">Missions d&apos;Acquisition</h2>
+        {/* Right: Missions Sidebar (1/3 width) - Internal Scroll */}
+        <div className="flex flex-col h-full border border-white/10 rounded-xl bg-white/[0.01] p-4 backdrop-blur-md overflow-hidden">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-white font-mono mb-3 shrink-0">
+            Suivi des Missions d&apos;Acquisition
+          </h2>
 
-            {/* Launch Mission Form */}
-            <details className="mb-4 rounded-lg border border-white/5 bg-black/20 overflow-hidden group">
-              <summary className="cursor-pointer list-none p-3.5 flex items-center justify-between text-xs font-semibold text-white/95">
-                <span>+ Lancer un Scan AI</span>
-                <span className="text-zinc-500 font-mono text-[10px] group-open:hidden">ouvrir</span>
-                <span className="text-zinc-500 font-mono text-[10px] hidden group-open:inline">fermer</span>
-              </summary>
-              <form action={launchMission} className="p-3.5 pt-0 space-y-3">
-                <div className="space-y-2">
-                  <div>
-                    <label className="block text-[10px] font-mono uppercase text-zinc-500 mb-1" htmlFor="mission-name">Nom</label>
-                    <input
-                      id="mission-name"
-                      name="name"
-                      type="text"
-                      required
-                      placeholder="ex: Restaurants Mons"
-                      className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-mono uppercase text-zinc-500 mb-1" htmlFor="mission-quota">Quota Max (1-50)</label>
-                    <input
-                      id="mission-quota"
-                      name="maxLeads"
-                      type="number"
-                      min={1}
-                      max={50}
-                      defaultValue={10}
-                      required
-                      className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-mono uppercase text-zinc-500 mb-1" htmlFor="mission-sectors">Secteur(s)</label>
-                    <input
-                      id="mission-sectors"
-                      name="sectors"
-                      type="text"
-                      required
-                      placeholder="ex: HoReCa"
-                      className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[10px] font-mono uppercase text-zinc-500 mb-1" htmlFor="mission-locations">Ville(s)</label>
-                    <input
-                      id="mission-locations"
-                      name="locations"
-                      type="text"
-                      required
-                      placeholder="ex: Mons"
-                      className="w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500"
-                    />
-                  </div>
-                </div>
-                <button
-                  type="submit"
-                  className="w-full rounded-lg bg-violet-600 hover:bg-violet-700 py-2 text-xs font-semibold text-white transition-all active:scale-[0.98] cursor-pointer"
-                >
-                  Lancer la recherche
-                </button>
-              </form>
-            </details>
-
-            {/* Mission tracker with progress bars */}
+          <div className="flex-1 overflow-y-auto pr-1">
             <MissionTracker missions={missions as never} />
-          </section>
+          </div>
         </div>
       </div>
     </div>
