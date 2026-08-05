@@ -148,10 +148,12 @@
   background: rgba(124, 58, 237, 0.5); /* Violet glow */
 }
 
-/* Fallback for firefox */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.05) transparent;
+/* Firefox fallback only (safely avoids overriding WebKit in modern Chromium) */
+@supports not selector(::-webkit-scrollbar) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #1a1523 transparent;
+  }
 }
 
 /* Neon Violet Glows & Liquid Glass */
