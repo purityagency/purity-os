@@ -144,6 +144,54 @@ model Payment {
   @@index([status, createdAt])
 }
 
+// Commandes du site public (purity-agency-site, Render) — persistées ici
+// car le service Render tourne sans disque (plan gratuit, confirmé via
+// l'API Render le 2026-08-05) : un stockage fichier local y est effacé à
+// chaque redéploiement/restart. Le site lit/écrit ces lignes via
+// /api/internal/orders au lieu d'un fichier JSON. `id` reprend l'id "ord_..."
+// généré côté site, jamais régénéré ici.
+model Order {
+  id                   String    @id // "ord_<timestamp>_<hex>", généré côté site
+  status               String    @default("pending") // "pending", "paid"
+  sector               String?
+  pack                 String?
+  name                 String?
+  price                Float?
+  deposit              Float?
+  remaining            Float?
+  monthly              Float?
+  clientName           String?
+  company              String?
+  bce                  String?
+  email                String?
+  phone                String?
+  paymentMode          String?
+  options              Json?
+  intake               Json?
+  brief                Json?
+
+  molliePaymentId      String?   @unique
+  mollieCustomerId     String?
+  mollieSubscriptionId String?
+  dashboardUrl         String?
+
+  // Idempotence webhook — voir handleMollieWebhook côté site : une livraison
+  // dupliquée par Mollie ne doit pas redéclencher provisioning/emails tant
+  // que la précédente est en cours (fenêtre de fraîcheur de 10 min).
+  webhookProcessingAt  DateTime?
+  paidAt               DateTime?
+
+  provisioningStatus   String?
+  provisionedAt        DateTime?
+  provisioningError    String?
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([mollieSubscriptionId])
+  @@index([status, createdAt])
+}
+
 // Boîte de réception unifiée pour tout ce qui arrive du site public :
 // question/lead (formulaire ou chatbot OctoMask), prise de RDV, commande payée.
 // Les commandes créent aussi un Project (voir /api/internal/provision) — l'Event
