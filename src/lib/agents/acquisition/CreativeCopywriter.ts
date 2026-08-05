@@ -37,6 +37,13 @@ export class CreativeCopywriter extends AutonomousAgent {
           "purity_catalogue_officiel_v2.md",
           "BrandRules.md",
           "ForbiddenWords.md"
+        ],
+        skills: [
+          "email-ops",
+          "research-ops",
+          "messages-ops",
+          "seo",
+          "security-review"
         ]
       }
     );

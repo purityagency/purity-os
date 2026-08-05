@@ -46,6 +46,7 @@ export interface AgentContext {
   role: string;
   department: string;
   knowledgeFiles?: string[];
+  skills?: string[];
 }
 
 /**
@@ -89,6 +90,13 @@ export abstract class AutonomousAgent {
     this.logger = new AgentLogger(this.agentName, this.context.department);
     this.modelName = modelName;
     this.systemInstruction = `Tu es ${this.agentName}, un agent autonome du département ${this.context.department} chez Purity Agency.\nRole: ${this.context.role}`;
+
+    if (this.context.skills && this.context.skills.length > 0) {
+      this.systemInstruction += `\n\n## Skills ECC intégrés (AI configuration)\nTu disposes et dois agir selon les directives des compétences suivantes :\n`;
+      for (const skill of this.context.skills) {
+        this.systemInstruction += `- \`${skill}\`\n`;
+      }
+    }
 
     if (this.context.knowledgeFiles && this.context.knowledgeFiles.length > 0) {
       this.systemInstruction += `\n\n## Base de connaissances (Contexte Purity)\n`;
