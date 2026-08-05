@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { AlertTriangleIcon, InboxIcon, EcosystemIcon } from "@/components/icons"
 
 interface ActionItem {
   id: string
@@ -42,9 +43,9 @@ interface Props {
 }
 
 const TABS = [
-  { id: "actions",  label: "Action Center",   icon: "⚠️" },
-  { id: "inbox",    label: "Demandes Clients", icon: "📩" },
-  { id: "ai_stream",label: "Flux IA & Kernel", icon: "🤖" },
+  { id: "actions",  label: "Action Center",   Icon: AlertTriangleIcon },
+  { id: "inbox",    label: "Demandes Clients", Icon: InboxIcon },
+  { id: "ai_stream",label: "Flux IA & Kernel", Icon: EcosystemIcon },
 ]
 
 export function DashboardTabs({ actionItems, recentEvents, recentAiEvents }: Props) {
@@ -59,6 +60,7 @@ export function DashboardTabs({ actionItems, recentEvents, recentAiEvents }: Pro
         <div className="flex items-center gap-1 bg-white/[0.03] border border-white/5 rounded-lg p-1">
           {TABS.map((tab) => {
             const isActive = activeTab === tab.id
+            const Icon = tab.Icon
             const count =
               tab.id === "actions"
                 ? actionItems.length
@@ -76,7 +78,7 @@ export function DashboardTabs({ actionItems, recentEvents, recentAiEvents }: Pro
                     : "text-zinc-400 hover:text-white hover:bg-white/5"
                 }`}
               >
-                <span>{tab.icon}</span>
+                <Icon className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-zinc-500"}`} />
                 <span>{tab.label}</span>
                 {count > 0 && (
                   <span
@@ -127,7 +129,7 @@ export function DashboardTabs({ actionItems, recentEvents, recentAiEvents }: Pro
                     className="flex items-center justify-between gap-3 p-3 hover:bg-white/[0.03] transition-colors rounded-lg group"
                   >
                     <div className="flex items-center gap-2.5 min-w-0">
-                      <span className="text-sm shrink-0">{item.icon}</span>
+                      <AlertTriangleIcon className="w-4 h-4 text-amber-400 shrink-0" />
                       <div className="min-w-0">
                         <p className="font-semibold text-xs text-white group-hover:text-violet-300 transition-colors truncate">
                           {item.label}

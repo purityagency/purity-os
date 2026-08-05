@@ -5,12 +5,24 @@ import type { Session } from "next-auth"
 import { usePathname } from "next/navigation"
 import { signOut } from "next-auth/react"
 import { GlobalSearch } from "./GlobalSearch"
+import {
+  OverviewIcon,
+  InboxIcon,
+  UsersIcon,
+  ProjectsIcon,
+  PaymentsIcon,
+  DocumentsIcon,
+  EcosystemIcon,
+  AcquisitionIcon,
+  BrandIcon,
+  FinanceIcon,
+  SettingsIcon,
+} from "./icons"
 
 interface NavItem {
   name: string
   href: string
-  icon: string
-  badge?: string
+  IconComponent: React.ComponentType<{ className?: string }>
 }
 
 interface NavGroup {
@@ -25,27 +37,27 @@ export function AdminSidebar({ session }: { session: Session }) {
     {
       title: "PILOTAGE CENTRAL",
       items: [
-        { name: "Vue d'ensemble", href: "/admin", icon: "⚡" },
-        { name: "Boîte de réception", href: "/admin/inbox", icon: "📥" },
-        { name: "Clients", href: "/admin/clients", icon: "👥" },
-        { name: "Projets & Livrables", href: "/admin/projects", icon: "📐" },
-        { name: "Paiements & Factures", href: "/admin/payments", icon: "💳" },
-        { name: "Coffre Documents", href: "/admin/documents", icon: "📄" },
+        { name: "Vue d'ensemble", href: "/admin", IconComponent: OverviewIcon },
+        { name: "Boîte de réception", href: "/admin/inbox", IconComponent: InboxIcon },
+        { name: "Clients", href: "/admin/clients", IconComponent: UsersIcon },
+        { name: "Projets & Livrables", href: "/admin/projects", IconComponent: ProjectsIcon },
+        { name: "Paiements & Factures", href: "/admin/payments", IconComponent: PaymentsIcon },
+        { name: "Coffre Documents", href: "/admin/documents", IconComponent: DocumentsIcon },
       ]
     },
     {
       title: "ÉCOSYSTÈME IA (6 PÔLES)",
       items: [
-        { name: "Équipe & Roster IA", href: "/admin/ecosystem", icon: "🤖" },
-        { name: "01: Acquisition", href: "/admin/acquisition", icon: "🎯" },
-        { name: "02: Brand & Influence", href: "/admin/brand", icon: "✨" },
-        { name: "04: Finance & Facturation", href: "/admin/finance", icon: "💶" },
+        { name: "Équipe & Roster IA", href: "/admin/ecosystem", IconComponent: EcosystemIcon },
+        { name: "01: Acquisition", href: "/admin/acquisition", IconComponent: AcquisitionIcon },
+        { name: "02: Brand & Influence", href: "/admin/brand", IconComponent: BrandIcon },
+        { name: "04: Finance & Facturation", href: "/admin/finance", IconComponent: FinanceIcon },
       ]
     },
     {
       title: "RÉGLAGES & CONFORMITÉ",
       items: [
-        { name: "Paramètres OS", href: "/admin/settings", icon: "⚙️" },
+        { name: "Paramètres OS", href: "/admin/settings", IconComponent: SettingsIcon },
       ]
     }
   ]
@@ -81,6 +93,7 @@ export function AdminSidebar({ session }: { session: Session }) {
             <div className="space-y-0.5">
               {group.items.map((item) => {
                 const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href))
+                const Icon = item.IconComponent
                 return (
                   <Link key={item.name} href={item.href} className="block">
                     <div
@@ -91,7 +104,7 @@ export function AdminSidebar({ session }: { session: Session }) {
                       }`}
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
-                        <span className="text-sm shrink-0 leading-none">{item.icon}</span>
+                        <Icon className={`w-4 h-4 shrink-0 transition-colors ${isActive ? 'text-violet-400' : 'text-zinc-500'}`} />
                         <span className="truncate">{item.name}</span>
                       </div>
                       {isActive && (
