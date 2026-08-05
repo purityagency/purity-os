@@ -46,7 +46,7 @@ export const POLES: Pole[] = [
   {
     id: "02",
     name: "Finance & Administration",
-    chief: { agentName: "Chief Finance AI", fullName: "Nathalie Coppens", role: "Directrice Finance", coded: false },
+    chief: { agentName: "Chief Finance AI", fullName: "Nathalie Coppens", role: "Directrice Finance", coded: true },
     agents: [
       { agentName: "Invoice Agent",                fullName: "Bruno Dechamps",   role: "Chargé de facturation",                     coded: true  },
       { agentName: "Cashflow Analyst",             fullName: "Aïcha Benali",     role: "Analyste Trésorerie",                       coded: false },
@@ -117,3 +117,4 @@ export function findIdentity(agentName: string): { identity: AgentIdentity; pole
   }
   return null
 }
+
