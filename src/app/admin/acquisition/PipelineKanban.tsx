@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { LocationIcon, UserIcon, GlobeIcon } from "@/components/icons"
 
 interface Lead {
   id: string
@@ -45,12 +46,20 @@ function LeadCard({ lead }: { lead: Lead }) {
       </div>
 
       {lead.location && (
-        <p className="text-[10px] text-zinc-500 truncate">📍 {lead.location}</p>
+        <div className="flex items-center gap-1 text-[10px] text-zinc-500 truncate">
+          <LocationIcon className="w-3 h-3 text-zinc-500 shrink-0" />
+          <span className="truncate">{lead.location}</span>
+        </div>
       )}
 
       {expanded && (
         <div className="pt-2 border-t border-white/5 space-y-1.5 text-[10px] text-zinc-400">
-          {lead.contactName && <p>👤 {lead.contactName}</p>}
+          {lead.contactName && (
+            <div className="flex items-center gap-1 text-zinc-300">
+              <UserIcon className="w-3 h-3 text-zinc-500 shrink-0" />
+              <span className="truncate">{lead.contactName}</span>
+            </div>
+          )}
           {lead.contactEmail && (
             <p className="font-mono text-zinc-300 truncate">{lead.contactEmail}</p>
           )}
@@ -60,9 +69,10 @@ function LeadCard({ lead }: { lead: Lead }) {
               target="_blank"
               rel="noopener noreferrer"
               onClick={e => e.stopPropagation()}
-              className="text-violet-400 hover:underline truncate block"
+              className="text-violet-400 hover:underline truncate flex items-center gap-1"
             >
-              🌐 {lead.websiteUrl.replace(/^https?:\/\/(www\.)?/, '')}
+              <GlobeIcon className="w-3 h-3 shrink-0" />
+              <span className="truncate">{lead.websiteUrl.replace(/^https?:\/\/(www\.)?/, '')}</span>
             </a>
           )}
         </div>

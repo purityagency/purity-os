@@ -4,6 +4,7 @@ import { useState } from "react"
 import { DraftComposer } from "./DraftComposer"
 import { LeadsExplorer } from "./LeadsExplorer"
 import { PipelineKanban } from "./PipelineKanban"
+import { KanbanIcon, MailIcon, TableIcon } from "@/components/icons"
 
 interface AuditData {
   painPoints?: string[]
@@ -49,9 +50,9 @@ interface Props {
 }
 
 const TABS = [
-  { id: "pipeline",  label: "Pipeline",   icon: "⬡" },
-  { id: "drafts",    label: "Brouillons", icon: "✉" },
-  { id: "leads",     label: "Base CRM",   icon: "☰" },
+  { id: "pipeline",  label: "Pipeline",   Icon: KanbanIcon },
+  { id: "drafts",    label: "Brouillons", Icon: MailIcon },
+  { id: "leads",     label: "Base CRM",   Icon: TableIcon },
 ]
 
 export function AcquisitionTabs({ pendingDrafts, allLeads }: Props) {
@@ -65,6 +66,7 @@ export function AcquisitionTabs({ pendingDrafts, allLeads }: Props) {
       <div className="flex items-center gap-1 bg-white/[0.03] border border-white/5 rounded-xl p-1 w-fit">
         {TABS.map(tab => {
           const isActive = activeTab === tab.id
+          const Icon = tab.Icon
           const showBadge = tab.id === "drafts" && draftsCount > 0
 
           return (
@@ -79,7 +81,7 @@ export function AcquisitionTabs({ pendingDrafts, allLeads }: Props) {
               aria-selected={isActive}
               role="tab"
             >
-              <span className="text-base leading-none">{tab.icon}</span>
+              <Icon className={`w-3.5 h-3.5 ${isActive ? "text-white" : "text-zinc-500"}`} />
               <span>{tab.label}</span>
               {showBadge && (
                 <span className={`ml-1 px-1.5 py-0.5 rounded-full text-[10px] font-bold font-mono leading-none ${
@@ -120,7 +122,7 @@ export function AcquisitionTabs({ pendingDrafts, allLeads }: Props) {
             <div className="space-y-4">
               {draftsCount === 0 ? (
                 <div className="p-12 text-center border border-dashed border-white/10 rounded-xl bg-white/[0.01]">
-                  <div className="text-3xl mb-3">✉</div>
+                  <MailIcon className="w-8 h-8 mx-auto text-zinc-600 mb-3" />
                   <p className="text-sm text-zinc-400">Aucun brouillon en attente de validation.</p>
                   <p className="text-xs text-zinc-600 mt-1">Les nouveaux brouillons apparaissent ici après enrichissement des leads.</p>
                 </div>
