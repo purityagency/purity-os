@@ -137,22 +137,23 @@ export default async function AdminAcquisitionPage() {
       </div>
 
       {/* Main Fit-to-Screen Split Area (Flex 1) */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-0 overflow-hidden">
-        {/* Left: Tabs (2/3 width) - Internal Scroll */}
-        <div className="lg:col-span-2 flex flex-col h-full overflow-hidden">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0 overflow-hidden">
+        {/* Left: Tabs (3/4 width) - Internal Scroll */}
+        <div className="lg:col-span-3 flex flex-col h-full overflow-hidden">
           <AcquisitionTabs
             pendingDrafts={pendingDrafts}
             allLeads={allLeads}
           />
         </div>
 
-        {/* Right: Missions Sidebar (1/3 width) - Internal Scroll */}
-        <div className="flex flex-col h-full border border-white/10 rounded-xl bg-white/[0.01] p-4 backdrop-blur-md overflow-hidden">
-          <h2 className="text-xs font-bold uppercase tracking-wider text-white font-mono mb-3 shrink-0">
+        {/* Right: Missions Sidebar (1/4 width) - Internal Scroll */}
+        <div className="flex flex-col h-full border-l border-white/5 bg-[#0a0510] p-4 overflow-hidden relative">
+          <div className="absolute inset-0 bg-violet-900/5 backdrop-blur-[2px]"></div>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-white font-mono mb-3 shrink-0 relative z-10">
             Suivi des Missions d&apos;Acquisition
           </h2>
 
-          <div className="flex-1 overflow-y-auto pr-1">
+          <div className="flex-1 overflow-y-auto pr-1 relative z-10">
             <MissionTracker missions={missions as never} />
           </div>
         </div>

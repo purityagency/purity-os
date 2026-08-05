@@ -96,17 +96,19 @@ export function AcquisitionTabs({ pendingDrafts, allLeads }: Props) {
       </div>
 
       {/* Tab content scrollable container */}
-      <div className="flex-1 overflow-y-auto pr-1">
+      <div className="flex-1 overflow-y-auto pr-1 flex flex-col">
         {/* Pipeline Kanban */}
         {activeTab === "pipeline" && (
-          <section className="border border-white/10 rounded-xl bg-white/[0.01] p-4 backdrop-blur-md">
-            <div className="mb-3">
+          <section className="flex-1 flex flex-col min-h-0">
+            <div className="mb-3 shrink-0">
               <h2 className="text-sm font-bold text-white">Vue Pipeline Kanban</h2>
               <p className="text-[11px] text-zinc-400">
                 Tous les leads par étape — cliquez sur une carte pour voir les détails.
               </p>
             </div>
-            <PipelineKanban leads={allLeads} />
+            <div className="flex-1 min-h-0 relative">
+              <PipelineKanban leads={allLeads} />
+            </div>
           </section>
         )}
 
@@ -140,14 +142,16 @@ export function AcquisitionTabs({ pendingDrafts, allLeads }: Props) {
 
         {/* Base CRM */}
         {activeTab === "leads" && (
-          <section className="space-y-3">
-            <div className="flex items-center justify-between">
+          <section className="flex-1 flex flex-col min-h-0">
+            <div className="flex items-center justify-between mb-3 shrink-0">
               <div>
                 <h2 className="text-sm font-bold text-white">Base CRM de Leads</h2>
                 <p className="text-[11px] text-zinc-400">Recherche et filtres avancés sur la base qualifiée.</p>
               </div>
             </div>
-            <LeadsExplorer initialLeads={allLeads} />
+            <div className="flex-1 min-h-0">
+              <LeadsExplorer initialLeads={allLeads} />
+            </div>
           </section>
         )}
       </div>
