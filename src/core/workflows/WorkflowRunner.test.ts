@@ -4,11 +4,11 @@ import { WorkflowStep } from './WorkflowStep';
 
 describe('WorkflowRunner', () => {
   it('should execute all steps successfully', async () => {
-    const step1: WorkflowStep<any> = {
+    const step1: WorkflowStep<Record<string, unknown>> = {
       name: 'step1',
       execute: vi.fn().mockResolvedValue(undefined),
     };
-    const step2: WorkflowStep<any> = {
+    const step2: WorkflowStep<Record<string, unknown>> = {
       name: 'step2',
       execute: vi.fn().mockResolvedValue(undefined),
     };
@@ -23,11 +23,11 @@ describe('WorkflowRunner', () => {
   });
 
   it('should continue executing even if a step fails', async () => {
-    const step1: WorkflowStep<any> = {
+    const step1: WorkflowStep<Record<string, unknown>> = {
       name: 'step1',
       execute: vi.fn().mockRejectedValue(new Error('Failed step')),
     };
-    const step2: WorkflowStep<any> = {
+    const step2: WorkflowStep<Record<string, unknown>> = {
       name: 'step2',
       execute: vi.fn().mockResolvedValue(undefined),
     };
