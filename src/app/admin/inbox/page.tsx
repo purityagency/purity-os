@@ -19,9 +19,8 @@ function FilterLink({ href, active, children }: { href: string; active: boolean;
   return (
     <Link
       href={href}
-      aria-current={active ? "page" : undefined}
-      className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-        active ? "bg-[#7C3AED] text-white" : "border border-white/10 text-zinc-300 hover:bg-white/5"
+      className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+        active ? "bg-violet-600 text-white" : "text-zinc-400 hover:text-white hover:bg-white/5"
       }`}
     >
       {children}
@@ -37,8 +36,6 @@ export default async function AdminInboxPage({
   await requireAdminSession()
   const sp = await searchParams
 
-  // Allowlist stricte : une valeur inattendue dans l'URL est ignorée, jamais
-  // passée telle quelle à la requête.
   const typeFilter = VALID_TYPES.includes(sp.type as (typeof VALID_TYPES)[number]) ? sp.type : undefined
   const statusFilter = VALID_STATUSES.includes(sp.status as (typeof VALID_STATUSES)[number]) ? sp.status : undefined
 
@@ -47,9 +44,12 @@ export default async function AdminInboxPage({
     ...(statusFilter ? { status: statusFilter } : {}),
   }
 
-  const [events, counts] = await Promise.all([
+  const [events, counts, newCount, seenCount, doneCount] = await Promise.all([
     prisma.event.findMany({ where, orderBy: { createdAt: "desc" }, take: 100 }),
     prisma.event.groupBy({ by: ["status"], _count: { _all: true } }),
+    prisma.event.count({ where: { status: "NEW" } }),
+    prisma.event.count({ where: { status: "SEEN" } }),
+    prisma.event.count({ where: { status: "DONE" } }),
   ])
 
   const countByStatus = Object.fromEntries(counts.map((c) => [c.status, c._count._all]))
@@ -64,42 +64,65 @@ export default async function AdminInboxPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-white">Boîte de réception</h1>
-        <p className="text-sm text-zinc-400 mt-1">
-          Questions, rendez-vous et commandes venant du site public.
-          {countByStatus.NEW ? ` ${countByStatus.NEW} nouvelle(s) à traiter.` : " Tout est traité."}
-        </p>
+    <div className="space-y-5">
+      {/* Header Compact */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-zinc-400">Inbox · {newCount} nouvelle(s) demande(s)</span>
+          </div>
+          <h1 className="text-2xl font-bold text-white tracking-tight mt-0.5">Boîte de Réception Unifiée</h1>
+        </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-[11px] text-zinc-500 uppercase tracking-wide mr-1">Type</span>
-        <FilterLink href={buildHref({ type: "" })} active={!typeFilter}>Tous</FilterLink>
-        {VALID_TYPES.map((type) => (
-          <FilterLink key={type} href={buildHref({ type })} active={typeFilter === type}>
-            {EVENT_TYPE_LABELS[type]}
-          </FilterLink>
-        ))}
-        <span className="w-px h-5 bg-white/10 mx-2" aria-hidden="true" />
-        <span className="text-[11px] text-zinc-500 uppercase tracking-wide mr-1">Statut</span>
-        <FilterLink href={buildHref({ status: "" })} active={!statusFilter}>Tous</FilterLink>
-        {VALID_STATUSES.map((status) => (
-          <FilterLink key={status} href={buildHref({ status })} active={statusFilter === status}>
-            {EVENT_STATUS_LABELS[status]}
-            {countByStatus[status] ? ` (${countByStatus[status]})` : ""}
-          </FilterLink>
-        ))}
+      {/* KPI Ribbon Strip */}
+      <div className="grid grid-cols-3 gap-3">
+        <div className="p-3 rounded-xl border border-violet-500/20 bg-violet-500/5 backdrop-blur-md">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Nouvelles (À Traiter)</span>
+          <p className="text-xl font-bold text-violet-400 tabular-nums mt-0.5">{newCount}</p>
+        </div>
+        <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 backdrop-blur-md">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">En Cours (Vues)</span>
+          <p className="text-xl font-bold text-amber-400 tabular-nums mt-0.5">{seenCount}</p>
+        </div>
+        <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 backdrop-blur-md">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Traiteés / Classées</span>
+          <p className="text-xl font-bold text-emerald-400 tabular-nums mt-0.5">{doneCount}</p>
+        </div>
       </div>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+      {/* Filters Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white/[0.02] border border-white/10 rounded-xl p-3">
+        <div className="flex items-center gap-1 overflow-x-auto">
+          <span className="text-[10px] font-mono text-zinc-500 uppercase mr-1">Type:</span>
+          <FilterLink href={buildHref({ type: "" })} active={!typeFilter}>Tous</FilterLink>
+          {VALID_TYPES.map((type) => (
+            <FilterLink key={type} href={buildHref({ type })} active={typeFilter === type}>
+              {EVENT_TYPE_LABELS[type]}
+            </FilterLink>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-1 overflow-x-auto">
+          <span className="text-[10px] font-mono text-zinc-500 uppercase mr-1">Statut:</span>
+          <FilterLink href={buildHref({ status: "" })} active={!statusFilter}>Tous</FilterLink>
+          {VALID_STATUSES.map((status) => (
+            <FilterLink key={status} href={buildHref({ status })} active={statusFilter === status}>
+              {EVENT_STATUS_LABELS[status]}
+              {countByStatus[status] ? ` (${countByStatus[status]})` : ""}
+            </FilterLink>
+          ))}
+        </div>
+      </div>
+
+      {/* Events High-Density Table */}
+      <div className="rounded-xl border border-white/10 bg-white/[0.01] overflow-hidden backdrop-blur-xl">
         {events.length === 0 ? (
-          <p className="p-6 text-sm text-zinc-400">
-            {typeFilter || statusFilter ? "Aucune demande ne correspond à ce filtre." : "Rien pour l'instant."}
+          <p className="p-8 text-xs text-zinc-500 text-center">
+            {typeFilter || statusFilter ? "Aucune demande ne correspond à ce filtre." : "Boîte vide."}
           </p>
         ) : (
-          <div className="divide-y divide-white/10">
+          <div className="divide-y divide-white/5">
             {events.map((event) => {
               const payload = (event.payload as Record<string, unknown> | null) ?? null
               const need = payload && typeof payload.need === "string" ? payload.need : null
@@ -108,65 +131,63 @@ export default async function AdminInboxPage({
               const reopen = reopenEvent.bind(null, event.id)
 
               return (
-                <div key={event.id} className="p-5">
-                  <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className={`text-xs px-2 py-1 rounded ${EVENT_TYPE_COLORS[event.type] ?? "bg-white/10 text-zinc-300"}`}>
+                <div key={event.id} className="p-3.5 hover:bg-white/[0.03] transition-colors">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded ${EVENT_TYPE_COLORS[event.type] ?? "bg-white/10 text-zinc-300"}`}>
                           {EVENT_TYPE_LABELS[event.type] ?? event.type}
                         </span>
-                        <span className={`text-xs px-2 py-1 rounded ${EVENT_STATUS_COLORS[event.status] ?? "bg-white/10 text-zinc-300"}`}>
+                        <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded ${EVENT_STATUS_COLORS[event.status] ?? "bg-white/10 text-zinc-300"}`}>
                           {EVENT_STATUS_LABELS[event.status] ?? event.status}
                         </span>
-                        <span className="text-xs text-zinc-500">{formatDateTime(event.createdAt)}</span>
+                        <span className="text-[10px] text-zinc-500 font-mono">{formatDateTime(event.createdAt)}</span>
                       </div>
 
-                      <p className="font-medium text-white mt-2">
-                        {event.name || "Contact sans nom"}
+                      <p className="font-semibold text-xs text-white">
+                        {event.name || "Contact anonyme"}
                         {event.company ? <span className="text-zinc-400 font-normal"> · {event.company}</span> : null}
                       </p>
 
-                      <p className="text-xs text-zinc-400 mt-0.5 flex flex-wrap gap-x-3">
+                      <p className="text-[11px] text-zinc-400 flex flex-wrap gap-x-3 font-mono">
                         {event.email && <a href={`mailto:${event.email}`} className="hover:text-white transition-colors">{event.email}</a>}
                         {event.phone && <a href={`tel:${event.phone}`} className="hover:text-white transition-colors">{event.phone}</a>}
-                        {!event.email && !event.phone && <span>Aucun contact fourni</span>}
                       </p>
 
-                      {event.summary && <p className="text-sm text-zinc-300 mt-2 leading-relaxed">{event.summary}</p>}
+                      {event.summary && <p className="text-xs text-zinc-300 leading-relaxed">{event.summary}</p>}
                       {need && need !== event.summary && (
-                        <p className="text-xs text-zinc-400 mt-1 leading-relaxed">{need}</p>
+                        <p className="text-[11px] text-zinc-500 leading-relaxed">{need}</p>
                       )}
 
                       {event.projectId && (
-                        <Link href={`/admin/projects/${event.projectId}`} className="text-xs text-[#C084FC] hover:underline mt-2 inline-block">
-                          Voir le dossier client →
+                        <Link href={`/admin/projects/${event.projectId}`} className="text-[11px] text-violet-400 hover:underline inline-block font-mono">
+                          Dossier Client →
                         </Link>
                       )}
                     </div>
 
-                    <div className="flex shrink-0 flex-wrap gap-2 lg:justify-end">
+                    <div className="flex shrink-0 items-center gap-2">
                       {event.status === "NEW" && (
                         <form action={markSeen}>
-                          <button type="submit" className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-white/5 transition-colors active:scale-[0.98]">
-                            Marquer vu
+                          <button type="submit" className="rounded-lg border border-white/10 px-2.5 py-1 text-xs font-medium text-zinc-200 hover:bg-white/5 transition-colors cursor-pointer">
+                            Vu
                           </button>
                         </form>
                       )}
                       {event.status !== "DONE" && (
                         <form action={markDone}>
-                          <button type="submit" className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-zinc-200 hover:bg-white/5 transition-colors active:scale-[0.98]">
-                            Marquer traité
+                          <button type="submit" className="rounded-lg border border-white/10 px-2.5 py-1 text-xs font-medium text-zinc-200 hover:bg-white/5 transition-colors cursor-pointer">
+                            Traité
                           </button>
                         </form>
                       )}
                       {event.status === "DONE" && !event.projectId && (
                         <form action={reopen}>
-                          <button type="submit" className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-medium text-zinc-400 hover:bg-white/5 transition-colors active:scale-[0.98]">
+                          <button type="submit" className="rounded-lg border border-white/10 px-2.5 py-1 text-xs font-medium text-zinc-400 hover:bg-white/5 transition-colors cursor-pointer">
                             Rouvrir
                           </button>
                         </form>
                       )}
-                      {/* Une commande payée a déjà son projet via /api/internal/provision */}
                       {!event.projectId && event.type !== "ORDER" && event.email && (
                         <EventConvertForm
                           eventId={event.id}

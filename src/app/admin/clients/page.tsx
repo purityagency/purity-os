@@ -25,65 +25,90 @@ export default async function AdminClientsPage({
       : {}),
   }
 
-  const clients = await prisma.user.findMany({
-    where,
-    orderBy: { createdAt: "desc" },
-    include: {
-      projects: { orderBy: { updatedAt: "desc" } },
-    },
-  })
+  const [clients, totalClientsCount, pendingActivationCount] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      orderBy: { createdAt: "desc" },
+      include: {
+        projects: { orderBy: { updatedAt: "desc" } },
+      },
+    }),
+    prisma.user.count({ where: { role: "CLIENT" } }),
+    prisma.user.count({ where: { role: "CLIENT", passwordHash: null } }),
+  ])
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="space-y-5">
+      {/* Header Compact */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Clients</h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Chaque fiche regroupe les projets, paiements, documents et demandes d&apos;origine du client.
-          </p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-zinc-400">Repertoire CRM · {totalClientsCount} client(s)</span>
+          </div>
+          <h1 className="text-2xl font-bold text-white tracking-tight mt-0.5">Base Clients</h1>
         </div>
-        <a
-          href={`/api/admin/export/clients${query ? `?q=${encodeURIComponent(query)}` : ""}`}
-          download
-          className="rounded-lg border border-white/10 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-white/5 transition-colors shrink-0"
-        >
-          Exporter CSV
-        </a>
+
+        <div className="flex items-center gap-2">
+          <a
+            href={`/api/admin/export/clients${query ? `?q=${encodeURIComponent(query)}` : ""}`}
+            download
+            className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-white/5 transition-colors shrink-0"
+          >
+            ↓ Exporter CSV
+          </a>
+        </div>
       </div>
 
-      <form method="get" className="flex gap-2 max-w-md">
-        <label htmlFor="client-search" className="sr-only">Rechercher un client</label>
+      {/* KPI Ribbon Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="p-3 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-md">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Total Clients</span>
+          <p className="text-xl font-bold text-white tabular-nums mt-0.5">{totalClientsCount}</p>
+        </div>
+        <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 backdrop-blur-md">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Accès Activés</span>
+          <p className="text-xl font-bold text-emerald-400 tabular-nums mt-0.5">{totalClientsCount - pendingActivationCount}</p>
+        </div>
+        <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 backdrop-blur-md">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Accès Non-Activés</span>
+          <p className="text-xl font-bold text-amber-400 tabular-nums mt-0.5">{pendingActivationCount}</p>
+        </div>
+      </div>
+
+      {/* Search Input Bar */}
+      <form method="get" className="flex items-center gap-2 bg-white/[0.02] border border-white/10 rounded-xl p-3">
         <input
           id="client-search"
           name="q"
           type="search"
           defaultValue={query}
-          placeholder="Rechercher par nom ou e-mail…"
-          className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/60"
+          placeholder="Rechercher un client par nom ou e-mail…"
+          className="flex-1 rounded-lg border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 transition-all"
         />
         <button
           type="submit"
-          className="rounded-lg bg-white/10 hover:bg-white/20 px-4 py-2 text-sm font-medium text-white transition-colors active:scale-[0.98]"
+          className="rounded-lg bg-white/10 hover:bg-white/20 px-3 py-1.5 text-xs font-semibold text-white transition-colors cursor-pointer"
         >
           Chercher
         </button>
         {query && (
           <Link
             href="/admin/clients"
-            className="rounded-lg border border-white/10 px-4 py-2 text-sm font-medium text-zinc-300 hover:bg-white/5 transition-colors flex items-center"
+            className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-semibold text-zinc-400 hover:text-white transition-colors"
           >
             Effacer
           </Link>
         )}
       </form>
 
-      <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+      {/* Clients High-Density Table */}
+      <div className="rounded-xl border border-white/10 bg-white/[0.01] overflow-hidden backdrop-blur-xl">
         {clients.length === 0 ? (
-          <p className="p-6 text-sm text-zinc-400">
+          <p className="p-8 text-xs text-zinc-500 text-center">
             {query ? `Aucun client ne correspond à « ${query} ».` : "Aucun client enregistré."}
           </p>
         ) : (
-          <div className="divide-y divide-white/10">
+          <div className="divide-y divide-white/5">
             {clients.map((client) => {
               const activeProjects = client.projects.filter((p) => p.status !== "COMPLETED" && p.status !== "CANCELLED")
               const latest = client.projects[0]
@@ -91,31 +116,40 @@ export default async function AdminClientsPage({
                 <Link
                   key={client.id}
                   href={`/admin/clients/${client.id}`}
-                  className="flex items-center justify-between gap-4 p-5 hover:bg-white/5 transition-colors"
+                  className="flex items-center justify-between gap-4 p-3.5 hover:bg-white/[0.03] transition-colors group"
                 >
-                  <div className="min-w-0">
-                    <p className="font-semibold text-white truncate">{client.name || "Client sans nom"}</p>
-                    <p className="text-sm text-zinc-400 truncate">{client.email}</p>
-                    <p className="text-[11px] text-zinc-500 mt-0.5">
-                      Depuis le {formatDate(client.createdAt)}
-                      {!client.passwordHash && <span className="text-amber-400"> · accès non activé</span>}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-xs text-white group-hover:text-violet-300 transition-colors truncate">
+                        {client.name || "Client anonyme"}
+                      </p>
+                      {!client.passwordHash && (
+                        <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                          Invitation en attente
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-zinc-400 font-mono truncate mt-0.5">{client.email}</p>
+                    <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
+                      Client depuis le {formatDate(client.createdAt)}
                     </p>
                   </div>
+
                   <div className="text-right shrink-0">
                     {latest ? (
                       <>
-                        <p className="text-sm text-zinc-200 truncate max-w-[220px]">{latest.name}</p>
-                        <span className={`text-[11px] px-2 py-0.5 rounded inline-block mt-1 ${PROJECT_STATUS_COLORS[latest.status] ?? "bg-white/10 text-zinc-300"}`}>
+                        <p className="text-xs font-semibold text-zinc-200 truncate max-w-[200px]">{latest.name}</p>
+                        <span className={`text-[9px] font-mono font-semibold px-2 py-0.5 rounded inline-block mt-1 ${PROJECT_STATUS_COLORS[latest.status] ?? "bg-white/10 text-zinc-300"}`}>
                           {PROJECT_STATUS_LABELS[latest.status] ?? latest.status}
                         </span>
                         {client.projects.length > 1 && (
-                          <p className="text-[11px] text-zinc-500 mt-1">
-                            {client.projects.length} projets · {activeProjects.length} actif(s)
+                          <p className="text-[10px] font-mono text-zinc-500 mt-0.5">
+                            {client.projects.length} projets ({activeProjects.length} actif)
                           </p>
                         )}
                       </>
                     ) : (
-                      <p className="text-sm text-zinc-500">Aucun projet</p>
+                      <span className="text-[10px] text-zinc-500 font-mono">Aucun projet</span>
                     )}
                   </div>
                 </Link>

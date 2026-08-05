@@ -1,9 +1,5 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { createProjectWithClient } from "@/actions/projectActions"
 import Link from "next/link"
 import type { Prisma } from "@prisma/client"
@@ -34,14 +30,19 @@ export default async function AdminProjectsPage({
       : {}),
   }
 
-  const projects = await prisma.project.findMany({
-    where,
-    orderBy: { updatedAt: "desc" },
-    include: {
-      client: { select: { id: true, name: true, email: true } },
-      stages: { select: { status: true } },
-    },
-  })
+  const [projects, activeCount, completedCount, onHoldCount] = await Promise.all([
+    prisma.project.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      include: {
+        client: { select: { id: true, name: true, email: true } },
+        stages: { select: { status: true } },
+      },
+    }),
+    prisma.project.count({ where: { status: "ACTIVE" } }),
+    prisma.project.count({ where: { status: "COMPLETED" } }),
+    prisma.project.count({ where: { status: "ON_HOLD" } }),
+  ])
 
   const buildHref = (status?: string) => {
     const params = new URLSearchParams()
@@ -52,156 +53,177 @@ export default async function AdminProjectsPage({
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="space-y-5">
+      {/* Header Compact */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/5 pb-4">
         <div>
-          <h1 className="text-3xl font-bold text-white">Projets</h1>
-          <p className="mt-1 text-sm text-zinc-400">Tous les dossiers en cours et terminés.</p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-mono text-zinc-400">Projets · {projects.length} dossier(s)</span>
+          </div>
+          <h1 className="text-2xl font-bold text-white tracking-tight mt-0.5">Gestion des Projets</h1>
         </div>
-        <a
-          href={`/api/admin/export/projects${statusFilter ? `?status=${statusFilter}` : ""}`}
-          download
-          className="rounded-lg border border-white/10 px-4 py-2 text-xs font-medium text-zinc-300 hover:bg-white/5 transition-colors shrink-0"
-        >
-          Exporter CSV
-        </a>
+
+        <div className="flex items-center gap-2">
+          {/* Nouveau Projet Toggle Form */}
+          <details className="relative group">
+            <summary className="cursor-pointer list-none px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-md shadow-violet-600/20">
+              + Nouveau Projet
+            </summary>
+            <div className="absolute right-0 top-10 z-30 w-80 p-4 rounded-xl border border-white/10 bg-[#0d0714] backdrop-blur-2xl shadow-2xl space-y-3">
+              <p className="font-bold text-xs text-white">Créer un nouveau projet client</p>
+              <form action={createProjectWithClient} className="space-y-2.5">
+                <div>
+                  <label htmlFor="clientName" className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Nom du client</label>
+                  <input id="clientName" name="clientName" required maxLength={200} className="w-full rounded-lg bg-black/40 border border-white/10 px-2.5 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500" placeholder="Ex: Marie Vandenbroucke" />
+                </div>
+                <div>
+                  <label htmlFor="clientEmail" className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">E-mail du client</label>
+                  <input id="clientEmail" name="clientEmail" type="email" required className="w-full rounded-lg bg-black/40 border border-white/10 px-2.5 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500" placeholder="marie@salon-eclat.be" />
+                </div>
+                <div>
+                  <label htmlFor="projectName" className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Nom du projet</label>
+                  <input id="projectName" name="projectName" required maxLength={200} className="w-full rounded-lg bg-black/40 border border-white/10 px-2.5 py-1.5 text-xs text-white placeholder:text-zinc-600 focus:outline-none focus:border-violet-500" placeholder="Site vitrine + réservation" />
+                </div>
+                <div>
+                  <label htmlFor="estimatedDelivery" className="block text-[10px] font-mono text-zinc-400 uppercase mb-1">Livraison estimée</label>
+                  <input id="estimatedDelivery" name="estimatedDelivery" type="date" className="w-full rounded-lg bg-black/40 border border-white/10 px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-violet-500" />
+                </div>
+                <button type="submit" className="w-full py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-xs font-semibold text-white transition-all cursor-pointer">
+                  Créer et envoyer l&apos;accès
+                </button>
+              </form>
+            </div>
+          </details>
+
+          <a
+            href={`/api/admin/export/projects${statusFilter ? `?status=${statusFilter}` : ""}`}
+            download
+            className="rounded-lg border border-white/10 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:bg-white/5 transition-colors shrink-0"
+          >
+            ↓ CSV
+          </a>
+        </div>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-4">
-          <form method="get" className="flex gap-2">
-            <label htmlFor="project-search" className="sr-only">Rechercher un projet</label>
-            <input
-              id="project-search"
-              name="q"
-              type="search"
-              defaultValue={query}
-              placeholder="Rechercher par projet ou client…"
-              className="flex-1 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/60"
-            />
-            {statusFilter && <input type="hidden" name="status" value={statusFilter} />}
-            <button
-              type="submit"
-              className="rounded-lg bg-white/10 hover:bg-white/20 px-4 py-2 text-sm font-medium text-white transition-colors active:scale-[0.98]"
-            >
-              Chercher
-            </button>
-          </form>
+      {/* KPI Ribbon Strip */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="p-3 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-md">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Actifs</span>
+          <p className="text-xl font-bold text-white tabular-nums mt-0.5">{activeCount}</p>
+        </div>
+        <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 backdrop-blur-md">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Terminés</span>
+          <p className="text-xl font-bold text-emerald-400 tabular-nums mt-0.5">{completedCount}</p>
+        </div>
+        <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/5 backdrop-blur-md">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">En Pause</span>
+          <p className="text-xl font-bold text-amber-400 tabular-nums mt-0.5">{onHoldCount}</p>
+        </div>
+        <div className="p-3 rounded-xl border border-white/10 bg-white/[0.02] backdrop-blur-md">
+          <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Total Projets</span>
+          <p className="text-xl font-bold text-zinc-300 tabular-nums mt-0.5">{activeCount + completedCount + onHoldCount}</p>
+        </div>
+      </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+      {/* Search & Filter Bar */}
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white/[0.02] border border-white/10 rounded-xl p-3">
+        <form method="get" className="flex items-center gap-2 flex-1 min-w-[220px]">
+          <input
+            id="project-search"
+            name="q"
+            type="search"
+            defaultValue={query}
+            placeholder="Rechercher un projet ou client…"
+            className="w-full rounded-lg border border-white/10 bg-black/40 px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:border-violet-500 transition-all"
+          />
+          {statusFilter && <input type="hidden" name="status" value={statusFilter} />}
+        </form>
+
+        <div className="flex items-center gap-1.5 overflow-x-auto">
+          <Link
+            href={buildHref()}
+            className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+              !statusFilter ? "bg-violet-600 text-white" : "text-zinc-400 hover:text-white hover:bg-white/5"
+            }`}
+          >
+            Tous
+          </Link>
+          {VALID_STATUSES.map((status) => (
             <Link
-              href={buildHref()}
-              aria-current={!statusFilter ? "page" : undefined}
-              className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                !statusFilter ? "bg-[#7C3AED] text-white" : "border border-white/10 text-zinc-300 hover:bg-white/5"
+              key={status}
+              href={buildHref(status)}
+              className={`rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+                statusFilter === status ? "bg-violet-600 text-white" : "text-zinc-400 hover:text-white hover:bg-white/5"
               }`}
             >
-              Tous
+              {PROJECT_STATUS_LABELS[status]}
             </Link>
-            {VALID_STATUSES.map((status) => (
-              <Link
-                key={status}
-                href={buildHref(status)}
-                aria-current={statusFilter === status ? "page" : undefined}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${
-                  statusFilter === status ? "bg-[#7C3AED] text-white" : "border border-white/10 text-zinc-300 hover:bg-white/5"
-                }`}
-              >
-                {PROJECT_STATUS_LABELS[status]}
-              </Link>
-            ))}
-          </div>
+          ))}
+        </div>
+      </div>
 
-          <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
-            {projects.length === 0 ? (
-              <p className="p-6 text-sm text-zinc-400">
-                {query || statusFilter ? "Aucun projet ne correspond à ce filtre." : "Aucun projet enregistré."}
-              </p>
-            ) : (
-              <div className="divide-y divide-white/10">
-                {projects.map((project) => {
-                  const done = project.stages.filter((s) => s.status === "COMPLETED").length
-                  const total = project.stages.length
-                  const percent = total > 0 ? Math.round((done / total) * 100) : 0
-                  const overdue =
-                    project.estimatedDelivery &&
-                    new Date(project.estimatedDelivery) < new Date() &&
-                    project.status !== "COMPLETED" &&
-                    project.status !== "CANCELLED"
+      {/* Projects High-Density Table */}
+      <div className="rounded-xl border border-white/10 bg-white/[0.01] overflow-hidden backdrop-blur-xl">
+        {projects.length === 0 ? (
+          <p className="p-8 text-xs text-zinc-500 text-center">
+            {query || statusFilter ? "Aucun projet ne correspond à ce critère." : "Aucun projet enregistré."}
+          </p>
+        ) : (
+          <div className="divide-y divide-white/5">
+            {projects.map((project) => {
+              const done = project.stages.filter((s) => s.status === "COMPLETED").length
+              const total = project.stages.length
+              const percent = total > 0 ? Math.round((done / total) * 100) : 0
+              const overdue =
+                project.estimatedDelivery &&
+                new Date(project.estimatedDelivery) < new Date() &&
+                project.status !== "COMPLETED" &&
+                project.status !== "CANCELLED"
 
-                  return (
-                    <Link
-                      key={project.id}
-                      href={`/admin/projects/${project.id}`}
-                      className="block p-5 hover:bg-white/5 transition-colors"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="min-w-0">
-                          <p className="font-semibold text-white truncate">{project.name}</p>
-                          <p className="text-xs text-zinc-400 truncate mt-0.5">
-                            {project.client.name || project.client.email}
-                            {sectorLabel(project.sector) ? ` · ${sectorLabel(project.sector)}` : ""}
-                          </p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <span className={`text-[11px] px-2 py-0.5 rounded inline-block ${PROJECT_STATUS_COLORS[project.status] ?? "bg-white/10 text-zinc-300"}`}>
-                            {PROJECT_STATUS_LABELS[project.status] ?? project.status}
-                          </span>
-                          <p className={`text-[11px] mt-1 ${overdue ? "text-red-400" : "text-zinc-500"}`}>
-                            {project.estimatedDelivery ? formatDate(project.estimatedDelivery) : "Pas de date"}
-                            {overdue ? " · en retard" : ""}
-                          </p>
-                        </div>
-                      </div>
-                      {total > 0 && (
-                        <div className="mt-3 flex items-center gap-3">
-                          <div className="h-1.5 flex-1 bg-white/5 rounded-full overflow-hidden">
-                            <div className="h-full bg-gradient-to-r from-purple-500 to-purple-400 rounded-full" style={{ width: `${percent}%` }} />
-                          </div>
-                          <span className="text-[11px] text-zinc-500 tabular-nums shrink-0">{done}/{total}</span>
-                        </div>
+              return (
+                <Link
+                  key={project.id}
+                  href={`/admin/projects/${project.id}`}
+                  className="flex items-center justify-between gap-4 p-3.5 hover:bg-white/[0.03] transition-colors group"
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="font-semibold text-xs text-white group-hover:text-violet-300 transition-colors truncate">{project.name}</p>
+                      {sectorLabel(project.sector) && (
+                        <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-white/5 text-zinc-400 border border-white/5">
+                          {sectorLabel(project.sector)}
+                        </span>
                       )}
-                    </Link>
-                  )
-                })}
-              </div>
-            )}
-          </div>
-        </div>
+                    </div>
+                    <p className="text-[11px] text-zinc-400 truncate mt-0.5">
+                      {project.client.name || project.client.email}
+                    </p>
+                  </div>
 
-        <div>
-          <Card className="bg-[#7C3AED]/10 border-[#7C3AED]/30 text-white backdrop-blur-md sticky top-8">
-            <CardHeader>
-              <CardTitle>Nouveau projet</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form action={createProjectWithClient} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="clientName">Nom du client</Label>
-                  <Input id="clientName" name="clientName" required maxLength={200} className="bg-white/5 border-white/10" placeholder="Ex : Marie Vandenbroucke" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="clientEmail">E-mail du client</Label>
-                  <Input id="clientEmail" name="clientEmail" type="email" required className="bg-white/5 border-white/10" placeholder="marie@salon-eclat.be" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="projectName">Nom du projet</Label>
-                  <Input id="projectName" name="projectName" required maxLength={200} className="bg-white/5 border-white/10" placeholder="Site vitrine + réservation" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="estimatedDelivery">Livraison estimée</Label>
-                  <Input id="estimatedDelivery" name="estimatedDelivery" type="date" className="bg-white/5 border-white/10" />
-                </div>
-                <Button type="submit" className="w-full bg-[#7C3AED] hover:bg-[#6D28D9] text-white">
-                  Créer le projet
-                </Button>
-                <p className="text-[11px] text-zinc-400">
-                  Le client reçoit automatiquement son lien d&apos;accès à l&apos;espace.
-                </p>
-              </form>
-            </CardContent>
-          </Card>
-        </div>
+                  {/* Progress bar */}
+                  {total > 0 && (
+                    <div className="hidden md:flex items-center gap-2 w-44 shrink-0">
+                      <div className="h-1 flex-1 bg-white/5 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-violet-600 to-indigo-400 rounded-full" style={{ width: `${percent}%` }} />
+                      </div>
+                      <span className="text-[10px] font-mono text-zinc-500 tabular-nums">{done}/{total}</span>
+                    </div>
+                  )}
+
+                  <div className="text-right shrink-0">
+                    <span className={`text-[10px] font-mono font-semibold px-2 py-0.5 rounded ${PROJECT_STATUS_COLORS[project.status] ?? "bg-white/10 text-zinc-300"}`}>
+                      {PROJECT_STATUS_LABELS[project.status] ?? project.status}
+                    </span>
+                    <p className={`text-[10px] font-mono mt-1 ${overdue ? "text-red-400 font-bold" : "text-zinc-500"}`}>
+                      {project.estimatedDelivery ? formatDate(project.estimatedDelivery) : "Sans échéance"}
+                      {overdue ? " (En retard)" : ""}
+                    </p>
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
