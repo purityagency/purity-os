@@ -19,6 +19,11 @@ if (!geminiApiKey) {
 const google = createGoogleGenerativeAI({ apiKey: geminiApiKey });
 
 /**
+ * MOCK MODE : Si MOCK_API=true, aucun appel Gemini ne sera fait.
+ */
+const MOCK_API = process.env.MOCK_API === 'true';
+
+/**
  * Un seul projet Google = un seul quota Gemini, partagé par TOUS les
  * agents de ce pôle (10 req/min, 250 req/jour sur le tier gratuit — voir
  * la conversation du 2026-08-03). Avant ce correctif, chaque agent
@@ -123,6 +128,28 @@ export abstract class AutonomousAgent {
     if (logTaskName) await this.logger.startTask(logTaskName);
 
     const callOnce = async () => {
+      if (MOCK_API && schema) {
+        // Renvoie un mock statique bidon mais valide au lieu de payer l'API
+        return {
+          // Chief
+          missionId: "mission-mock",
+          parameters: { sectors: ["Artisan", "Toiture"], locations: ["Charleroi"], maxLeads: 2 },
+          // MarketScout SearchStrategy
+          queries: ["artisan toiture charleroi", "entreprise batiment namur"],
+          // MarketScout EvalResponse
+          isGoodLead: true,
+          companyName: "Toiture Mock SPRL",
+          reason: "Semble être un bon artisan",
+          // IntelligenceAnalyst
+          painPoints: ["Pas de site web mobile", "Mauvais référencement Google"],
+          recommendedModules: ["Site Vitrine", "Visibilité Locale SEO"],
+          score: 85,
+          // Copywriter
+          subject: "Améliorer votre visibilité en Wallonie",
+          bodyHtml: "<p>Bonjour,</p><p>J'ai remarqué votre absence sur Google. Nous proposons la <strong>Visibilité Locale SEO (990 €)</strong>. Vous pouvez bénéficier de 50% via les Chèques Entreprises Wallonie.</p><p>On s'appelle ?</p><br><p>Manon Verhoeven — Purity Agency</p>"
+        } as unknown as T;
+      }
+
       await throttleGeminiCall();
       const model = google(this.modelName);
       return schema

@@ -1,13 +1,37 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
-import { FinanceIcon, AlertTriangleIcon } from "@/components/icons"
+import { FinanceIcon } from "@/components/icons"
+import { InvoiceKanban } from "./InvoiceKanban"
+import { FinanceAgentFeed } from "./FinanceAgentFeed"
 
 export default async function AdminAiFinancePage() {
   await requireAdminSession()
 
+  // Fetch Invoices
+  const invoices = await prisma.invoice.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 100,
+  })
+
+  // Fetch Agents for Finance (02_FINANCE)
+  const financeAgents = await prisma.agentActivity.findMany({
+    where: { department: "02_FINANCE" },
+    orderBy: { updatedAt: "desc" },
+  })
+
+  // KPI Calculations
+  const draftCount = invoices.filter(i => i.status === "DRAFT").length
+  const pendingCount = invoices.filter(i => i.status === "ISSUED" || i.status === "PENDING").length
+  const overdueCount = invoices.filter(i => i.status === "OVERDUE").length
+  const pendingAmount = invoices
+    .filter(i => i.status === "ISSUED" || i.status === "PENDING" || i.status === "OVERDUE")
+    .reduce((sum, i) => sum + i.totalAmount, 0)
+    
+  const activeAgentsCount = financeAgents.filter(a => a.status === "WORKING").length
+
   return (
-    <div className="h-[calc(100vh-90px)] flex flex-col space-y-4 overflow-hidden">
-      {/* Header Compact */}
+    <div className="h-[calc(100vh-90px)] flex flex-col space-y-4 overflow-hidden bg-[#060309]">
+      {/* Top Header & Compact KPI Bar */}
       <div className="shrink-0 space-y-3 border-b border-white/5 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
@@ -25,51 +49,34 @@ export default async function AdminAiFinancePage() {
         {/* KPI Ribbon Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
           <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Agents Facturation</span>
-            <span className="text-base font-bold text-emerald-400 tabular-nums">0 Actifs</span>
+            <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-500/70 block truncate">Agents Actifs</span>
+            <span className="text-base font-bold text-emerald-400 tabular-nums">{activeAgentsCount}</span>
           </div>
           <div className="p-2.5 rounded-xl border border-white/10 bg-white/[0.02]">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Rapports Financiers</span>
-            <span className="text-base font-bold text-white tabular-nums">0</span>
+            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Cash en Attente</span>
+            <span className="text-base font-bold text-white tabular-nums">{pendingAmount.toLocaleString('fr-BE')} €</span>
+          </div>
+          <div className="p-2.5 rounded-xl border border-red-500/20 bg-red-500/5">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-red-500/70 block truncate">Factures en Retard</span>
+            <span className="text-base font-bold text-red-400 tabular-nums">{overdueCount}</span>
+          </div>
+          <div className="p-2.5 rounded-xl border border-white/10 bg-white/[0.02] cursor-pointer hover:bg-white/[0.04] transition-colors">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Brouillons à Valider</span>
+            <span className="text-base font-bold text-white tabular-nums">{draftCount}</span>
           </div>
         </div>
       </div>
 
-      {/* Main Fit-To-Screen Content Grid */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-5 min-h-0 overflow-hidden">
-        {/* Left (2/3 width) - System Event Feed */}
-        <div className="lg:col-span-2 flex flex-col h-full border border-white/10 rounded-xl bg-white/[0.01] p-4 backdrop-blur-md overflow-hidden">
-          <div className="flex items-center justify-between mb-3 shrink-0">
-            <div className="flex items-center gap-2">
-              <FinanceIcon className="w-4 h-4 text-emerald-400" />
-              <h2 className="text-sm font-bold text-white">Event Feed Pôle Finance</h2>
-            </div>
-            <span className="text-[10px] font-mono text-zinc-500">Live</span>
-          </div>
-
-          <div className="flex-1 overflow-y-auto pr-1">
-            <div className="p-12 text-center border border-dashed border-white/10 rounded-xl bg-black/20">
-              <FinanceIcon className="w-8 h-8 mx-auto text-zinc-600 mb-2" />
-              <p className="text-xs text-zinc-400">En attente d&apos;événements de l&apos;agent financier.</p>
-            </div>
-          </div>
+      {/* Main Fit-To-Screen Content Grid (75/25) */}
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0 overflow-hidden">
+        {/* Left (75% width) - Invoice Kanban */}
+        <div className="lg:col-span-3 min-h-0 relative">
+          <InvoiceKanban invoices={invoices} />
         </div>
 
-        {/* Right (1/3 width) - AI Agent Status */}
-        <div className="flex flex-col h-full border border-white/10 rounded-xl bg-white/[0.01] p-4 backdrop-blur-md overflow-hidden justify-between space-y-4">
-          <div className="space-y-4 flex-1 overflow-y-auto pr-1">
-            <div className="space-y-2">
-              <div className="flex items-center gap-1.5">
-                <AlertTriangleIcon className="w-4 h-4 text-amber-400" />
-                <h2 className="text-xs font-bold uppercase tracking-wider text-white font-mono">
-                  État des Agents (Live)
-                </h2>
-              </div>
-            </div>
-            <div className="space-y-2">
-                <p className="text-[11px] text-zinc-500 font-mono p-4 border border-dashed border-white/5 rounded-xl bg-black/20 text-center">Nathalie Coppens (Chief Finance AI) : Dormante.</p>
-            </div>
-          </div>
+        {/* Right (25% width) - Agent Activity Feed */}
+        <div className="min-h-0 relative">
+          <FinanceAgentFeed agents={financeAgents} />
         </div>
       </div>
     </div>
