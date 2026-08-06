@@ -20,8 +20,9 @@ const google = createGoogleGenerativeAI({ apiKey: geminiApiKey });
 
 /**
  * MOCK MODE : Si MOCK_API=true, aucun appel Gemini ne sera fait.
+ * (Désactivé pour la vraie prospection)
  */
-const MOCK_API = process.env.MOCK_API === 'true';
+const MOCK_API = false; // process.env.MOCK_API === 'true';
 
 /**
  * Un seul projet Google = un seul quota Gemini, partagé par TOUS les
