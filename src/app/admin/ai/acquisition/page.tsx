@@ -4,7 +4,6 @@ import { launchMission } from "@/actions/acquisitionActions"
 import Link from "next/link"
 import { MissionTracker } from "./MissionTracker"
 import { PipelineKanban } from "./PipelineKanban"
-import { AcquisitionNav } from "./AcquisitionNav"
 
 export default async function AdminAcquisitionPage() {
   await requireAdminSession()
@@ -55,8 +54,7 @@ export default async function AdminAcquisitionPage() {
   const conversionRate = totalLeads > 0 ? Math.round((engagedCount / totalLeads) * 100) : 0
 
   return (
-    <div className="h-[calc(100vh-90px)] flex flex-col space-y-4 overflow-hidden">
-      <AcquisitionNav />
+    <div className="h-full flex flex-col space-y-4 p-4 lg:p-8">
       {/* Top Header & Compact KPI Bar (Fixed) */}
       <div className="shrink-0 space-y-3 border-b border-white/5 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

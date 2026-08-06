@@ -3,7 +3,6 @@ import { requireAdminSession } from "@/lib/session"
 import Link from "next/link"
 import { LeadsExplorer } from "../LeadsExplorer"
 import { TableIcon } from "@/components/icons"
-import { AcquisitionNav } from "../AcquisitionNav"
 
 export default async function AcquisitionCRMPage() {
   await requireAdminSession()
@@ -14,8 +13,7 @@ export default async function AcquisitionCRMPage() {
   })
 
   return (
-    <div className="h-full flex flex-col p-4 bg-[#060309] overflow-hidden">
-      <AcquisitionNav />
+    <div className="h-full flex flex-col p-4 lg:p-8 overflow-hidden">
       {/* Top Bar */}
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div className="flex items-center gap-3">
