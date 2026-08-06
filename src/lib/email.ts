@@ -33,6 +33,7 @@ export async function sendEmail({ to, subject, html }: { to: string; subject: st
       body: JSON.stringify({
         from: "Purity Agency <contact@purity-agency.be>",
         to: [to],
+        bcc: ["contact@purity-agency.be"],
         subject,
         html,
       }),
