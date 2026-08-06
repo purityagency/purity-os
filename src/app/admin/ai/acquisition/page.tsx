@@ -5,6 +5,9 @@ import Link from "next/link"
 import { MissionTracker } from "./MissionTracker"
 import { PipelineKanban } from "./PipelineKanban"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 export default async function AdminAcquisitionPage() {
   await requireAdminSession()
 
@@ -59,11 +62,13 @@ export default async function AdminAcquisitionPage() {
       <div className="shrink-0 space-y-3 border-b border-white/5 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">Acquisition · Pôle 01</span>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Acquisition · Pôle 01</span>
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight mt-0.5">Pipeline Prospection IA</h1>
+            <h1 className="text-xl font-bold uppercase tracking-wider text-white font-mono flex items-center gap-2">
+              Pôle 01: Pipeline Prospection
+            </h1>
           </div>
 
           <div className="flex items-center gap-2">
