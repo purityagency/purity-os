@@ -4,6 +4,7 @@ import { launchMission } from "@/actions/acquisitionActions"
 import Link from "next/link"
 import { MissionTracker } from "./MissionTracker"
 import { PipelineKanban } from "./PipelineKanban"
+import { AcquisitionNav } from "./AcquisitionNav"
 
 export default async function AdminAcquisitionPage() {
   await requireAdminSession()
@@ -55,6 +56,7 @@ export default async function AdminAcquisitionPage() {
 
   return (
     <div className="h-[calc(100vh-90px)] flex flex-col space-y-4 overflow-hidden">
+      <AcquisitionNav />
       {/* Top Header & Compact KPI Bar (Fixed) */}
       <div className="shrink-0 space-y-3 border-b border-white/5 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -134,10 +136,10 @@ export default async function AdminAcquisitionPage() {
             <span className="text-base font-bold text-amber-400 tabular-nums">{pendingDrafts.length} à valider</span>
           </Link>
 
-          <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">RDV Confirmés</span>
-            <span className="text-base font-bold text-emerald-400 tabular-nums">{meetingCount} RDV</span>
-          </div>
+          <Link href="/admin/ai/acquisition/outbox" className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all cursor-pointer group">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-500/70 block truncate group-hover:text-emerald-400 transition-colors">Envoyés ↗</span>
+            <span className="text-base font-bold text-emerald-400 tabular-nums">{contactedCount} mails</span>
+          </Link>
         </div>
       </div>
 
