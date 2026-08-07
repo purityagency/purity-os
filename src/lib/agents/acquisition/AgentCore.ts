@@ -146,8 +146,12 @@ export abstract class AutonomousAgent {
           recommendedModules: ["Site Vitrine", "Visibilité Locale SEO"],
           score: 85,
           // Copywriter
-          subject: "Améliorer votre visibilité en Wallonie",
-          bodyHtml: "<p>Bonjour,</p><p>J'ai remarqué votre absence sur Google. Nous proposons la <strong>Visibilité Locale SEO (990 €)</strong>. Vous pouvez bénéficier de 50% via les Chèques Entreprises Wallonie.</p><p>On s'appelle ?</p><br><p>Manon Verhoeven — Purity Agency</p>"
+          objectionPrediction: "Le prospect n'a pas le temps, il a la tête dans le guidon avec ses chantiers.",
+          subject: "Le détail qui vous fait perdre des appels",
+          bodyHtml: "<p>Votre site charge en 8 secondes sur mobile. À Charleroi, vos clients vont chez le concurrent avant même de voir vos réalisations.</p><p>Ça vaudrait le coup qu'on vous montre comment régler ça ?</p><br><p>Manon Verhoeven — Purity Agency</p>",
+          selfCritique: "Le mail est court (37 mots), percutant, value first (PageSpeed). Pas de bonjour corporate. Le CTA est un micro-commitment.",
+          selfCritiqueScore: 9,
+          humanDetectorPassed: true
         } as unknown as T;
       }
 
