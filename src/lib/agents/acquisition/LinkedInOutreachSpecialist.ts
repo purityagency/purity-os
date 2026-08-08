@@ -64,8 +64,8 @@ export class LinkedInOutreachSpecialist extends AutonomousAgent {
     let attempts = 1;
     while ((!result.humanDetectorPassed || result.selfCritiqueScore < 8) && attempts <= 2) {
       await this.logger.startTask(`Message LinkedIn refusé par Human Detector (Note: ${result.selfCritiqueScore}/10). Réécriture...`);
-      const retryPrompt = \`\${prompt}\n\nTa précédente tentative a échoué. Ta propre critique : "\${result.selfCritique}".\n\nLe message sonnait trop commercial ou comme une IA. Réécris un message totalement différent, beaucoup plus naturel, cassant encore plus les codes (Pattern Interrupt).\`;
-      result = await this.think<PersonalizedMessage>(retryPrompt, \`Rédaction message LinkedIn (Essai \${attempts + 1})\`, PersonalizedMessageSchema);
+      const retryPrompt = `${prompt}\n\nTa précédente tentative a échoué. Ta propre critique : "${result.selfCritique}".\n\nLe message sonnait trop commercial ou comme une IA. Réécris un message totalement différent, beaucoup plus naturel, cassant encore plus les codes (Pattern Interrupt).`;
+      result = await this.think<PersonalizedMessage>(retryPrompt, `Rédaction message LinkedIn (Essai ${attempts + 1})`, PersonalizedMessageSchema);
       attempts++;
     }
 

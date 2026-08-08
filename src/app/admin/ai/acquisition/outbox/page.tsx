@@ -38,7 +38,7 @@ export default async function AcquisitionOutboxPage() {
         {sentEmails.length === 0 ? (
           <div className="p-12 text-center border border-dashed border-white/10 rounded-xl bg-white/[0.01] flex flex-col items-center">
             <MailIcon className="w-8 h-8 text-zinc-600 mb-3" />
-            <p className="text-sm font-semibold text-zinc-300">Aucun email n'a encore été envoyé.</p>
+            <p className="text-sm font-semibold text-zinc-300">Aucun email n&apos;a encore été envoyé.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-4">

@@ -34,7 +34,7 @@ export default async function AcquisitionInboxPage() {
           companyName: "Hôtel Le repos",
           contactName: "Marie Dubois",
           contactEmail: "direction@hotel-repos.be",
-          updatedAt: new Date(Date.now() - 86400000),
+          updatedAt: new Date("2026-08-06T10:00:00Z"),
           status: "REPLIED",
           lastMessage: "Non merci, nous avons déjà un prestataire.",
           missionName: "Campagne HoReCa Namur"
@@ -134,13 +134,13 @@ export default async function AcquisitionInboxPage() {
                 <div className="flex flex-col gap-1 items-end pl-12">
                   <span className="text-[10px] text-zinc-500 font-mono mr-1">Hier, 10:30 (Purity AI)</span>
                   <div className="bg-white/[0.03] border border-white/10 rounded-2xl rounded-tr-sm p-4 text-sm text-zinc-300 w-full">
-                    <p>Bonjour {displayLeads[0].contactName},<br/><br/>J'ai remarqué que votre entreprise n'était pas optimisée pour le SEO local en Wallonie. Nous pouvons vous aider...</p>
+                    <p>Bonjour {displayLeads[0].contactName},<br/><br/>J&apos;ai remarqué que votre entreprise n&apos;était pas optimisée pour le SEO local en Wallonie. Nous pouvons vous aider...</p>
                   </div>
                 </div>
 
                 {/* Inbound Email (Mock) */}
                 <div className="flex flex-col gap-1 items-start pr-12">
-                  <span className="text-[10px] text-zinc-500 font-mono ml-1">Aujourd'hui, 09:15 ({displayLeads[0].contactName})</span>
+                  <span className="text-[10px] text-zinc-500 font-mono ml-1">Aujourd&apos;hui, 09:15 ({displayLeads[0].contactName})</span>
                   <div className="bg-violet-600/10 border border-violet-500/20 rounded-2xl rounded-tl-sm p-4 text-sm text-violet-100 w-full shadow-lg shadow-violet-900/10">
                     <p>{displayLeads[0].lastMessage}</p>
                   </div>

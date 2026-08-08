@@ -8,7 +8,7 @@ interface AgentActivity {
   status: string
   currentTask: string | null
   updatedAt: Date
-  history: any
+  history: unknown
 }
 
 export function FinanceAgentFeed({ agents }: { agents: AgentActivity[] }) {

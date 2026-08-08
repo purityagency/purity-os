@@ -16,19 +16,8 @@ function formatCurrency(amount: number) {
   return new Intl.NumberFormat('fr-BE', { style: 'currency', currency: 'EUR' }).format(amount)
 }
 
-export function InvoiceKanban({ invoices }: { invoices: Invoice[] }) {
-  // Grouper par statut (DRAFT, ISSUED, PAID, OVERDUE)
-  const columns = useMemo(() => {
-    const cols = {
-      DRAFT: invoices.filter((i) => i.status === "DRAFT"),
-      ISSUED: invoices.filter((i) => i.status === "ISSUED" || i.status === "PENDING"),
-      OVERDUE: invoices.filter((i) => i.status === "OVERDUE"),
-      PAID: invoices.filter((i) => i.status === "PAID"),
-    }
-    return cols
-  }, [invoices])
-
-  const Column = ({ title, status, items, colorClass, bgClass }: { title: string, status: string, items: Invoice[], colorClass: string, bgClass: string }) => (
+function Column({ title, items, colorClass, bgClass }: { title: string, items: Invoice[], colorClass: string, bgClass: string }) {
+  return (
     <div className="flex-1 min-w-[280px] bg-black/20 rounded-xl flex flex-col overflow-hidden border border-white/5">
       <div className={`p-3 border-b border-white/5 flex items-center justify-between ${bgClass}`}>
         <h3 className={`font-mono text-xs font-bold uppercase tracking-wider ${colorClass}`}>{title}</h3>
@@ -68,39 +57,45 @@ export function InvoiceKanban({ invoices }: { invoices: Invoice[] }) {
       </div>
     </div>
   )
+}
+
+export function InvoiceKanban({ invoices }: { invoices: Invoice[] }) {
+  // Grouper par statut (DRAFT, ISSUED, PAID, OVERDUE)
+  const columns = useMemo(() => ({
+    DRAFT: invoices.filter((i) => i.status === "DRAFT"),
+    ISSUED: invoices.filter((i) => i.status === "ISSUED" || i.status === "PENDING"),
+    OVERDUE: invoices.filter((i) => i.status === "OVERDUE"),
+    PAID: invoices.filter((i) => i.status === "PAID"),
+  }), [invoices])
 
   return (
     <div className="h-full flex flex-col bg-white/[0.01] border border-white/10 rounded-xl overflow-hidden">
       {/* Scrollable Container (Horizontal) */}
       <div className="flex-1 overflow-x-auto p-4 custom-scrollbar">
         <div className="flex h-full gap-4 min-w-max">
-          <Column 
-            title="Brouillons" 
-            status="DRAFT" 
-            items={columns.DRAFT} 
-            colorClass="text-zinc-400" 
-            bgClass="bg-zinc-500/5" 
+          <Column
+            title="Brouillons"
+            items={columns.DRAFT}
+            colorClass="text-zinc-400"
+            bgClass="bg-zinc-500/5"
           />
-          <Column 
-            title="Émises" 
-            status="ISSUED" 
-            items={columns.ISSUED} 
-            colorClass="text-emerald-400" 
-            bgClass="bg-emerald-500/5" 
+          <Column
+            title="Émises"
+            items={columns.ISSUED}
+            colorClass="text-emerald-400"
+            bgClass="bg-emerald-500/5"
           />
-          <Column 
-            title="En retard" 
-            status="OVERDUE" 
-            items={columns.OVERDUE} 
-            colorClass="text-red-400" 
-            bgClass="bg-red-500/5" 
+          <Column
+            title="En retard"
+            items={columns.OVERDUE}
+            colorClass="text-red-400"
+            bgClass="bg-red-500/5"
           />
-          <Column 
-            title="Payées" 
-            status="PAID" 
-            items={columns.PAID} 
-            colorClass="text-violet-400" 
-            bgClass="bg-violet-500/5" 
+          <Column
+            title="Payées"
+            items={columns.PAID}
+            colorClass="text-violet-400"
+            bgClass="bg-violet-500/5"
           />
         </div>
       </div>
