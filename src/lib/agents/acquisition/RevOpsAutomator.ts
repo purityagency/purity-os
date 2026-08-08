@@ -67,8 +67,9 @@ export class RevOpsAutomator extends AutonomousAgent {
 
     try {
       const { data, error } = await getResend().emails.send({
-        from: 'Amir KEBIYEB <amir@purity-agency.be>',
+        from: 'Purity Agency <contact@purity-agency.be>',
         to: [draft.lead.contactEmail],
+        bcc: ['contact@purity-agency.be'],
         subject: draft.subject,
         html: draft.bodyHtml,
       });

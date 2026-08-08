@@ -13,16 +13,10 @@ export default async function AcquisitionCRMPage() {
   })
 
   return (
-    <div className="h-full flex flex-col p-4 bg-[#060309] overflow-hidden">
+    <div className="h-full flex flex-col p-4 lg:p-8 overflow-hidden">
       {/* Top Bar */}
       <div className="flex items-center justify-between mb-6 shrink-0">
         <div className="flex items-center gap-3">
-          <Link 
-            href="/admin/ai/acquisition" 
-            className="text-xs font-semibold text-zinc-400 hover:text-white transition-colors bg-white/5 px-3 py-1.5 rounded-lg border border-white/5 hover:bg-white/10"
-          >
-            ← Retour au Dashboard
-          </Link>
           <div>
             <h1 className="text-lg font-bold text-white flex items-center gap-2">
               <TableIcon className="w-5 h-5 text-violet-500" />

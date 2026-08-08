@@ -3,47 +3,38 @@ import { prisma } from '@/lib/prisma';
 import { AutonomousAgent } from './AgentCore';
 
 const EmailDraftSchema = z.object({
-  subject: z.string().min(5),
-  bodyHtml: z.string().min(30),
+  objectionPrediction: z.string().describe("Pourquoi ce prospect ne répondrait-il pas ? (Prix, temps, pas intéressé, déjà une agence, manque de confiance)"),
+  subject: z.string().describe("Objet du mail : court, intrigant (Pattern Interrupt)"),
+  bodyHtml: z.string().describe("Corps du mail en HTML basique (<p>, <br>). Longueur stricte : 40 à 90 mots."),
+  selfCritique: z.string().describe("Analyse de ton propre email : Est-ce humain ? Est-ce court ? Est-ce personnalisé ? Est-ce crédible ? Est-ce qu'il donne envie de répondre ?"),
+  selfCritiqueScore: z.number().describe("Note sur 10 de la qualité du mail (sois très sévère)"),
+  humanDetectorPassed: z.boolean().describe("Vrai si le mail est impossible à distinguer d'un vrai humain tapant sur son clavier, faux s'il sonne comme une IA, un commercial ou s'il tente de vendre.")
 });
-type EmailDraftResponse = z.infer<typeof EmailDraftSchema>;
 
-// Finding audit 2026-08-02 : "mentionne toujours la subvention" n'existait
-// qu'en texte de prompt, jamais vérifié en code. Un humain approuve vite,
-// pas ligne à ligne — sans ce contrôle, un email commercialement incomplet
-// pouvait partir à un vrai prospect. Vérifié sur le texte généré, jamais
-// sur une auto-déclaration du modèle (qui peut se tromper sur lui-même).
-const SUBSIDY_MENTION_PATTERN = /ch[eè]ques?[\s-]entreprises?/i;
+type EmailDraftResponse = z.infer<typeof EmailDraftSchema>;
 
 export class CreativeCopywriter extends AutonomousAgent {
   constructor() {
     super(
-      "Creative Copywriter",
+      "Outreach Copywriter AI",
       {
         role: [
-          "Tu es Manon Verhoeven, Creative Copywriter du pôle Acquisition de",
-          "Purity Agency. Tu écris comme quelqu'un qui a fait ses devoirs sur",
-          "l'entreprise ciblée, jamais comme un robot poli qui recycle un",
-          "template. Chaque email cite un point de douleur précis de l'audit —",
-          "jamais une formule générique. Tu proposes exactement le module du",
-          "catalogue qui répond à ce point de douleur, prix exact, et tu",
-          "mentionnes systématiquement la subvention Chèques Entreprises",
-          "Wallonie qui en prend en charge une partie. Objet accrocheur mais",
-          "jamais putaclic — le ton reste \"Liquid Glass\" : premium, direct,",
-          "sans superlatif vide.",
+          "Tu es un Expert humain qui observe un problème et ouvre une conversation.",
+          "Tu n'es pas un commercial. Tu n'es pas un consultant. Tu n'es pas un copain.",
+          "L'objectif de l'email n'est pas de convaincre. Il est de susciter suffisamment de curiosité",
+          "et de crédibilité pour obtenir une réponse. Si tu tentes de vendre, d'expliquer toute l'offre",
+          "ou de multiplier les arguments, tu as échoué. Chaque email doit sembler avoir été écrit",
+          "individuellement par un humain qui a réellement observé l'entreprise."
         ].join(' '),
         department: "01_ACQUISITION",
         knowledgeFiles: [
-          "purity_catalogue_officiel_v2.md",
           "BrandRules.md",
           "ForbiddenWords.md"
         ],
         skills: [
           "email-ops",
           "research-ops",
-          "messages-ops",
-          "seo",
-          "security-review"
+          "messages-ops"
         ]
       }
     );
@@ -57,8 +48,7 @@ export class CreativeCopywriter extends AutonomousAgent {
       return;
     }
 
-    const chosenTone = customTone || "Liquid Glass (Premium)";
-    await this.logger.startTask(`Rédaction du brouillon d'e-mail pour ${lead.companyName} (Ton: ${chosenTone})`);
+    await this.logger.startTask(`Rédaction du brouillon d'e-mail pour ${lead.companyName} (Outreach Copywriter)`);
 
     try {
       interface AuditData {
@@ -66,59 +56,59 @@ export class CreativeCopywriter extends AutonomousAgent {
         recommendedModules?: string[]
       }
       const auditData = (lead.auditData as AuditData | null) || {};
-      const painPoints = auditData.painPoints?.join(", ") || "Optimisation générale";
-      const modules = auditData.recommendedModules?.join(", ") || "Refonte globale";
+      const painPoints = auditData.painPoints?.join(", ") || "Problème d'optimisation générale";
 
       const prompt = `
-        Tu es Manon Verhoeven, Creative Copywriter chez Purity Agency (une agence web d'avant-garde basée à Charleroi, Belgique).
-        Rédige un e-mail de prospection ultra-personnalisé, court, percutant et humain pour l'entreprise "${lead.companyName}".
-        Tu t'adresses à un artisan, commerçant ou dirigeant de PME en Wallonie. Le ton doit être adapté aux consignes de style suivantes :
-
-        Style et Ton requis : "${chosenTone}"
-        - Si "Liquid Glass (Premium)" : premium, direct, sans superlatif vide, très factuel et élégant.
-        - Si "Direct & Cash" : court, pragmatique, axé sur le ROI direct et le manque à gagner, ton d'égal à égal.
-        - Si "Subtil & Conseil" : axé sur l'accompagnement, l'analyse gratuite et l'apport de valeur en conseil, ton chaleureux et expert.
-        - Si "Cyber-Futuriste" : axé sur la puissance des agents IA et de l'automatisation, style technique de pointe 2026-2027.
-
+        Tu rédiges le premier email de prospection (Cold Email) pour le lead "${lead.companyName}".
+        
         Détails du destinataire :
         - Entreprise : ${lead.companyName}
         - Localisation : ${lead.location || "Wallonie"}
         - Site Web : ${lead.websiteUrl || "Pas de site actuel"}
         - Nom du contact : ${lead.contactName || "non spécifié"}
         - Rôle du contact : ${lead.contactRole || "dirigeant"}
-        - Faiblesses identifiées lors de notre audit : ${painPoints}
-        - Modules Purity recommandés : ${modules}
+        - Problème identifié (utilise 1 seul point d'attaque) : ${painPoints}
 
-        Directives de rédaction psychologique et humaine :
-        1. **Salutation humaine** : Si le nom du contact est connu, commence par "Bonjour ${lead.contactName},". Sinon, utilise "Bonjour," ou "Bonjour ${lead.companyName},".
-        2. **Pas d'introduction clichée** : Bannis totalement les formules d'accroche génériques comme "J'espère que vous allez bien", "Je me permets de vous écrire" ou "Je suis Manon de Purity". Commence DIRECTEMENT par une observation factuelle sur leur présence en ligne (ex: "En observant la visibilité locale de ${lead.companyName} à ${lead.location || "Charleroi"}...", "En analysant le site web de ${lead.companyName}...").
-        3. **L'impact psychologique** : Relie chaque faiblesse identifiée à sa conséquence financière réelle (ex: un site lent = perte de clients sur mobile, une fiche Google non optimisée = les clients vont chez le concurrent voisin, pas de prise de RDV en ligne = perte de prospects le soir ou le week-end).
-        4. **Proposition de valeur concrète** : Présente les modules recommandés en gras avec leurs vrais prix du catalogue Purity (que tu trouveras dans purity_catalogue_officiel_v2.md, ex: **Réservation en Ligne (390 €)**, **Site Vitrine (1 490 €)**, **Pilote Automatique Business (990 €)**).
-        5. **Le levier financier (Wallonie)** : Explique de manière simple et rassurante que la Région Wallonne offre la subvention "Chèques Entreprises Wallonie" qui finance jusqu'à 50 % du montant HTVA. Traduis cela en chiffres réels (ex: le module à 1 490 € revient à seulement 745 € après subvention).
-        6. **Clarté "Liquid Glass"** : Pas de jargon complexe ni de superlatifs inutiles ("révolutionnaire", etc.). Sois factuel, asymétrique et direct.
-        7. **CTA à faible friction (Fitts's Law)** : Une seule question claire pour ouvrir la discussion (ex: "Seriez-vous disponible 10 minutes ce jeudi pour en parler de vive voix ?", "Est-ce qu'on peut s'appeler 10 minutes cette semaine ?").
-        8. **Signature professionnelle** : Termine simplement par "Manon Verhoeven — Purity Agency".
-
-        Règles techniques :
-        - Évite absolument les mots interdits de ForbiddenWords.md (ex: "Dans le monde d'aujourd'hui", "En conclusion", "N'hésitez pas à nous contacter", "Nous sommes fiers de vous annoncer", "Révolutionnaire", "Plongez dans l'univers de", "Booster").
-        - Génère uniquement le sujet de l'email et le corps au format HTML basique (<p>, <br>, <strong>).
+        RÈGLES ABSOLUES (MANUEL OPÉRATOIRE - AOÛT 2026) :
+        
+        1. OBJECTIF UNIQUE : Le but N'EST PAS de vendre. Le but est UNIQUEMENT de déclencher une conversation (obtenir une réponse).
+        
+        2. PATTERN INTERRUPT (Casser les codes) :
+           - Le cerveau du prospect doit s'arrêter.
+           - INTERDIT : "Bonjour Monsieur", "J'espère que vous allez bien", "Je me permets de vous contacter".
+           - OBLIGATOIRE : Commence directement par le fait. (Ex: "En regardant votre site, un détail m'a sauté aux yeux.", "J'ai probablement trouvé la raison pour laquelle votre site perd des clients sur mobile.")
+        
+        3. VALUE FIRST : 
+           - Apporte de la valeur avant même de parler de nous (Purity Agency). 
+           - Pointe un fait précis (Ex: "Votre PageSpeed mobile est de 41. Cela pénalise probablement votre référencement local.")
+        
+        4. VARIABLE LENGTH : L'email doit faire entre 40 et 90 mots maximum.
+        
+        5. LOW FRICTION CTA (Micro-Commitment) : 
+           - Le Call-To-Action final demande un très faible niveau d'engagement. Ne fige pas la question, sois contextuel.
+           - Urgence -> "Ça vaut le coup qu'on vous montre ?"
+           - Curiosité -> "Vous voulez voir ce qu'on changerait ?"
+           - Gros problème -> "Je peux vous envoyer les 3 corrections principales."
+        
+        6. VOUVOIEMENT STRICT : Jamais de tutoiement en B2B Wallonie. Utilise le "vous" professionnellement.
+        
+        INSTRUCTIONS DE RÉFLEXION :
+        Avant d'écrire, remplis le champ "objectionPrediction" : Pourquoi ce prospect ne répondrait-il pas ? (Prix, temps, pas intéressé, déjà une agence, manque de confiance).
+        Après avoir écrit, remplis "selfCritique" et donne une note sur 10. Si le mail ressemble à ChatGPT (Human Detector), mets humanDetectorPassed à false.
+        
+        FORMAT DE SORTIE :
+        Retourne le sujet (subject) et le corps de l'email (bodyHtml) formaté en HTML simple (<p>, <br>). Ne mentionne pas de prix catalogue.
       `;
 
-      let result = await this.think<EmailDraftResponse>(prompt, "Génération de l'email de prospection", EmailDraftSchema);
+      let result = await this.think<EmailDraftResponse>(prompt, "Génération de l'email (Essai 1)", EmailDraftSchema);
 
-      // Garde-fou code, pas juste prompt (finding audit 2026-08-02) : on
-      // vérifie le texte réellement généré, une seule reformulation
-      // tentée, puis échec bruyant plutôt qu'un brouillon incomplet.
-      if (!SUBSIDY_MENTION_PATTERN.test(result.bodyHtml)) {
-        await this.logger.startTask('Mention Chèques Entreprises absente — reformulation forcée');
-        const retryPrompt = `${prompt}\n\nTa précédente tentative n'a PAS mentionné "Chèques Entreprises Wallonie" — corrige impérativement cette omission cette fois.`;
-        result = await this.think<EmailDraftResponse>(retryPrompt, "Reformulation forcée (mention obligatoire)", EmailDraftSchema);
-
-        if (!SUBSIDY_MENTION_PATTERN.test(result.bodyHtml)) {
-          throw new Error(
-            "Deux tentatives sans mention de Chèques Entreprises Wallonie — brouillon non créé plutôt que livré incomplet."
-          );
-        }
+      // Boucle de réécriture Human Detector / Self Critique (Max 2 retries)
+      let attempts = 1;
+      while ((!result.humanDetectorPassed || result.selfCritiqueScore < 8) && attempts <= 2) {
+        await this.logger.startTask(`Email refusé par le Human Detector (Note: ${result.selfCritiqueScore}/10). Réécriture en cours...`);
+        const retryPrompt = `${prompt}\n\nTa précédente tentative a échoué. Voici ta propre critique : "${result.selfCritique}".\n\nL'email sonnait trop commercial ou comme une IA. Réécris un email totalement différent, beaucoup plus naturel, cassant encore plus les codes (Pattern Interrupt), et qui passe le Human Detector.`;
+        result = await this.think<EmailDraftResponse>(retryPrompt, `Génération de l'email (Essai ${attempts + 1})`, EmailDraftSchema);
+        attempts++;
       }
 
       if (regeneratingDraftId) {
@@ -127,7 +117,7 @@ export class CreativeCopywriter extends AutonomousAgent {
           data: {
             subject: result.subject,
             bodyHtml: result.bodyHtml,
-            tone: chosenTone,
+            tone: "Outreach (Value First)",
             status: "PENDING_APPROVAL"
           }
         });
@@ -137,7 +127,7 @@ export class CreativeCopywriter extends AutonomousAgent {
             leadId: lead.id,
             subject: result.subject,
             bodyHtml: result.bodyHtml,
-            tone: chosenTone,
+            tone: "Outreach (Value First)",
             status: "PENDING_APPROVAL"
           }
         });
@@ -148,7 +138,7 @@ export class CreativeCopywriter extends AutonomousAgent {
         });
       }
 
-      await this.logger.finishTask(`Brouillon généré pour ${lead.companyName}. En attente de validation CEO.`);
+      await this.logger.finishTask(`Brouillon "Outreach" généré pour ${lead.companyName} (Note AI: ${result.selfCritiqueScore}/10).`);
 
     } catch (error) {
       await this.logger.logError(`Échec de la génération pour ${lead.websiteUrl}: ${error}`);

@@ -31,8 +31,9 @@ export async function sendEmail({ to, subject, html }: { to: string; subject: st
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        from: process.env.CONTACT_FROM || "Purity Agency <onboarding@resend.dev>",
+        from: "Purity Agency <contact@purity-agency.be>",
         to: [to],
+        bcc: ["contact@purity-agency.be"],
         subject,
         html,
       }),

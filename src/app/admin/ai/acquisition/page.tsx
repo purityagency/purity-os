@@ -5,6 +5,9 @@ import Link from "next/link"
 import { MissionTracker } from "./MissionTracker"
 import { PipelineKanban } from "./PipelineKanban"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 export default async function AdminAcquisitionPage() {
   await requireAdminSession()
 
@@ -54,16 +57,18 @@ export default async function AdminAcquisitionPage() {
   const conversionRate = totalLeads > 0 ? Math.round((engagedCount / totalLeads) * 100) : 0
 
   return (
-    <div className="h-[calc(100vh-90px)] flex flex-col space-y-4 overflow-hidden">
+    <div className="h-full flex flex-col space-y-4 p-4 lg:p-8">
       {/* Top Header & Compact KPI Bar (Fixed) */}
       <div className="shrink-0 space-y-3 border-b border-white/5 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">Acquisition · Pôle 01</span>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
+              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Acquisition · Pôle 01</span>
             </div>
-            <h1 className="text-2xl font-bold text-white tracking-tight mt-0.5">Pipeline Prospection IA</h1>
+            <h1 className="text-xl font-bold uppercase tracking-wider text-white font-mono flex items-center gap-2">
+              Pôle 01: Pipeline Prospection
+            </h1>
           </div>
 
           <div className="flex items-center gap-2">
@@ -134,10 +139,10 @@ export default async function AdminAcquisitionPage() {
             <span className="text-base font-bold text-amber-400 tabular-nums">{pendingDrafts.length} à valider</span>
           </Link>
 
-          <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">RDV Confirmés</span>
-            <span className="text-base font-bold text-emerald-400 tabular-nums">{meetingCount} RDV</span>
-          </div>
+          <Link href="/admin/ai/acquisition/outbox" className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all cursor-pointer group">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-500/70 block truncate group-hover:text-emerald-400 transition-colors">Envoyés ↗</span>
+            <span className="text-base font-bold text-emerald-400 tabular-nums">{contactedCount} mails</span>
+          </Link>
         </div>
       </div>
 

@@ -19,6 +19,12 @@ if (!geminiApiKey) {
 const google = createGoogleGenerativeAI({ apiKey: geminiApiKey });
 
 /**
+ * MOCK MODE : Si MOCK_API=true, aucun appel Gemini ne sera fait.
+ * (Désactivé pour la vraie prospection)
+ */
+const MOCK_API = false; // process.env.MOCK_API === 'true';
+
+/**
  * Un seul projet Google = un seul quota Gemini, partagé par TOUS les
  * agents de ce pôle (10 req/min, 250 req/jour sur le tier gratuit — voir
  * la conversation du 2026-08-03). Avant ce correctif, chaque agent
@@ -123,6 +129,32 @@ export abstract class AutonomousAgent {
     if (logTaskName) await this.logger.startTask(logTaskName);
 
     const callOnce = async () => {
+      if (MOCK_API && schema) {
+        // Renvoie un mock statique bidon mais valide au lieu de payer l'API
+        return {
+          // Chief
+          missionId: "mission-mock",
+          parameters: { sectors: ["Artisan", "Toiture"], locations: ["Charleroi"], maxLeads: 2 },
+          // MarketScout SearchStrategy
+          queries: ["artisan toiture charleroi", "entreprise batiment namur"],
+          // MarketScout EvalResponse
+          isGoodLead: true,
+          companyName: "Toiture Mock SPRL",
+          reason: "Semble être un bon artisan",
+          // IntelligenceAnalyst
+          painPoints: ["Pas de site web mobile", "Mauvais référencement Google"],
+          recommendedModules: ["Site Vitrine", "Visibilité Locale SEO"],
+          score: 85,
+          // Copywriter
+          objectionPrediction: "Le prospect n'a pas le temps, il a la tête dans le guidon avec ses chantiers.",
+          subject: "Le détail qui vous fait perdre des appels",
+          bodyHtml: "<p>Votre site charge en 8 secondes sur mobile. À Charleroi, vos clients vont chez le concurrent avant même de voir vos réalisations.</p><p>Ça vaudrait le coup qu'on vous montre comment régler ça ?</p><br><p>Manon Verhoeven — Purity Agency</p>",
+          selfCritique: "Le mail est court (37 mots), percutant, value first (PageSpeed). Pas de bonjour corporate. Le CTA est un micro-commitment.",
+          selfCritiqueScore: 9,
+          humanDetectorPassed: true
+        } as unknown as T;
+      }
+
       await throttleGeminiCall();
       const model = google(this.modelName);
       return schema
