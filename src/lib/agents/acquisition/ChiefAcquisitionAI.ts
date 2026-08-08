@@ -1,12 +1,8 @@
 import { z } from 'zod';
-import * as fs from 'fs';
-import * as path from 'path';
 import { prisma } from '@/lib/prisma';
 import { MarketScout } from './MarketScout';
 import { MissionOrder } from './types';
 import { AutonomousAgent } from './AgentCore';
-
-type TargetingFeedbackEntry = { action: 'APPROVED' | 'REJECTED'; companyName: string };
 
 const StrategyResponseSchema = z.object({
   recommendedTechStack: z.array(z.string()),
@@ -66,22 +62,39 @@ export class ChiefAcquisitionAI extends AutonomousAgent {
   public async launchMission(name: string, sectors: string[], locations: string[], maxLeads: number = 50) {
     await this.logger.startTask(`Stratégie pour la mission: ${name}`);
 
+    // Learning Loop — lue directement depuis la source durable (Postgres),
+    // plus depuis un fichier disque : sur Vercel le FS est en lecture seule,
+    // donc l'ancien `data/daily-logs/targeting-feedback.json` n'était jamais
+    // écrit en prod (échec avalé par un try/catch) et ce contexte restait
+    // toujours vide. La donnée existe déjà : EmailDraft.status vaut SENT pour
+    // un brouillon approuvé/envoyé, REJECTED pour un refusé.
     let learningContext = "";
     try {
-      const feedbackPath = path.join(process.cwd(), 'data/daily-logs/targeting-feedback.json');
-      if (fs.existsSync(feedbackPath)) {
-        const content = fs.readFileSync(feedbackPath, 'utf8');
-        if (content) {
-          const feedback: TargetingFeedbackEntry[] = JSON.parse(content);
-          const recentRejections = feedback.filter((f) => f.action === 'REJECTED').slice(-10);
-          const recentApprovals = feedback.filter((f) => f.action === 'APPROVED').slice(-10);
-          learningContext = `
+      const [approved, rejected] = await Promise.all([
+        prisma.emailDraft.findMany({
+          where: { status: "SENT" },
+          orderBy: { updatedAt: "desc" },
+          take: 10,
+          select: { lead: { select: { companyName: true } } },
+        }),
+        prisma.emailDraft.findMany({
+          where: { status: "REJECTED" },
+          orderBy: { updatedAt: "desc" },
+          take: 10,
+          select: { lead: { select: { companyName: true } } },
+        }),
+      ]);
+
+      const approvedNames = approved.map((d) => d.lead.companyName).join(', ') || 'Aucun';
+      const rejectedNames = rejected.map((d) => d.lead.companyName).join(', ') || 'Aucun';
+
+      if (approved.length > 0 || rejected.length > 0) {
+        learningContext = `
             Historique récent d'apprentissage (Learning Loop) :
-            - Leads validés récemment : ${recentApprovals.map((f) => f.companyName).join(', ') || 'Aucun'}
-            - Leads rejetés récemment : ${recentRejections.map((f) => f.companyName).join(', ') || 'Aucun'}
+            - Leads validés récemment : ${approvedNames}
+            - Leads rejetés récemment : ${rejectedNames}
             Ajuste tes propositions de technologies et tes directives de ciblage en évitant les profils similaires aux leads rejetés.
           `;
-        }
       }
     } catch (e) {
       this.logger.logError(`Impossible de lire le feedback d'apprentissage : ${e}`);
