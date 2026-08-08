@@ -1,6 +1,7 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
+import type { Prisma } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { requireAdminSession } from "@/lib/session"
 import { AppError, NotFoundError, ValidationError } from "@/lib/errors"
@@ -61,30 +62,31 @@ export async function launchMission(formData: FormData) {
  * ce correctif (finding 2026-08-03), rien ne confirmait jamais l'envoi et un
  * échec Resend pouvait être marqué SENT quand même (voir email.ts).
  */
-export async function approveAndSendDraft(draftId: string, _prevState: ActionResult | null): Promise<ActionResult> {
-  await requireAdminSession()
-  void _prevState
+// Cœur d'envoi partagé par l'envoi unitaire ET l'envoi groupé. Applique tous
+// les garde-fous (traité / email absent / désinscrit / placeholder), envoie,
+// met à jour les statuts et émet l'événement. Retourne un résultat structuré
+// avec une raison de skip exploitable par l'envoi groupé.
+type DeliverResult =
+  | { ok: true; email: string }
+  | { ok: false; reason: "already" | "no_email" | "opted_out" | "placeholder" | "send_failed"; message: string }
 
-  const draft = await prisma.emailDraft.findUnique({
-    where: { id: draftId },
-    include: { lead: true },
-  })
-  if (!draft) throw new NotFoundError("Brouillon")
+type DraftWithLead = Prisma.EmailDraftGetPayload<{ include: { lead: true } }>
+
+async function deliverDraft(draft: DraftWithLead): Promise<DeliverResult> {
   if (draft.status !== "PENDING_APPROVAL") {
-    return { ok: false, message: "Ce brouillon a déjà été traité." }
+    return { ok: false, reason: "already", message: "Déjà traité." }
   }
   if (!draft.lead.contactEmail) {
-    return { ok: false, message: "Ce lead n'a pas d'e-mail de contact — impossible d'envoyer." }
+    return { ok: false, reason: "no_email", message: "Pas d'e-mail de contact." }
   }
-  // Suppression : un lead désinscrit ne peut JAMAIS être recontacté, même sur
-  // approbation manuelle. Garde-fou légal (droit d'opposition) et de réputation.
+  // Suppression : un lead désinscrit ne peut JAMAIS être recontacté (droit
+  // d'opposition RGPD + réputation).
   if (draft.lead.optedOut) {
-    return { ok: false, message: "Ce lead s'est désinscrit — envoi interdit." }
+    return { ok: false, reason: "opted_out", message: "Lead désinscrit." }
   }
-  // Garde-fou anti-placeholder : jamais un crochet non rempli ("[nom du
-  // contact]"…) n'atteint un prospect, même sur un ancien brouillon.
+  // Jamais un crochet non rempli ("[nom du contact]"…) n'atteint un prospect.
   if (containsPlaceholder(draft.bodyHtml)) {
-    return { ok: false, message: "Ce brouillon contient un champ non rempli ([...]) — régénérez-le ou corrigez-le avant d'envoyer." }
+    return { ok: false, reason: "placeholder", message: "Champ non rempli ([...])." }
   }
 
   const unsubscribeUrl = `${getBaseUrl()}/api/unsubscribe?token=${makeUnsubscribeToken(draft.lead.id)}`
@@ -98,26 +100,89 @@ export async function approveAndSendDraft(draftId: string, _prevState: ActionRes
         source: draft.lead.source,
         websiteUrl: draft.lead.websiteUrl,
       }),
-      // Header List-Unsubscribe volontairement NON passé : à faible volume
-      // (<50/jour, loin du seuil bulk de 5000/jour qui le rend obligatoire),
-      // ce header est un signal "marketing" qui pousse Gmail vers l'onglet
-      // Promotions. La désinscription reste assurée par le lien visible +
-      // reply STOP dans la signature. À réactiver si le volume dépasse le seuil.
+      // Header List-Unsubscribe volontairement NON passé (<50/jour) — signal
+      // Promotions inutile ; désinscription assurée par le lien visible + STOP.
     })
   } catch (e) {
-    const message = e instanceof AppError ? e.message : "Échec d'envoi inattendu — voir les logs serveur."
-    return { ok: false, message: `Email NON envoyé : ${message}` }
+    const message = e instanceof AppError ? e.message : "Échec d'envoi inattendu."
+    return { ok: false, reason: "send_failed", message }
   }
 
   await prisma.$transaction([
     prisma.emailDraft.update({ where: { id: draft.id }, data: { status: "SENT" } }),
     prisma.lead.update({ where: { id: draft.leadId }, data: { status: "CONTACTED" } }),
   ])
-
   eventBus.publish(new DraftReviewedEvent(draft.lead.id, draft.lead.companyName, "APPROVED"))
+  return { ok: true, email: draft.lead.contactEmail }
+}
 
-  revalidatePath("/admin/acquisition")
-  return { ok: true, message: `Email envoyé à ${draft.lead.contactEmail}.` }
+function revalidateAcquisition() {
+  revalidatePath("/admin/ai/acquisition")
+  revalidatePath("/admin/ai/acquisition/drafts")
+  revalidatePath("/admin/ai/acquisition/outbox")
+}
+
+export async function approveAndSendDraft(draftId: string, _prevState: ActionResult | null): Promise<ActionResult> {
+  await requireAdminSession()
+  void _prevState
+
+  const draft = await prisma.emailDraft.findUnique({ where: { id: draftId }, include: { lead: true } })
+  if (!draft) throw new NotFoundError("Brouillon")
+
+  const result = await deliverDraft(draft)
+  revalidateAcquisition()
+  if (!result.ok) {
+    const hint =
+      result.reason === "placeholder"
+        ? " Régénérez-le ou corrigez-le avant d'envoyer."
+        : ""
+    return { ok: false, message: `Email NON envoyé : ${result.message}${hint}` }
+  }
+  return { ok: true, message: `Email envoyé à ${result.email}.` }
+}
+
+/**
+ * Envoi GROUPÉ sécurisé : envoie d'un coup tous les brouillons en attente dont
+ * le lead a un score ≥ minScore. Chaque brouillon repasse par TOUS les
+ * garde-fous unitaires (désinscrit, placeholder, email manquant) — l'envoi
+ * groupé n'affaiblit jamais la sécurité, il l'applique juste en série. Retourne
+ * un récap (envoyés / ignorés par raison) au lieu d'un simple ok/ko.
+ */
+export async function bulkApproveAndSend(
+  minScore: number,
+  _prevState: ActionResult | null,
+): Promise<ActionResult> {
+  await requireAdminSession()
+  void _prevState
+
+  const threshold = Number.isFinite(minScore) ? Math.max(0, Math.min(100, minScore)) : 75
+
+  const drafts = await prisma.emailDraft.findMany({
+    where: {
+      status: "PENDING_APPROVAL",
+      lead: { score: { gte: threshold }, optedOut: false, contactEmail: { not: null } },
+    },
+    include: { lead: true },
+    orderBy: { lead: { score: "desc" } },
+  })
+
+  if (drafts.length === 0) {
+    return { ok: false, message: `Aucun brouillon éligible (lead score ≥ ${threshold}, email présent, non désinscrit).` }
+  }
+
+  let sent = 0
+  const skipped: Record<string, number> = {}
+  for (const draft of drafts) {
+    const r = await deliverDraft(draft)
+    if (r.ok) sent++
+    else skipped[r.reason] = (skipped[r.reason] ?? 0) + 1
+  }
+
+  revalidateAcquisition()
+
+  const skipTotal = Object.values(skipped).reduce((a, b) => a + b, 0)
+  const skipDetail = skipTotal > 0 ? ` — ${skipTotal} ignoré(s) (${Object.entries(skipped).map(([k, v]) => `${v} ${k}`).join(", ")})` : ""
+  return { ok: true, message: `${sent} email(s) envoyé(s) (score ≥ ${threshold})${skipDetail}.` }
 }
 
 export async function rejectDraft(draftId: string, _prevState: ActionResult | null): Promise<ActionResult> {

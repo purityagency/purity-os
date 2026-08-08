@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
-import Link from "next/link"
 import { DraftComposer } from "../DraftComposer"
+import { BulkSendBar } from "../BulkSendBar"
 import { MailIcon } from "@/components/icons"
 
 export default async function AcquisitionDraftsPage() {
@@ -24,6 +24,8 @@ export default async function AcquisitionDraftsPage() {
   }))
 
   const draftsCount = pendingDrafts.length
+  // Scores des leads (null = 0) pour piloter l'envoi groupé côté client.
+  const scores = pendingDrafts.map((d) => d.lead.score ?? 0)
 
   return (
     <div className="h-full flex flex-col p-4 lg:p-8 overflow-hidden">
@@ -44,6 +46,13 @@ export default async function AcquisitionDraftsPage() {
           {draftsCount} attente(s)
         </div>
       </div>
+
+      {/* Envoi groupé sécurisé au seuil de score */}
+      {draftsCount > 0 && (
+        <div className="mb-4 shrink-0">
+          <BulkSendBar scores={scores} />
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto pr-2 space-y-4">
