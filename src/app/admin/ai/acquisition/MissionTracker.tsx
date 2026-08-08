@@ -46,7 +46,7 @@ function MissionCard({ mission }: { mission: Mission }) {
       {/* Progress bar terminal style */}
       <div className="pl-3 space-y-0.5">
         <div className="flex items-center justify-between text-[8px] font-mono text-zinc-500">
-          <span>{mission._count.leads} SRC'D</span>
+          <span>{mission._count.leads} SRC&apos;D</span>
           <span>{progress}% [{maxLeads}]</span>
         </div>
         <div className="h-[1px] bg-white/5 w-full">

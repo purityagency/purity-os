@@ -29,7 +29,7 @@ export default async function AcquisitionCRMPage() {
               Base CRM de Leads
             </h1>
             <p className="text-xs text-zinc-400">
-              Recherche et filtres avancés sur la base qualifiée par les agents d'Acquisition.
+              Recherche et filtres avancés sur la base qualifiée par les agents d&apos;Acquisition.
             </p>
           </div>
         </div>
