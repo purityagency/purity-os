@@ -259,6 +259,13 @@ model Lead {
   // Voir ai/01_ACQUISITION/Lead_Scoring_Analyst/README.md pour la méthode.
   score       Int?
 
+  // Désinscription (opt-out / droit d'opposition RGPD + ePrivacy). Un lead
+  // optedOut ne doit PLUS JAMAIS être recontacté — la suppression est
+  // définitive et transversale à toutes les campagnes, jamais juste "cette
+  // fois-ci" (exigence légale ET règles délivrabilité Gmail/Yahoo 2024).
+  optedOut    Boolean  @default(false)
+  optedOutAt  DateTime?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

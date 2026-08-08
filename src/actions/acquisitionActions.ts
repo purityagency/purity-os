@@ -7,6 +7,8 @@ import { AppError, NotFoundError, ValidationError } from "@/lib/errors"
 import { sendEmail } from "@/lib/email"
 import { withAgentSignature } from "@/lib/emailSignature"
 import { sanitizeEmailHtml } from "@/lib/sanitizeHtml"
+import { makeUnsubscribeToken } from "@/lib/unsubscribeToken"
+import { getBaseUrl } from "@/lib/utils"
 import { ChiefAcquisitionAI } from "@/lib/agents/acquisition/ChiefAcquisitionAI"
 
 import { CreativeCopywriter } from "@/lib/agents/acquisition/CreativeCopywriter"
@@ -73,12 +75,24 @@ export async function approveAndSendDraft(draftId: string, _prevState: ActionRes
   if (!draft.lead.contactEmail) {
     return { ok: false, message: "Ce lead n'a pas d'e-mail de contact — impossible d'envoyer." }
   }
+  // Suppression : un lead désinscrit ne peut JAMAIS être recontacté, même sur
+  // approbation manuelle. Garde-fou légal (droit d'opposition) et de réputation.
+  if (draft.lead.optedOut) {
+    return { ok: false, message: "Ce lead s'est désinscrit — envoi interdit." }
+  }
+
+  const unsubscribeUrl = `${getBaseUrl()}/api/unsubscribe?token=${makeUnsubscribeToken(draft.lead.id)}`
 
   try {
     await sendEmail({
       to: draft.lead.contactEmail,
       subject: draft.subject,
-      html: withAgentSignature(sanitizeEmailHtml(draft.bodyHtml)),
+      html: withAgentSignature(sanitizeEmailHtml(draft.bodyHtml), {
+        unsubscribeUrl,
+        source: draft.lead.source,
+        websiteUrl: draft.lead.websiteUrl,
+      }),
+      listUnsubscribeUrl: unsubscribeUrl,
     })
   } catch (e) {
     const message = e instanceof AppError ? e.message : "Échec d'envoi inattendu — voir les logs serveur."
