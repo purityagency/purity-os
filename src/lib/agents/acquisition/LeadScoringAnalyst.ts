@@ -30,35 +30,63 @@ export class LeadScoringAnalyst extends AutonomousAgent {
     const breakdown: LeadScore['breakdown'] = [];
     let score = 0;
 
-    if (lead.contactEmail) {
-      score += 30;
-      breakdown.push({ criterion: 'Contact vérifié', points: 30, reason: `Email confirmé: ${lead.contactEmail}` });
-    } else {
-      breakdown.push({ criterion: 'Contact vérifié', points: 0, reason: 'Aucun contact vérifié en base' });
-    }
+    const audit = lead.auditData as { performanceScore?: number; seoScore?: number; contactPhone?: string } | null;
 
-    const audit = lead.auditData as { performanceScore?: number } | null;
+    // 1. OPPORTUNITÉ TECHNIQUE (0-35) — le cœur : "cette entreprise a-t-elle
+    // besoin de nous ?". Plus le site est mauvais, plus l'opportunité est
+    // grande. Un score PageSpeed inconnu vaut une opportunité MOYENNE (18),
+    // pas zéro : ne pas écraser tous les non-audités au même niveau.
     const perf = audit?.performanceScore;
+    let perfPts: number;
     if (typeof perf === 'number') {
-      const opportunityPoints = perf < 50 ? 25 : perf < 80 ? 15 : 5;
-      score += opportunityPoints;
-      breakdown.push({ criterion: 'Opportunité technique', points: opportunityPoints, reason: `Score performance: ${perf}/100` });
+      perfPts = perf < 30 ? 35 : perf < 50 ? 30 : perf < 70 ? 22 : perf < 85 ? 12 : 4;
+      breakdown.push({ criterion: 'Opportunité technique', points: perfPts, reason: `Performance mobile ${Math.round(perf)}/100` });
     } else {
-      breakdown.push({ criterion: 'Opportunité technique', points: 0, reason: "Pas encore audité" });
+      perfPts = 18;
+      breakdown.push({ criterion: 'Opportunité technique', points: perfPts, reason: 'Performance non mesurée (opportunité présumée moyenne)' });
     }
+    score += perfPts;
 
-    const sectors = (lead.mission?.parameters as { sectors?: string[] } | null)?.sectors ?? [];
-    if (sectors.length > 0) {
-      score += 15;
-      breakdown.push({ criterion: 'Mission active', points: 15, reason: `Secteurs ciblés: ${sectors.join(', ')}` });
+    // 2. LACUNE SEO (0-15).
+    const seo = audit?.seoScore;
+    let seoPts: number;
+    if (typeof seo === 'number') {
+      seoPts = seo < 50 ? 15 : seo < 70 ? 10 : seo < 85 ? 5 : 0;
+      breakdown.push({ criterion: 'Lacune SEO', points: seoPts, reason: `SEO ${Math.round(seo)}/100` });
+    } else {
+      seoPts = 6;
+      breakdown.push({ criterion: 'Lacune SEO', points: seoPts, reason: 'SEO non mesuré' });
     }
+    score += seoPts;
 
+    // 3. JOIGNABILITÉ — email (0-25) : un email nominatif (jean@) vaut bien plus
+    // qu'un générique (info@/contact@) car il ouvre un vrai canal 1:1.
+    const email = lead.contactEmail?.toLowerCase() ?? null;
+    let emailPts = 0;
+    if (email) {
+      const localPart = email.split('@')[0];
+      const isGeneric = /^(info|contact|hello|bonjour|admin|sales|commercial|accueil|welcome|mail|no-?reply)/.test(localPart);
+      emailPts = isGeneric ? 15 : 25;
+      breakdown.push({ criterion: 'Joignabilité email', points: emailPts, reason: isGeneric ? `Email générique (${email})` : `Email nominatif (${email})` });
+    } else {
+      breakdown.push({ criterion: 'Joignabilité email', points: 0, reason: 'Aucun email — lead injoignable' });
+    }
+    score += emailPts;
+
+    // 4. Téléphone présent (0-10) — canal de secours réel.
+    const phonePts = audit?.contactPhone ? 10 : 0;
+    if (phonePts) breakdown.push({ criterion: 'Téléphone', points: phonePts, reason: audit?.contactPhone ?? '' });
+    score += phonePts;
+
+    // 5. ENGAGEMENT (0-15) — signal fort seulement quand il existe vraiment
+    // (réponse/RDV). Avant l'envoi, quasi neutre : ne doit pas gonfler le score
+    // artificiellement (c'était une des causes du tassement à ~60).
     const statusPoints: Record<string, number> = {
-      NEW: 5, ENRICHED: 10, DRAFTED: 15, CONTACTED: 20, REPLIED: 30, MEETING_BOOKED: 30, BOUNCED: -20,
+      NEW: 0, ENRICHED: 0, DRAFTED: 2, CONTACTED: 6, REPLIED: 15, MEETING_BOOKED: 15, BOUNCED: -25,
     };
     const sp = statusPoints[lead.status] ?? 0;
     score += sp;
-    breakdown.push({ criterion: 'Avancement pipeline', points: sp, reason: `Statut actuel: ${lead.status}` });
+    breakdown.push({ criterion: 'Engagement', points: sp, reason: `Statut ${lead.status}` });
 
     score = Math.max(0, Math.min(100, score));
 

@@ -8,10 +8,12 @@ export default async function AcquisitionDraftsPage() {
   await requireAdminSession()
 
   // Fetch pending drafts
+  // File triée par score de lead décroissant : les meilleurs prospects
+  // remontent en haut, on valide d'abord ce qui compte (nulls en dernier).
   const pendingDraftsRaw = await prisma.emailDraft.findMany({
     where: { status: "PENDING_APPROVAL" },
     include: { lead: true },
-    orderBy: { createdAt: "desc" }
+    orderBy: [{ lead: { score: { sort: "desc", nulls: "last" } } }, { createdAt: "desc" }]
   })
 
   // Cast JSON field to satisfy TypeScript

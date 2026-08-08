@@ -52,6 +52,42 @@ function extractBelgianPhone(html: string): string | null {
   return null;
 }
 
+// Cloudflare masque les emails en HTML (`<a data-cfemail="a1b2...">`) : le
+// texte est XORé avec le premier octet comme clé. Beaucoup de sites belges
+// l'utilisent — sans ce décodage, leur email est invisible et le lead paraît
+// injoignable à tort.
+function decodeCloudflareEmails(html: string): string[] {
+  const out: string[] = [];
+  for (const m of html.matchAll(/data-cfemail=["']([0-9a-fA-F]+)["']/g)) {
+    const hex = m[1];
+    try {
+      const key = parseInt(hex.slice(0, 2), 16);
+      let email = '';
+      for (let i = 2; i < hex.length; i += 2) {
+        email += String.fromCharCode(parseInt(hex.slice(i, i + 2), 16) ^ key);
+      }
+      if (/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) out.push(email);
+    } catch {
+      /* hex invalide : on ignore */
+    }
+  }
+  return out;
+}
+
+// Récupère le HTML d'une page en tolérant l'échec (timeout court) — jamais
+// bloquant pour le pipeline.
+async function fetchHtml(url: string): Promise<string> {
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(7000), redirect: 'follow' });
+    return res.ok ? await res.text() : '';
+  } catch {
+    return '';
+  }
+}
+
+// Pages où un email de contact se cache le plus souvent, au-delà de l'accueil.
+const CONTACT_PATHS = ['/contact', '/contact.html', '/contactez-nous', '/nous-contacter', '/a-propos', '/about', '/mentions-legales'];
+
 const ContactExtractionSchema = z.object({
   contactName: z.string().nullable(),
   contactRole: z.string().nullable(),
@@ -102,20 +138,28 @@ export class IntelligenceAnalyst extends AutonomousAgent {
     contactEmail: string | null;
     contactPhone: string | null;
   }> {
-    let html = '';
+    // On lit l'accueil PUIS quelques pages de contact courantes : un email s'y
+    // trouve bien plus souvent que sur la home. Les fetchs tournent en
+    // parallèle, chacun avec son propre timeout, jamais bloquant.
+    let origin = '';
     try {
-      const response = await fetch(url, { signal: AbortSignal.timeout(8000) });
-      html = response.ok ? await response.text() : '';
+      origin = new URL(url).origin;
     } catch {
-      html = '';
+      origin = '';
     }
+    const pageUrls = [url, ...(origin ? CONTACT_PATHS.map((p) => origin + p) : [])];
+    const pages = await Promise.all(pageUrls.map(fetchHtml));
+    const html = pages.filter(Boolean).join('\n');
 
     if (!html) {
       return { contactName: null, contactRole: null, contactEmail: null, contactPhone: null };
     }
 
-    const emailMatches = Array.from(html.matchAll(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g)).map((m) => m[0]);
-    const realEmails = [...new Set(emailMatches)].filter(
+    // Emails depuis : texte brut + liens mailto: + décodage Cloudflare.
+    const plainEmails = Array.from(html.matchAll(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g)).map((m) => m[0]);
+    const mailtoEmails = Array.from(html.matchAll(/mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi)).map((m) => m[1]);
+    const cfEmails = decodeCloudflareEmails(html);
+    const realEmails = [...new Set([...mailtoEmails, ...cfEmails, ...plainEmails])].filter(
       (email) => !EMAIL_DOMAIN_BLOCKLIST.some((domain) => email.toLowerCase().endsWith(domain))
     );
 

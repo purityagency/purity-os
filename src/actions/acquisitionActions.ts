@@ -206,8 +206,59 @@ export async function rejectDraft(draftId: string, _prevState: ActionResult | nu
     eventBus.publish(new DraftReviewedEvent(draftWithLead.lead.id, draftWithLead.lead.companyName, "REJECTED"))
   }
 
-  revalidatePath("/admin/acquisition")
+  revalidateAcquisition()
   return { ok: true, message: "Brouillon rejeté." }
+}
+
+/**
+ * Nettoyage groupé : rejette tous les brouillons en attente qui ne pourront
+ * JAMAIS partir — lead sans email ou désinscrit. Déclutter la file de
+ * validation d'un coup (ex. les 69 brouillons sans email de contact).
+ */
+export async function bulkRejectUnsendable(_prevState: ActionResult | null): Promise<ActionResult> {
+  await requireAdminSession()
+  void _prevState
+
+  const { count } = await prisma.emailDraft.updateMany({
+    where: {
+      status: "PENDING_APPROVAL",
+      OR: [{ lead: { contactEmail: null } }, { lead: { optedOut: true } }],
+    },
+    data: { status: "REJECTED" },
+  })
+
+  revalidateAcquisition()
+  return count > 0
+    ? { ok: true, message: `${count} brouillon(s) injoignable(s) retiré(s) de la file.` }
+    : { ok: false, message: "Aucun brouillon injoignable à nettoyer." }
+}
+
+/**
+ * Recalcule le score de TOUS les leads avec le modèle courant. À lancer après
+ * un changement de la méthode de scoring pour que les leads existants
+ * bénéficient du nouveau barème (sinon ils gardent leur ancien score figé).
+ * Déterministe, aucun appel LLM.
+ */
+export async function rescoreAllLeads(_prevState: ActionResult | null): Promise<ActionResult> {
+  await requireAdminSession()
+  void _prevState
+
+  const { LeadScoringAnalyst } = await import("@/lib/agents/acquisition/LeadScoringAnalyst")
+  const analyst = new LeadScoringAnalyst()
+  const leads = await prisma.lead.findMany({ select: { id: true } })
+
+  let done = 0
+  for (const { id } of leads) {
+    try {
+      await analyst.scoreLead(id)
+      done++
+    } catch {
+      /* un lead en échec ne bloque pas le lot */
+    }
+  }
+
+  revalidateAcquisition()
+  return { ok: true, message: `${done}/${leads.length} lead(s) re-scoré(s) avec le modèle actuel.` }
 }
 
 export async function updateDraftAction(
