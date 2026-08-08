@@ -1,37 +1,37 @@
 /**
- * Signature + pied de page légal ajoutés à chaque email de PROSPECTION.
- * Conforme au cadre cold email B2B Belgique/UE 2026 (intérêt légitime RGPD) :
- *  - identité de l'agent + disclosure IA (AI Act art. 50)
- *  - source des données (RGPD art. 14(2)(f)) — d'où vient le contact
- *  - désinscription en un clic (ePrivacy + droit d'opposition ; couplé aux
- *    en-têtes List-Unsubscribe côté envoi, cf. email.ts)
- *  - identification légale de l'entreprise (raison sociale, BCE, siège)
- *  - lien vers la politique de confidentialité
- * Ajouté uniquement à l'envoi réel, jamais dans le brouillon stocké.
+ * Signature + mentions légales d'un email de PROSPECTION.
+ *
+ * Objectif double, en tension :
+ *  1. Conformité cold email B2B Belgique/UE 2026 (intérêt légitime RGPD) :
+ *     source des données (art. 14), désinscription (ePrivacy), identification
+ *     légale, lien confidentialité, disclosure IA (AI Act art. 50).
+ *  2. Délivrabilité onglet PRINCIPAL (pas Promotions) : Gmail classe en
+ *     Promotions les mails "marketing" — HTML lourd, avatar, boutons, multiples
+ *     liens, header List-Unsubscribe. À faible volume (<50/jour, très loin du
+ *     seuil bulk de 5000/jour), on n'est pas un bulk sender : on retire donc le
+ *     header List-Unsubscribe (cf. email.ts, non passé) et on garde un rendu
+ *     quasi texte, comme un vrai email 1:1. Les obligations légales restent,
+ *     mais en texte discret plutôt qu'en blocs stylés.
  */
 const AGENT_NAME = "Manon Verhoeven"
-const AGENT_ROLE = "Copywriter — Purity Agency"
 const SITE_URL = "https://purity-agency.be"
-const INSTAGRAM_URL = "https://www.instagram.com/purityagency.be/"
 const PRIVACY_URL = "https://purity-agency.be/legal.html#confidentialite"
-const COMPANY_LEGAL = "Purity Agency · BCE 1036.775.590 · Charleroi, Wallonie, Belgique"
-const VAT_MENTION = "Petite entreprise — franchise, TVA non applicable (art. 56bis CTVA)"
 
 /**
- * Phrase de divulgation de la source du contact, adaptée à l'origine réelle du
- * lead. Jamais inventée : basée sur `Lead.source` renseigné par le Market Scout.
+ * Divulgation de la source du contact (RGPD art. 14(2)(f)), adaptée à l'origine
+ * réelle du lead. Jamais inventée : basée sur `Lead.source` (Market Scout).
  */
 export function dataSourceDisclosure(source: string, websiteUrl?: string | null): string {
   switch (source) {
     case "GOOGLE_PLACES":
-      return "J'ai trouvé les coordonnées publiques de votre entreprise sur votre fiche Google Business."
+      return "coordonnées trouvées sur votre fiche Google Business publique"
     case "LINKEDIN":
-      return "J'ai trouvé votre profil professionnel public sur LinkedIn."
+      return "profil professionnel public trouvé sur LinkedIn"
     case "EXA":
     default:
       return websiteUrl
-        ? "J'ai trouvé les coordonnées publiques de votre entreprise sur votre site web."
-        : "J'ai trouvé les coordonnées publiques de votre entreprise en recherchant des professionnels de votre secteur en Wallonie."
+        ? "coordonnées trouvées sur votre site web"
+        : "coordonnées professionnelles trouvées en ligne en Wallonie"
   }
 }
 
@@ -41,41 +41,24 @@ export function withAgentSignature(
 ): string {
   const sourceLine = dataSourceDisclosure(opts.source, opts.websiteUrl)
 
+  // Signature volontairement sobre et proche du texte (aucune image, aucun
+  // bouton, un seul lien "cliquable" visible) pour ne pas déclencher le
+  // classifieur Promotions de Gmail. Les mentions légales sont en petit texte
+  // gris, sur le modèle d'un pied de mail pro classique — pas un encart marketing.
   return `
-    <div style="font-family: -apple-system, Segoe UI, Helvetica, Arial, sans-serif; color: #1a1a1a; max-width: 560px;">
-      <div style="font-size: 15px; line-height: 1.6;">
-        ${bodyHtml}
+    <div style="font-family: -apple-system, Segoe UI, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #1a1a1a; max-width: 560px;">
+      ${bodyHtml}
+      <div style="margin-top: 22px;">
+        ${AGENT_NAME}<br>
+        Purity Agency — <a href="${SITE_URL}" style="color: #1a1a1a;">purity-agency.be</a>
       </div>
-
-      <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top: 28px; border-top: 1px solid #e5e5e5; padding-top: 20px; width: 100%;">
-        <tr>
-          <td style="vertical-align: top; padding-right: 14px;">
-            <div style="width: 44px; height: 44px; border-radius: 50%; background: #111111; color: #ffffff; font-size: 17px; font-weight: 600; text-align: center; line-height: 44px;">
-              MV
-            </div>
-          </td>
-          <td style="vertical-align: middle;">
-            <div style="font-size: 14px; font-weight: 600; color: #111111;">${AGENT_NAME}</div>
-            <div style="font-size: 12.5px; color: #6b6b6b; margin-top: 1px;">${AGENT_ROLE}</div>
-            <div style="margin-top: 8px;">
-              <a href="${SITE_URL}" style="display: inline-block; font-size: 12px; color: #6b6b6b; text-decoration: none; border: 1px solid #d8d8d8; border-radius: 999px; padding: 3px 10px; margin-right: 6px;">Site web</a>
-              <a href="${INSTAGRAM_URL}" style="display: inline-block; font-size: 12px; color: #6b6b6b; text-decoration: none; border: 1px solid #d8d8d8; border-radius: 999px; padding: 3px 10px;">Instagram</a>
-            </div>
-          </td>
-        </tr>
-      </table>
-
-      <p style="margin-top: 16px; font-size: 11.5px; line-height: 1.6; color: #8a8a8a;">
-        ${sourceLine} Si ce message ne vous concerne pas ou si vous ne souhaitez plus être contacté,
-        <a href="${opts.unsubscribeUrl}" style="color: #6b6b6b; text-decoration: underline;">désinscrivez-vous en un clic</a>
-        — ou répondez simplement « STOP ». Votre demande est immédiate et définitive.
-      </p>
-
-      <p style="margin-top: 10px; font-size: 11px; line-height: 1.5; color: #a0a0a0;">
-        ${COMPANY_LEGAL}<br>
-        ${VAT_MENTION} · <a href="${PRIVACY_URL}" style="color: #a0a0a0;">Politique de confidentialité</a><br>
-        Message rédigé par un agent IA de Purity Agency.
-      </p>
+      <div style="margin-top: 18px; font-size: 11.5px; line-height: 1.55; color: #9a9a9a;">
+        ${sourceLine}. Pour ne plus être contacté :
+        <a href="${opts.unsubscribeUrl}" style="color: #9a9a9a;">se désinscrire</a>
+        ou répondre « STOP » (immédiat et définitif).<br>
+        Purity Agency · BCE 1036.775.590 · Charleroi, Belgique · franchise TVA (art. 56bis CTVA) ·
+        <a href="${PRIVACY_URL}" style="color: #9a9a9a;">confidentialité</a> · rédigé avec l'aide d'une IA.
+      </div>
     </div>
   `.trim()
 }

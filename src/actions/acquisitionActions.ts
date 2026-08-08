@@ -9,6 +9,7 @@ import { withAgentSignature } from "@/lib/emailSignature"
 import { sanitizeEmailHtml } from "@/lib/sanitizeHtml"
 import { makeUnsubscribeToken } from "@/lib/unsubscribeToken"
 import { getBaseUrl } from "@/lib/utils"
+import { containsPlaceholder } from "@/lib/emailPlaceholders"
 import { ChiefAcquisitionAI } from "@/lib/agents/acquisition/ChiefAcquisitionAI"
 
 import { CreativeCopywriter } from "@/lib/agents/acquisition/CreativeCopywriter"
@@ -80,6 +81,11 @@ export async function approveAndSendDraft(draftId: string, _prevState: ActionRes
   if (draft.lead.optedOut) {
     return { ok: false, message: "Ce lead s'est désinscrit — envoi interdit." }
   }
+  // Garde-fou anti-placeholder : jamais un crochet non rempli ("[nom du
+  // contact]"…) n'atteint un prospect, même sur un ancien brouillon.
+  if (containsPlaceholder(draft.bodyHtml)) {
+    return { ok: false, message: "Ce brouillon contient un champ non rempli ([...]) — régénérez-le ou corrigez-le avant d'envoyer." }
+  }
 
   const unsubscribeUrl = `${getBaseUrl()}/api/unsubscribe?token=${makeUnsubscribeToken(draft.lead.id)}`
 
@@ -92,7 +98,11 @@ export async function approveAndSendDraft(draftId: string, _prevState: ActionRes
         source: draft.lead.source,
         websiteUrl: draft.lead.websiteUrl,
       }),
-      listUnsubscribeUrl: unsubscribeUrl,
+      // Header List-Unsubscribe volontairement NON passé : à faible volume
+      // (<50/jour, loin du seuil bulk de 5000/jour qui le rend obligatoire),
+      // ce header est un signal "marketing" qui pousse Gmail vers l'onglet
+      // Promotions. La désinscription reste assurée par le lien visible +
+      // reply STOP dans la signature. À réactiver si le volume dépasse le seuil.
     })
   } catch (e) {
     const message = e instanceof AppError ? e.message : "Échec d'envoi inattendu — voir les logs serveur."

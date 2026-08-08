@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { AutonomousAgent } from './AgentCore';
+import { containsPlaceholder, stripPlaceholders } from '@/lib/emailPlaceholders';
 
 const EmailDraftSchema = z.object({
   objectionPrediction: z.string().describe("Pourquoi ce prospect ne répondrait-il pas ? (Prix, temps, pas intéressé, déjà une agence, manque de confiance)"),
@@ -91,7 +92,17 @@ export class CreativeCopywriter extends AutonomousAgent {
            - Gros problème -> "Je peux vous envoyer les 3 corrections principales."
         
         6. VOUVOIEMENT STRICT : Jamais de tutoiement en B2B Wallonie. Utilise le "vous" professionnellement.
-        
+
+        7. ZÉRO PLACEHOLDER — RÈGLE NON NÉGOCIABLE :
+           - INTERDIT ABSOLU d'écrire un champ à remplir : jamais de "[nom du contact]",
+             "[prénom]", "[entreprise]", "{{name}}", "[votre nom]", ni aucun crochet
+             ou variable de gabarit dans le corps. Un mail avec un crochet = spam automatisé,
+             c'est une faute grave.
+           - Le nom du contact ci-dessus est "${lead.contactName || "INCONNU"}". S'il est INCONNU :
+             tu N'inventes PAS de nom et tu n'insères AUCUN placeholder. Tu écris simplement
+             SANS saluer par un nom — commence direct par le fait (Pattern Interrupt).
+             En B2B froid sans nom connu, ne pas nommer est parfaitement naturel et attendu.
+
         INSTRUCTIONS DE RÉFLEXION :
         Avant d'écrire, remplis le champ "objectionPrediction" : Pourquoi ce prospect ne répondrait-il pas ? (Prix, temps, pas intéressé, déjà une agence, manque de confiance).
         Après avoir écrit, remplis "selfCritique" et donne une note sur 10. Si le mail ressemble à ChatGPT (Human Detector), mets humanDetectorPassed à false.
@@ -102,13 +113,32 @@ export class CreativeCopywriter extends AutonomousAgent {
 
       let result = await this.think<EmailDraftResponse>(prompt, "Génération de l'email (Essai 1)", EmailDraftSchema);
 
-      // Boucle de réécriture Human Detector / Self Critique (Max 2 retries)
+      // Boucle de réécriture : Human Detector / Self Critique / présence d'un
+      // placeholder (un crochet non rempli = échec immédiat, on réécrit).
       let attempts = 1;
-      while ((!result.humanDetectorPassed || result.selfCritiqueScore < 8) && attempts <= 2) {
-        await this.logger.startTask(`Email refusé par le Human Detector (Note: ${result.selfCritiqueScore}/10). Réécriture en cours...`);
-        const retryPrompt = `${prompt}\n\nTa précédente tentative a échoué. Voici ta propre critique : "${result.selfCritique}".\n\nL'email sonnait trop commercial ou comme une IA. Réécris un email totalement différent, beaucoup plus naturel, cassant encore plus les codes (Pattern Interrupt), et qui passe le Human Detector.`;
+      while (
+        (!result.humanDetectorPassed || result.selfCritiqueScore < 8 || containsPlaceholder(result.bodyHtml)) &&
+        attempts <= 2
+      ) {
+        const hadPlaceholder = containsPlaceholder(result.bodyHtml);
+        await this.logger.startTask(
+          hadPlaceholder
+            ? `Email contient un placeholder non rempli — réécriture forcée...`
+            : `Email refusé par le Human Detector (Note: ${result.selfCritiqueScore}/10). Réécriture en cours...`
+        );
+        const placeholderWarning = hadPlaceholder
+          ? "\n\nTON EMAIL CONTENAIT UN PLACEHOLDER (crochet à remplir) — c'est une faute grave. Réécris SANS aucun crochet ni nom inventé ; si le nom du contact est inconnu, n'adresse personne par son nom."
+          : "";
+        const retryPrompt = `${prompt}\n\nTa précédente tentative a échoué. Voici ta propre critique : "${result.selfCritique}".${placeholderWarning}\n\nL'email sonnait trop commercial ou comme une IA. Réécris un email totalement différent, beaucoup plus naturel, cassant encore plus les codes (Pattern Interrupt), et qui passe le Human Detector.`;
         result = await this.think<EmailDraftResponse>(retryPrompt, `Génération de l'email (Essai ${attempts + 1})`, EmailDraftSchema);
         attempts++;
+      }
+
+      // Filet final : si un placeholder subsiste malgré les réécritures, on le
+      // retire avant sauvegarde — jamais un crochet n'atteint un prospect.
+      if (containsPlaceholder(result.bodyHtml)) {
+        await this.logger.logError(`Placeholder persistant après réécritures pour ${lead.companyName} — nettoyage appliqué.`);
+        result.bodyHtml = stripPlaceholders(result.bodyHtml);
       }
 
       if (regeneratingDraftId) {
