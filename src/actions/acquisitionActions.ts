@@ -1,16 +1,10 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
-import type { Prisma } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { requireAdminSession } from "@/lib/session"
-import { AppError, NotFoundError, ValidationError } from "@/lib/errors"
-import { sendEmail, prospectingFrom } from "@/lib/email"
-import { withAgentSignature } from "@/lib/emailSignature"
-import { sanitizeEmailHtml } from "@/lib/sanitizeHtml"
-import { makeUnsubscribeToken } from "@/lib/unsubscribeToken"
-import { getBaseUrl } from "@/lib/utils"
-import { containsPlaceholder } from "@/lib/emailPlaceholders"
+import { NotFoundError, ValidationError } from "@/lib/errors"
+import { deliverDraft } from "@/lib/acquisition/deliverDraft"
 import { ChiefAcquisitionAI } from "@/lib/agents/acquisition/ChiefAcquisitionAI"
 
 import { CreativeCopywriter } from "@/lib/agents/acquisition/CreativeCopywriter"
@@ -62,61 +56,9 @@ export async function launchMission(formData: FormData) {
  * ce correctif (finding 2026-08-03), rien ne confirmait jamais l'envoi et un
  * échec Resend pouvait être marqué SENT quand même (voir email.ts).
  */
-// Cœur d'envoi partagé par l'envoi unitaire ET l'envoi groupé. Applique tous
-// les garde-fous (traité / email absent / désinscrit / placeholder), envoie,
-// met à jour les statuts et émet l'événement. Retourne un résultat structuré
-// avec une raison de skip exploitable par l'envoi groupé.
-type DeliverResult =
-  | { ok: true; email: string }
-  | { ok: false; reason: "already" | "no_email" | "opted_out" | "placeholder" | "send_failed"; message: string }
-
-type DraftWithLead = Prisma.EmailDraftGetPayload<{ include: { lead: true } }>
-
-async function deliverDraft(draft: DraftWithLead): Promise<DeliverResult> {
-  if (draft.status !== "PENDING_APPROVAL") {
-    return { ok: false, reason: "already", message: "Déjà traité." }
-  }
-  if (!draft.lead.contactEmail) {
-    return { ok: false, reason: "no_email", message: "Pas d'e-mail de contact." }
-  }
-  // Suppression : un lead désinscrit ne peut JAMAIS être recontacté (droit
-  // d'opposition RGPD + réputation).
-  if (draft.lead.optedOut) {
-    return { ok: false, reason: "opted_out", message: "Lead désinscrit." }
-  }
-  // Jamais un crochet non rempli ("[nom du contact]"…) n'atteint un prospect.
-  if (containsPlaceholder(draft.bodyHtml)) {
-    return { ok: false, reason: "placeholder", message: "Champ non rempli ([...])." }
-  }
-
-  const unsubscribeUrl = `${getBaseUrl()}/api/unsubscribe?token=${makeUnsubscribeToken(draft.lead.id)}`
-
-  try {
-    await sendEmail({
-      to: draft.lead.contactEmail,
-      subject: draft.subject,
-      from: prospectingFrom(),
-      bccSelf: false,
-      html: withAgentSignature(sanitizeEmailHtml(draft.bodyHtml), {
-        unsubscribeUrl,
-        source: draft.lead.source,
-        websiteUrl: draft.lead.websiteUrl,
-      }),
-      // Header List-Unsubscribe volontairement NON passé (<50/jour) — signal
-      // Promotions inutile ; désinscription assurée par le lien visible + STOP.
-    })
-  } catch (e) {
-    const message = e instanceof AppError ? e.message : "Échec d'envoi inattendu."
-    return { ok: false, reason: "send_failed", message }
-  }
-
-  await prisma.$transaction([
-    prisma.emailDraft.update({ where: { id: draft.id }, data: { status: "SENT" } }),
-    prisma.lead.update({ where: { id: draft.leadId }, data: { status: "CONTACTED", lastContactedAt: new Date() } }),
-  ])
-  eventBus.publish(new DraftReviewedEvent(draft.lead.id, draft.lead.companyName, "APPROVED"))
-  return { ok: true, email: draft.lead.contactEmail }
-}
+// La logique d'envoi d'un brouillon (garde-fous + envoi + statut + event) vit
+// désormais dans @/lib/acquisition/deliverDraft, partagée avec l'autopilote
+// (/api/cron/autosend).
 
 function revalidateAcquisition() {
   revalidatePath("/admin/ai/acquisition")
