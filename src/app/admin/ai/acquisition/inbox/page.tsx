@@ -1,55 +1,29 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
-import { InboxIcon, MailIcon, ReplyIcon } from "@/components/icons"
-import Link from "next/link"
+import { InboxIcon, ReplyIcon } from "@/components/icons"
 
 export default async function AcquisitionInboxPage() {
   await requireAdminSession()
 
-  // Fetch leads that have replied or need attention in the inbox context
-  // For now, we list any leads that have status "REPLIED" (or mock it if none)
+  // Leads ayant réellement répondu (status REPLIED, posé par le webhook
+  // d'email entrant). Aucune donnée de démonstration : un onglet vide signifie
+  // qu'aucune réponse réelle n'est encore arrivée — jamais de faux prospects.
   const repliedLeads = await prisma.lead.findMany({
     where: { status: "REPLIED" },
     include: { emailDrafts: true, mission: true },
     orderBy: { updatedAt: "desc" }
   })
 
-  // Mock UI state if empty to show the design
-  const showMockData = repliedLeads.length === 0
-  
-  const displayLeads = showMockData 
-    ? [
-        {
-          id: "mock-1",
-          companyName: "Toiture Moderne SPRL",
-          contactName: "Jean Dupont",
-          contactEmail: "jean@toituremoderne.be",
-          updatedAt: new Date(),
-          status: "REPLIED",
-          lastMessage: "Bonjour, oui cela pourrait nous intéresser. Pouvons-nous en discuter la semaine prochaine ?",
-          missionName: "Campagne BTP Wallonie"
-        },
-        {
-          id: "mock-2",
-          companyName: "Hôtel Le repos",
-          contactName: "Marie Dubois",
-          contactEmail: "direction@hotel-repos.be",
-          updatedAt: new Date("2026-08-06T10:00:00Z"),
-          status: "REPLIED",
-          lastMessage: "Non merci, nous avons déjà un prestataire.",
-          missionName: "Campagne HoReCa Namur"
-        }
-      ]
-    : repliedLeads.map(l => ({
-        id: l.id,
-        companyName: l.companyName,
-        contactName: l.contactName || "Contact inconnu",
-        contactEmail: l.contactEmail || "Email inconnu",
-        updatedAt: l.updatedAt,
-        status: l.status,
-        lastMessage: l.emailDrafts.length > 0 ? "Réponse reçue (voir CRM pour détails)" : "Nouvelle réponse entrante.",
-        missionName: l.mission.name
-      }))
+  const displayLeads = repliedLeads.map(l => ({
+    id: l.id,
+    companyName: l.companyName,
+    contactName: l.contactName || "Contact inconnu",
+    contactEmail: l.contactEmail || "Email inconnu",
+    updatedAt: l.updatedAt,
+    status: l.status,
+    lastMessage: l.emailDrafts.length > 0 ? "Réponse reçue (voir CRM pour détails)" : "Nouvelle réponse entrante.",
+    missionName: l.mission.name
+  }))
 
   return (
     <div className="h-full flex flex-col p-4 lg:p-8 overflow-hidden">
