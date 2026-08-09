@@ -4,6 +4,7 @@ import { CreativeCopywriter } from '../CreativeCopywriter';
 import { LeadScoringAnalyst } from '../LeadScoringAnalyst';
 import { LinkedInOutreachSpecialist } from '../LinkedInOutreachSpecialist';
 import { AdsStrategist } from '../AdsStrategist';
+import { SEOLocalScout } from '../SEOLocalScout';
 import { logger } from '@/core/logger';
 import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
@@ -37,43 +38,55 @@ export async function onLeadCaptured(event: LeadCapturedEvent): Promise<void> {
     const scorer = new LeadScoringAnalyst();
     await scorer.scoreLead(event.leadId);
 
-    // Phase 4: Dormant Agents (Simulation Mode)
-    let linkedinDraft = null;
-    let adsBrief = null;
-    try {
-      const linkedIn = new LinkedInOutreachSpecialist();
-      linkedinDraft = await linkedIn.draftPersonalizedMessage(event.leadId, "Manque de visibilité locale");
-    } catch (e) {
-      logger.error(`[Handler] Error in LinkedInOutreachSpecialist for ${event.leadId}:`, e);
-    }
-
-    try {
-      const adsStrategist = new AdsStrategist();
-      // Le paramètre sectors est un array (ex: ['HoReCa']) ou absent
+    // Angles d'attaque complémentaires (LinkedIn, Ads, SEO). On ne les génère
+    // QUE pour un lead joignable (email trouvé) : inutile de dépenser du quota
+    // LLM sur un lead qu'on ne pourra pas contacter, et ça concentre l'effort
+    // sur les prospects qui comptent (recherche 2026 : précision > volume).
+    // Chaque agent est isolé — l'échec de l'un n'empêche pas les autres.
+    if (enrichedLead?.contactEmail) {
       const sectors = (lead.mission?.parameters as { sectors?: unknown } | null)?.sectors;
-      const sector = Array.isArray(sectors) && sectors.length > 0 ? sectors[0] : 'Secteur général';
-      adsBrief = await adsStrategist.buildCampaignBrief(sector, "Faible flux de nouveaux clients");
-    } catch (e) {
-      logger.error(`[Handler] Error in AdsStrategist for ${event.leadId}:`, e);
-    }
+      const sector = Array.isArray(sectors) && sectors.length > 0 ? String(sectors[0]) : 'Secteur général';
 
-    // Sauvegarde dans auditData pour affichage UI
-    if (linkedinDraft || adsBrief) {
-      // Re-fetch lead to get updated auditData from Analyst
-      const currentLead = await prisma.lead.findUnique({ where: { id: event.leadId }});
-      if (currentLead) {
-        const currentAuditData: Record<string, unknown> = (typeof currentLead.auditData === 'object' && currentLead.auditData !== null) ? currentLead.auditData as Record<string, unknown> : {};
+      let linkedinDraft: unknown = null;
+      let adsBrief: unknown = null;
+      let seoAudit: unknown = null;
 
-        await prisma.lead.update({
-          where: { id: event.leadId },
-          data: {
-            auditData: {
-              ...currentAuditData,
-              linkedinDraft: linkedinDraft || currentAuditData.linkedinDraft,
-              adsBrief: adsBrief || currentAuditData.adsBrief
-            } as Prisma.InputJsonValue
-          }
-        });
+      try {
+        linkedinDraft = await new LinkedInOutreachSpecialist().draftPersonalizedMessage(event.leadId, "Manque de visibilité locale");
+      } catch (e) {
+        logger.error(`[Handler] LinkedInOutreachSpecialist échec pour ${event.leadId}:`, e);
+      }
+      try {
+        adsBrief = await new AdsStrategist().buildCampaignBrief(sector, "Faible flux de nouveaux clients");
+      } catch (e) {
+        logger.error(`[Handler] AdsStrategist échec pour ${event.leadId}:`, e);
+      }
+      try {
+        seoAudit = await new SEOLocalScout().compareAgainstCompetitor(event.leadId, `Concurrent local mieux référencé dans le secteur ${sector}`);
+      } catch (e) {
+        logger.error(`[Handler] SEOLocalScout échec pour ${event.leadId}:`, e);
+      }
+
+      if (linkedinDraft || adsBrief || seoAudit) {
+        const currentLead = await prisma.lead.findUnique({ where: { id: event.leadId } });
+        if (currentLead) {
+          const currentAuditData: Record<string, unknown> =
+            (typeof currentLead.auditData === 'object' && currentLead.auditData !== null)
+              ? currentLead.auditData as Record<string, unknown>
+              : {};
+
+          await prisma.lead.update({
+            where: { id: event.leadId },
+            data: {
+              auditData: {
+                ...currentAuditData,
+                linkedinDraft: linkedinDraft || currentAuditData.linkedinDraft,
+                adsBrief: adsBrief || currentAuditData.adsBrief,
+                seoAudit: seoAudit || currentAuditData.seoAudit,
+              } as Prisma.InputJsonValue,
+            },
+          });
+        }
       }
     }
 

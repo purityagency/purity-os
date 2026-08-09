@@ -13,8 +13,16 @@ function strArray(v: unknown): string[] {
   return Array.isArray(v) ? v.map(str).filter(Boolean) : []
 }
 
-// 01_ACQUISITION — lance une mission de prospection (Chief → Market Scout).
+// 01_ACQUISITION — deux capacités selon `data.type` :
+//  - "referral" : scan des clients satisfaits + partenaires locaux potentiels
+//  - défaut     : lance une mission de prospection (Chief → Market Scout)
 const acquisitionExecutor: TaskExecutor = async (t: KernelTask): Promise<KernelResult> => {
+  if (str(t.data.type).toLowerCase() === "referral") {
+    const { ReferralPartnershipAgent } = await import("@/lib/agents/acquisition/ReferralPartnershipAgent")
+    const candidates = await new ReferralPartnershipAgent().findReferralCandidates()
+    return { status: "done", summary: `${candidates.length} candidat(s) au parrainage identifié(s)`, data: { count: candidates.length, candidates } }
+  }
+
   const sectors = strArray(t.data.sectors)
   const locations = strArray(t.data.locations)
   if (sectors.length === 0 || locations.length === 0) {
