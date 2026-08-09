@@ -174,4 +174,77 @@ export class CreativeCopywriter extends AutonomousAgent {
       await this.logger.logError(`Échec de la génération pour ${lead.websiteUrl}: ${error}`);
     }
   }
+
+  /**
+   * Génère une RELANCE (follow-up) sous forme de brouillon à valider. Cadence
+   * J+3 / J+7 (recherche 2026 : max 2 relances, 42% des réponses viennent
+   * uniquement des follow-ups). Règle d'or : une relance apporte du NEUF (un
+   * nouvel angle, une observation), jamais un "je reviens vers vous" creux.
+   * Incrémente lead.relanceCount pour ne pas régénérer indéfiniment.
+   */
+  public async draftFollowUp(leadId: string, relanceNumber: 1 | 2): Promise<void> {
+    const lead = await prisma.lead.findUnique({ where: { id: leadId } });
+    if (!lead || lead.status !== 'CONTACTED' || lead.optedOut || !lead.contactEmail) return;
+
+    await this.logger.startTask(`Relance ${relanceNumber} pour ${lead.companyName} (Outreach Copywriter)`);
+
+    try {
+      const auditData = (lead.auditData as { painPoints?: string[] } | null) || {};
+      const painPoints = auditData.painPoints?.join(", ") || "optimisation générale";
+
+      const prompt = `
+        Tu écris la RELANCE n°${relanceNumber} pour "${lead.companyName}" (${lead.location || "Wallonie"}).
+        Un premier email de prospection a déjà été envoyé et est resté sans réponse. Ce n'est PAS le premier contact.
+
+        Problème identifié précédemment : ${painPoints}
+        Nom du contact : ${lead.contactName || "INCONNU"}
+
+        RÈGLES ABSOLUES :
+        1. APPORTE DU NEUF : un nouvel angle, une observation concrète, un mini-conseil actionnable, une preuve.
+           INTERDIT : "je reviens vers vous", "avez-vous eu le temps de", "petit rappel", "je me permets de relancer".
+        2. ULTRA COURT : 25 à 55 mots. Une relance est plus courte que le 1er mail.
+        3. LÉGER, PAS INSISTANT : le ton reste celui de quelqu'un qui rend service, pas d'un commercial qui presse.
+        4. VOUVOIEMENT B2B strict. Aucune salutation nominative inventée : si le nom est INCONNU, n'adresse personne par son nom.
+        5. ZÉRO PLACEHOLDER : jamais de crochet "[...]" ni de variable de gabarit. Faute grave.
+        6. CTA micro-engageant et contextuel (une question simple).
+
+        Remplis objectionPrediction, puis écris, puis selfCritique + note. Human Detector strict.
+      `;
+
+      let result = await this.think<EmailDraftResponse>(prompt, `Relance ${relanceNumber} (Essai 1)`, EmailDraftSchema);
+
+      let attempts = 1;
+      while (
+        (!result.humanDetectorPassed || result.selfCritiqueScore < 8 || containsPlaceholder(result.bodyHtml)) &&
+        attempts <= 2
+      ) {
+        const retryPrompt = `${prompt}\n\nTa tentative a échoué : "${result.selfCritique}". Réécris, encore plus naturel et plus court, en apportant un angle VRAIMENT nouveau, sans aucun placeholder.`;
+        result = await this.think<EmailDraftResponse>(retryPrompt, `Relance ${relanceNumber} (Essai ${attempts + 1})`, EmailDraftSchema);
+        attempts++;
+      }
+
+      if (containsPlaceholder(result.bodyHtml)) {
+        result.bodyHtml = stripPlaceholders(result.bodyHtml);
+      }
+
+      // Brouillon de relance + incrément du compteur, en transaction : on ne
+      // veut jamais incrémenter sans créer le brouillon (ni l'inverse).
+      await prisma.$transaction([
+        prisma.emailDraft.create({
+          data: {
+            leadId: lead.id,
+            subject: result.subject,
+            bodyHtml: result.bodyHtml,
+            tone: `Relance ${relanceNumber}`,
+            status: "PENDING_APPROVAL",
+          },
+        }),
+        prisma.lead.update({ where: { id: lead.id }, data: { relanceCount: relanceNumber } }),
+      ]);
+
+      await this.logger.finishTask(`Relance ${relanceNumber} générée pour ${lead.companyName} (Note AI: ${result.selfCritiqueScore}/10).`);
+    } catch (error) {
+      await this.logger.logError(`Échec relance ${relanceNumber} pour ${lead.companyName}: ${error}`);
+    }
+  }
 }

@@ -266,6 +266,12 @@ model Lead {
   optedOut    Boolean  @default(false)
   optedOutAt  DateTime?
 
+  // Séquence de relance (max 2, cadence J+3 puis J+7). relanceCount = nombre de
+  // relances DÉJÀ générées (0 = seul le 1er mail est parti). lastContactedAt =
+  // dernier envoi réel, base de calcul du délai avant la relance suivante.
+  relanceCount    Int       @default(0)
+  lastContactedAt DateTime?
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

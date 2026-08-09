@@ -110,7 +110,7 @@ async function deliverDraft(draft: DraftWithLead): Promise<DeliverResult> {
 
   await prisma.$transaction([
     prisma.emailDraft.update({ where: { id: draft.id }, data: { status: "SENT" } }),
-    prisma.lead.update({ where: { id: draft.leadId }, data: { status: "CONTACTED" } }),
+    prisma.lead.update({ where: { id: draft.leadId }, data: { status: "CONTACTED", lastContactedAt: new Date() } }),
   ])
   eventBus.publish(new DraftReviewedEvent(draft.lead.id, draft.lead.companyName, "APPROVED"))
   return { ok: true, email: draft.lead.contactEmail }
