@@ -103,12 +103,21 @@ export class CreativeCopywriter extends AutonomousAgent {
              SANS saluer par un nom — commence direct par le fait (Pattern Interrupt).
              En B2B froid sans nom connu, ne pas nommer est parfaitement naturel et attendu.
 
+        8. INTERDICTIONS ABSOLUES DE CONTENU (fautes graves — si présentes, mets humanDetectorPassed à false) :
+           - JAMAIS de code module interne : "M04", "M07", "(M07)", "Mxx"… Ce sont des identifiants
+             INTERNES. Parle du bénéfice concret ("un site rapide sur mobile"), jamais du code.
+           - JAMAIS de prix ni montant en euros ("1 490 €", "290 €"). Le but n'est PAS de vendre ni
+             de chiffrer — c'est d'ouvrir une conversation. Un prix dans un premier mail = échec.
+           - JAMAIS de "Bonjour," / "Bonjour Madame, Monsieur" en ouverture générique : commence
+             directement par le fait observé (Pattern Interrupt, règle 2).
+           - JAMAIS de crochet [ ], parenthèse de gabarit, ou variable à remplir.
+
         INSTRUCTIONS DE RÉFLEXION :
         Avant d'écrire, remplis le champ "objectionPrediction" : Pourquoi ce prospect ne répondrait-il pas ? (Prix, temps, pas intéressé, déjà une agence, manque de confiance).
-        Après avoir écrit, remplis "selfCritique" et donne une note sur 10. Si le mail ressemble à ChatGPT (Human Detector), mets humanDetectorPassed à false.
-        
+        Après avoir écrit, remplis "selfCritique" et donne une note sur 10. Si le mail ressemble à ChatGPT, contient un code Mxx, un prix en €, un "Bonjour" générique ou un placeholder → humanDetectorPassed = false.
+
         FORMAT DE SORTIE :
-        Retourne le sujet (subject) et le corps de l'email (bodyHtml) formaté en HTML simple (<p>, <br>). Ne mentionne pas de prix catalogue.
+        Retourne le sujet (subject) et le corps de l'email (bodyHtml) formaté en HTML simple (<p>, <br>). Aucun prix, aucun code module, aucune parenthèse de gabarit.
       `;
 
       let result = await this.think<EmailDraftResponse>(prompt, "Génération de l'email (Essai 1)", EmailDraftSchema);
@@ -205,7 +214,7 @@ export class CreativeCopywriter extends AutonomousAgent {
         2. ULTRA COURT : 25 à 55 mots. Une relance est plus courte que le 1er mail.
         3. LÉGER, PAS INSISTANT : le ton reste celui de quelqu'un qui rend service, pas d'un commercial qui presse.
         4. VOUVOIEMENT B2B strict. Aucune salutation nominative inventée : si le nom est INCONNU, n'adresse personne par son nom.
-        5. ZÉRO PLACEHOLDER : jamais de crochet "[...]" ni de variable de gabarit. Faute grave.
+        5. ZÉRO PLACEHOLDER + ZÉRO code module (Mxx) + ZÉRO prix en euros + pas de "Bonjour" générique. Fautes graves.
         6. CTA micro-engageant et contextuel (une question simple).
 
         Remplis objectionPrediction, puis écris, puis selfCritique + note. Human Detector strict.
