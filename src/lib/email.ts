@@ -31,6 +31,7 @@ export async function sendEmail({
   html,
   listUnsubscribeUrl,
   from = TRANSACTIONAL_FROM,
+  bccSelf = true,
 }: {
   to: string
   subject: string
@@ -43,6 +44,12 @@ export async function sendEmail({
   // Identité d'envoi. Par défaut transactionnelle ; la prospection passe
   // `prospectingFrom()` pour isoler son domaine (protection de réputation).
   from?: string
+  // Copie cachée à soi-même. Par défaut activée (trace des rares emails
+  // transactionnels clients). La PROSPECTION la désactive : sinon chaque envoi
+  // revient en copie dans la boîte de réception (via le forward de contact@),
+  // polluant l'inbox avec ses propres envois — l'Outbox du dashboard suffit
+  // comme registre.
+  bccSelf?: boolean
 }) {
   if (process.env.NODE_ENV !== "production") {
     console.log(`\n=== [EMAIL DEV LOG] ===\nTo: ${to}\nSubject: ${subject}\nBody: ${html}\n=======================\n`)
@@ -75,7 +82,7 @@ export async function sendEmail({
       body: JSON.stringify({
         from,
         to: [to],
-        bcc: ["contact@purity-agency.be"],
+        ...(bccSelf ? { bcc: ["contact@purity-agency.be"] } : {}),
         subject,
         html,
         ...(headers ? { headers } : {}),

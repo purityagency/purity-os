@@ -96,6 +96,7 @@ async function deliverDraft(draft: DraftWithLead): Promise<DeliverResult> {
       to: draft.lead.contactEmail,
       subject: draft.subject,
       from: prospectingFrom(),
+      bccSelf: false,
       html: withAgentSignature(sanitizeEmailHtml(draft.bodyHtml), {
         unsubscribeUrl,
         source: draft.lead.source,
