@@ -4,9 +4,9 @@ import { GenerateKanbanStagesStep, OnboardingContext } from '../steps/GenerateKa
 import { CreateStoragePrefixStep } from '../steps/CreateStoragePrefixStep';
 import { ScheduleKickoffStep } from '../steps/ScheduleKickoffStep';
 import { EmbedAiMemoryStep } from '../steps/EmbedAiMemoryStep';
-import { S3StorageProvider } from '../providers/S3StorageProvider';
+import { ProjectStorageProvider } from '../providers/ProjectStorageProvider';
 import { GoogleCalendarProvider } from '../providers/GoogleCalendarProvider';
-import { OpenAIProvider } from '../providers/OpenAIProvider';
+import { GeminiMemoryProvider } from '../providers/GeminiMemoryProvider';
 import { prisma } from '@/lib/prisma';
 import { logger } from '@/core/logger';
 
@@ -50,9 +50,9 @@ export class OnboardingWorkflowService {
   async runOnboarding(projectId: string, sector: string | null): Promise<void> {
     // Implémentations réelles : échouent bruyamment si les clés d'API sont absentes
     // Respect de la règle "Zéro donnée fictive"
-    const storageProvider = new S3StorageProvider();
+    const storageProvider = new ProjectStorageProvider();
     const calendarProvider = new GoogleCalendarProvider();
-    const aiProvider = new OpenAIProvider();
+    const aiProvider = new GeminiMemoryProvider();
 
     const steps = [
       new GenerateKanbanStagesStep(),
