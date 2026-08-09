@@ -1,5 +1,22 @@
 import { AppError } from "@/lib/errors"
 
+// Identité d'envoi TRANSACTIONNELLE (factures, accès client, notifications) —
+// légitime, jamais du cold. Reste sur le domaine principal.
+const TRANSACTIONAL_FROM = "Purity Agency <contact@purity-agency.be>"
+
+/**
+ * Identité d'envoi PROSPECTION (cold outreach). Séparée volontairement : le
+ * cold email est contraire aux CGU de la plupart des providers et peut faire
+ * flagger/bannir un domaine. En l'isolant sur son propre expéditeur (idéalement
+ * un domaine dédié comme go-purity.be, à définir via PROSPECTING_FROM), on
+ * protège la réputation du domaine principal qui envoie les emails clients.
+ * Tant que PROSPECTING_FROM n'est pas défini, on retombe sur l'adresse
+ * transactionnelle (comportement actuel inchangé).
+ */
+export function prospectingFrom(): string {
+  return process.env.PROSPECTING_FROM || TRANSACTIONAL_FROM
+}
+
 /**
  * Envoi d'email via Resend. Échoue TOUJOURS bruyamment si l'envoi ne part
  * pas réellement — avant ce correctif (finding 2026-08-03), une clé absente
@@ -13,6 +30,7 @@ export async function sendEmail({
   subject,
   html,
   listUnsubscribeUrl,
+  from = TRANSACTIONAL_FROM,
 }: {
   to: string
   subject: string
@@ -22,6 +40,9 @@ export async function sendEmail({
   // pour les emails transactionnels (accès client, factures) qui ne sont pas
   // du marketing et ne doivent pas porter d'en-tête de désinscription.
   listUnsubscribeUrl?: string
+  // Identité d'envoi. Par défaut transactionnelle ; la prospection passe
+  // `prospectingFrom()` pour isoler son domaine (protection de réputation).
+  from?: string
 }) {
   if (process.env.NODE_ENV !== "production") {
     console.log(`\n=== [EMAIL DEV LOG] ===\nTo: ${to}\nSubject: ${subject}\nBody: ${html}\n=======================\n`)
@@ -52,7 +73,7 @@ export async function sendEmail({
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        from: "Purity Agency <contact@purity-agency.be>",
+        from,
         to: [to],
         bcc: ["contact@purity-agency.be"],
         subject,

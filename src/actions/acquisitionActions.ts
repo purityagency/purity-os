@@ -5,7 +5,7 @@ import type { Prisma } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { requireAdminSession } from "@/lib/session"
 import { AppError, NotFoundError, ValidationError } from "@/lib/errors"
-import { sendEmail } from "@/lib/email"
+import { sendEmail, prospectingFrom } from "@/lib/email"
 import { withAgentSignature } from "@/lib/emailSignature"
 import { sanitizeEmailHtml } from "@/lib/sanitizeHtml"
 import { makeUnsubscribeToken } from "@/lib/unsubscribeToken"
@@ -95,6 +95,7 @@ async function deliverDraft(draft: DraftWithLead): Promise<DeliverResult> {
     await sendEmail({
       to: draft.lead.contactEmail,
       subject: draft.subject,
+      from: prospectingFrom(),
       html: withAgentSignature(sanitizeEmailHtml(draft.bodyHtml), {
         unsubscribeUrl,
         source: draft.lead.source,
