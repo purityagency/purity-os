@@ -98,6 +98,23 @@ type ContactExtraction = z.infer<typeof ContactExtractionSchema>;
 // Un module qui ne matche pas "M" + chiffres n'est pas un vrai identifiant
 // du catalogue officiel — voir finding audit 2026-08-02 : avant ce schéma,
 // rien n'empêchait le modèle d'inventer un nom de module plausible.
+// Signal d'OPPORTUNITÉ technique dérivé du HTML réel du site (0-100, haut =
+// plus d'opportunité commerciale = site qui a le plus besoin de nous). Sert de
+// carburant au scoring quand PageSpeed est indisponible (rate-limité sans clé),
+// pour éviter que tous les leads reçoivent la même valeur par défaut et que le
+// score s'écrase (finding audit 2026-08-09 : scoring en trompe-l'œil).
+function computeTechOpportunity(html: string, url: string): number {
+  if (!html) return 50; // inconnu = opportunité moyenne, jamais 0
+  const lower = html.toLowerCase();
+  let opp = 30; // base
+  if (!/<meta[^>]+name=["']viewport["']/i.test(html)) opp += 30; // pas de responsive mobile
+  if (url.startsWith('http://')) opp += 15;                       // pas de HTTPS
+  if (/wp-content|wordpress|wix\.com|joomla|weebly|jimdo|ionos|1and1/i.test(lower)) opp += 20; // techno datée/template
+  if (html.length < 8000) opp += 15;                              // site très léger (souvent une seule page pauvre)
+  if (/__next|_nuxt|data-reactroot|cdn\.tailwindcss|react-dom/i.test(lower)) opp -= 25; // déjà moderne
+  return Math.max(5, Math.min(100, opp));
+}
+
 const AuditAnalysisSchema = z.object({
   painPoints: z.array(z.string().min(5)).min(1),
   recommendedModules: z.array(z.string().regex(/^M\d{2}$/, "doit être un code module réel, ex: M04")).min(1),
@@ -137,6 +154,7 @@ export class IntelligenceAnalyst extends AutonomousAgent {
     contactRole: string | null;
     contactEmail: string | null;
     contactPhone: string | null;
+    techOpportunity: number;
   }> {
     // On lit l'accueil PUIS quelques pages de contact courantes : un email s'y
     // trouve bien plus souvent que sur la home. Les fetchs tournent en
@@ -150,9 +168,10 @@ export class IntelligenceAnalyst extends AutonomousAgent {
     const pageUrls = [url, ...(origin ? CONTACT_PATHS.map((p) => origin + p) : [])];
     const pages = await Promise.all(pageUrls.map(fetchHtml));
     const html = pages.filter(Boolean).join('\n');
+    const techOpportunity = computeTechOpportunity(pages[0] || html, url);
 
     if (!html) {
-      return { contactName: null, contactRole: null, contactEmail: null, contactPhone: null };
+      return { contactName: null, contactRole: null, contactEmail: null, contactPhone: null, techOpportunity };
     }
 
     // Emails depuis : texte brut + liens mailto: + décodage Cloudflare.
@@ -166,7 +185,7 @@ export class IntelligenceAnalyst extends AutonomousAgent {
     const contactPhone = extractBelgianPhone(html);
 
     if (realEmails.length === 0) {
-      return { contactName: null, contactRole: null, contactEmail: null, contactPhone };
+      return { contactName: null, contactRole: null, contactEmail: null, contactPhone, techOpportunity };
     }
 
     const visibleText = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<[^>]+>/g, ' ').slice(0, 4000);
@@ -200,6 +219,7 @@ export class IntelligenceAnalyst extends AutonomousAgent {
       contactRole: extraction.contactRole,
       contactEmail: bestEmail,
       contactPhone,
+      techOpportunity,
     };
   }
 
@@ -257,6 +277,7 @@ export class IntelligenceAnalyst extends AutonomousAgent {
           auditData: {
             performanceScore,
             seoScore,
+            techOpportunity: contact.techOpportunity,
             painPoints: analysis.painPoints,
             recommendedModules: analysis.recommendedModules,
             contactPhone: contact.contactPhone,

@@ -4,6 +4,7 @@ import { launchMission } from "@/actions/acquisitionActions"
 import Link from "next/link"
 import { MissionTracker } from "./MissionTracker"
 import { PipelineKanban } from "./PipelineKanban"
+import { BulkSendBar } from "./BulkSendBar"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -41,20 +42,30 @@ export default async function AdminAcquisitionPage() {
     orderBy: [{ score: "desc" }, { createdAt: "desc" }],
   })
 
-  // KPI Calculations (parallel)
-  const [totalLeads, avgScoreResult, activeMissionsCount, contactedCount, repliedCount, meetingCount] =
-    await Promise.all([
-      prisma.lead.count(),
-      prisma.lead.aggregate({ _avg: { score: true } }),
-      prisma.mission.count({ where: { status: "ACTIVE" } }),
-      prisma.lead.count({ where: { status: "CONTACTED" } }),
-      prisma.lead.count({ where: { status: "REPLIED" } }),
-      prisma.lead.count({ where: { status: "MEETING_BOOKED" } }),
-    ])
+  // Comptes RÉELS par statut (source unique de vérité) — jamais dérivés du
+  // tableau plafonné à 200, sinon les chiffres se contredisent entre le Kanban
+  // et les KPI (finding audit UI 2026-08-09).
+  const grouped = await prisma.lead.groupBy({ by: ["status"], _count: { _all: true } })
+  const statusCounts: Record<string, number> = {}
+  for (const g of grouped) statusCounts[g.status] = g._count._all
 
+  const [totalLeads, avgScoreResult, activeMissionsCount] = await Promise.all([
+    prisma.lead.count(),
+    prisma.lead.aggregate({ _avg: { score: true } }),
+    prisma.mission.count({ where: { status: "ACTIVE" } }),
+  ])
+
+  const contactedCount = statusCounts["CONTACTED"] ?? 0
+  const repliedCount = statusCounts["REPLIED"] ?? 0
+  const meetingCount = statusCounts["MEETING_BOOKED"] ?? 0
   const avgScore = avgScoreResult._avg.score ? Math.round(avgScoreResult._avg.score) : 0
   const engagedCount = contactedCount + repliedCount + meetingCount
   const conversionRate = totalLeads > 0 ? Math.round((engagedCount / totalLeads) * 100) : 0
+
+  // Détection auto des réponses inactive tant que le Worker Cloudflare n'est pas
+  // déployé : afficher "0 répondu" serait un mensonge (des réponses existent
+  // peut-être dans Gmail). On le signale honnêtement dans l'UI.
+  const replyDetectionActive = false
 
   return (
     <div className="h-full flex flex-col space-y-4 p-4 lg:p-8">
@@ -144,13 +155,23 @@ export default async function AdminAcquisitionPage() {
             <span className="text-base font-bold text-emerald-400 tabular-nums">{contactedCount} mails</span>
           </Link>
         </div>
+
+        {/* Action puissante surfacée ici (plus seulement dans l'onglet Brouillons) */}
+        {pendingDrafts.length > 0 && (
+          <BulkSendBar scores={pendingDrafts.map((d) => d.lead.score ?? 0)} />
+        )}
       </div>
 
       {/* Main Fit-to-Screen Split Area (Flex 1) */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0 overflow-hidden">
         <div className="lg:col-span-3 flex flex-col h-full overflow-hidden relative">
           <div className="flex-1 min-h-0 relative">
-            <PipelineKanban leads={allLeads} />
+            <PipelineKanban
+              leads={allLeads}
+              counts={statusCounts}
+              total={totalLeads}
+              replyDetectionActive={replyDetectionActive}
+            />
           </div>
         </div>
 

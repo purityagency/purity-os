@@ -30,20 +30,26 @@ export class LeadScoringAnalyst extends AutonomousAgent {
     const breakdown: LeadScore['breakdown'] = [];
     let score = 0;
 
-    const audit = lead.auditData as { performanceScore?: number; seoScore?: number; contactPhone?: string } | null;
+    const audit = lead.auditData as { performanceScore?: number; seoScore?: number; techOpportunity?: number; contactPhone?: string } | null;
 
     // 1. OPPORTUNITÉ TECHNIQUE (0-35) — le cœur : "cette entreprise a-t-elle
     // besoin de nous ?". Plus le site est mauvais, plus l'opportunité est
-    // grande. Un score PageSpeed inconnu vaut une opportunité MOYENNE (18),
-    // pas zéro : ne pas écraser tous les non-audités au même niveau.
+    // grande. Ordre de préférence : PageSpeed réel > signal heuristique dérivé
+    // du HTML (techOpportunity, quand PageSpeed est rate-limité) > défaut moyen.
+    // Ce fallback évite que tous les leads reçoivent la même valeur et que le
+    // score s'écrase (finding audit 2026-08-09).
     const perf = audit?.performanceScore;
+    const techOpp = audit?.techOpportunity;
     let perfPts: number;
     if (typeof perf === 'number') {
       perfPts = perf < 30 ? 35 : perf < 50 ? 30 : perf < 70 ? 22 : perf < 85 ? 12 : 4;
       breakdown.push({ criterion: 'Opportunité technique', points: perfPts, reason: `Performance mobile ${Math.round(perf)}/100` });
+    } else if (typeof techOpp === 'number') {
+      perfPts = Math.round((techOpp / 100) * 35); // techOpp élevé = site faible = grosse opportunité
+      breakdown.push({ criterion: 'Opportunité technique', points: perfPts, reason: `Signal site (heuristique HTML) ${techOpp}/100` });
     } else {
       perfPts = 18;
-      breakdown.push({ criterion: 'Opportunité technique', points: perfPts, reason: 'Performance non mesurée (opportunité présumée moyenne)' });
+      breakdown.push({ criterion: 'Opportunité technique', points: perfPts, reason: 'Non mesurée (opportunité présumée moyenne)' });
     }
     score += perfPts;
 
