@@ -8,6 +8,7 @@ import {
   DEFAULT_DEPARTMENT,
   DEFAULT_PRIORITY,
 } from "@/core/departments"
+import { enqueueTask } from "@/core/kernel/enqueue"
 
 export async function POST(request: Request) {
   try {
@@ -37,6 +38,10 @@ export async function POST(request: Request) {
 
     const data = body.data && typeof body.data === "object" ? body.data : {}
 
+    // Tâche EXÉCUTABLE dans la file du kernel (consommée par /api/cron/kernel).
+    const queued = await enqueueTask({ department, task, priority, data: data as Record<string, unknown> })
+
+    // Trace dans le fil d'activité admin (Event) — lecture humaine, pas d'exécution.
     const event = await prisma.event.create({
       data: {
         type: "AI",
@@ -47,14 +52,15 @@ export async function POST(request: Request) {
           task,
           priority,
           data,
-          status: "DISPATCHED",
+          taskId: queued?.id ?? null,
+          status: "QUEUED",
           dispatchedAt: new Date().toISOString(),
         },
       },
     })
 
     return NextResponse.json(
-      { ok: true, eventId: event.id, department, priority, task },
+      { ok: true, taskId: queued?.id ?? null, eventId: event.id, department, priority, task },
       { status: 200 },
     )
   } catch (error) {

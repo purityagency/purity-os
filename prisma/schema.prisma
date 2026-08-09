@@ -192,6 +192,32 @@ model Order {
   @@index([status, createdAt])
 }
 
+// File de tâches du KERNEL — le système nerveux central qui interconnecte les
+// pôles. Une tâche est dispatchée (via /api/internal/ai-dispatch ou enqueueTask)
+// vers un département ; le worker cron /api/cron/kernel la consomme, la route
+// vers l'exécuteur du bon pôle, et enregistre le résultat. C'est ce qui
+// transforme un squelette d'agents isolés en organisme qui fait circuler le
+// travail entre pôles.
+model AgentTask {
+  id           String    @id @default(cuid())
+  department   String    // DepartmentId (ex: "01_ACQUISITION")
+  task         String    // description lisible de la tâche
+  priority     String    @default("NORMAL") // LOW, NORMAL, HIGH, CRITICAL
+  data         Json?     // paramètres structurés pour l'exécuteur
+
+  status       String    @default("PENDING") // PENDING, RUNNING, DONE, FAILED
+  result       Json?     // sortie de l'exécuteur en cas de succès
+  error        String?   // message d'erreur en cas d'échec
+  attempts     Int       @default(0)
+  scheduledFor DateTime  @default(now()) // permet le backoff / la planification
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([department, status])
+}
+
 // Boîte de réception unifiée pour tout ce qui arrive du site public :
 // question/lead (formulaire ou chatbot OctoMask), prise de RDV, commande payée.
 // Les commandes créent aussi un Project (voir /api/internal/provision) — l'Event
