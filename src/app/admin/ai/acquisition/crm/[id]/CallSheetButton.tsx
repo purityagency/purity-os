@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { getCallSheet, type CallSheetData } from "@/actions/acquisitionActions"
 import { CopyButton } from "./CopyButton"
 
@@ -40,37 +40,68 @@ export function CallSheetButton({ leadId, label = "📞 Fiche d'appel", classNam
 
 function Drawer({ data, loading, onClose, leadId }: { data: CallSheetData | null; loading: boolean; onClose: () => void; leadId: string }) {
   const [tab, setTab] = useState<Tab>("Dossier")
+
+  // Échap pour fermer + verrou de scroll de l'arrière-plan (standard des modals
+  // modernes : Linear, Raycast, Vercel).
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose()
+    document.addEventListener("keydown", onKey)
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    return () => {
+      document.removeEventListener("keydown", onKey)
+      document.body.style.overflow = prev
+    }
+  }, [onClose])
+
+  const scoreColor = data?.score == null ? "text-zinc-500" : data.score >= 70 ? "text-emerald-400" : data.score >= 40 ? "text-amber-400" : "text-red-400"
+
   return (
-    <div className="fixed inset-0 z-[100] flex justify-end">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-2xl h-full bg-[#0a0510] border-l border-white/10 shadow-2xl flex flex-col animate-[slideIn_.2s_ease-out]">
-        <style>{`@keyframes slideIn{from{transform:translateX(24px);opacity:.6}to{transform:translateX(0);opacity:1}}`}</style>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+      <div className="absolute inset-0 bg-black/75" onClick={onClose} />
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="relative w-full max-w-4xl max-h-[88vh] rounded-2xl border border-white/10 bg-[#0b0710] shadow-[0_24px_80px_-12px_rgba(0,0,0,0.9)] flex flex-col overflow-hidden animate-[popIn_.16s_cubic-bezier(.16,1,.3,1)]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <style>{`@keyframes popIn{from{transform:scale(.97);opacity:0}to{transform:scale(1);opacity:1}}`}</style>
 
         {/* Header */}
-        <div className="shrink-0 p-4 border-b border-white/10 flex items-start justify-between gap-3">
+        <div className="shrink-0 px-6 pt-5 pb-4 border-b border-white/[0.07] flex items-start justify-between gap-4">
           <div className="min-w-0">
-            <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-400">Fiche d&apos;appel</div>
-            <h2 className="text-lg font-bold text-white truncate">{data?.companyName ?? "…"}</h2>
+            <div className="text-[10px] font-mono uppercase tracking-[0.2em] text-zinc-500 mb-1">Fiche d&apos;appel</div>
+            <h2 className="text-2xl font-bold text-white tracking-tight truncate">{data?.companyName ?? "…"}</h2>
+            {data && (
+              <div className="mt-1.5 flex items-center gap-3 text-xs text-zinc-400">
+                {data.location && <span>{data.location}</span>}
+                {data.score != null && <span className={`font-mono font-semibold ${scoreColor}`}>Score {data.score}</span>}
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {data?.phone && (
-              <a href={`tel:${data.phone.dial}`} className="text-sm font-mono font-bold text-emerald-300 hover:text-emerald-200 px-3 py-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10">📞 {data.phone.display}</a>
+              <a href={`tel:${data.phone.dial}`} className="text-sm font-semibold text-white px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 transition-colors">Appeler · {data.phone.display}</a>
             )}
-            <button type="button" onClick={onClose} className="w-8 h-8 rounded-lg border border-white/10 text-zinc-400 hover:bg-white/5 hover:text-white text-lg leading-none cursor-pointer">×</button>
+            <button type="button" onClick={onClose} aria-label="Fermer" className="w-9 h-9 rounded-xl border border-white/10 text-zinc-400 hover:bg-white/5 hover:text-white grid place-items-center cursor-pointer transition-colors">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
+            </button>
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="shrink-0 flex gap-1 p-2 border-b border-white/5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-          {TABS.map((t) => (
-            <button key={t} type="button" onClick={() => setTab(t)} className={`text-xs font-semibold px-3 py-1.5 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${tab === t ? "bg-violet-600 text-white" : "text-zinc-400 hover:text-white hover:bg-white/5"}`}>{t}</button>
-          ))}
+        {/* Tabs — segmented, sobre */}
+        <div className="shrink-0 px-4 pt-3">
+          <div className="inline-flex gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+            {TABS.map((t) => (
+              <button key={t} type="button" onClick={() => setTab(t)} className={`text-xs font-semibold px-3.5 py-1.5 rounded-lg whitespace-nowrap transition-colors cursor-pointer ${tab === t ? "bg-white text-black" : "text-zinc-400 hover:text-white"}`}>{t}</button>
+            ))}
+          </div>
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
+        <div className="flex-1 overflow-y-auto px-6 py-5 custom-scrollbar">
           {loading || !data ? (
-            <p className="text-sm text-zinc-500 p-6 text-center">Préparation de la fiche…</p>
+            <div className="h-40 grid place-items-center text-sm text-zinc-500">Préparation de la fiche…</div>
           ) : (
             <>
               {tab === "Dossier" && <DossierTab data={data} leadId={leadId} />}
@@ -80,6 +111,12 @@ function Drawer({ data, loading, onClose, leadId }: { data: CallSheetData | null
               {tab === "Après" && <AfterTab data={data} leadId={leadId} />}
             </>
           )}
+        </div>
+
+        {/* Footer hint */}
+        <div className="shrink-0 px-6 py-2.5 border-t border-white/[0.07] flex items-center justify-between text-[10px] font-mono text-zinc-600">
+          <span>Préparé sans IA · données réelles du prospect</span>
+          <span>Échap pour fermer</span>
         </div>
       </div>
     </div>
