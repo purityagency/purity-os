@@ -34,7 +34,7 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
       {/* Barre de navigation — surface noire opaque, bordure nette (pas de
           glassmorphism ni de glow, conformément à la direction visuelle). */}
       <div
-        className={`shrink-0 flex items-center justify-between gap-3 px-4 sm:px-6 py-3 sticky top-0 z-50 bg-[#060309] border-b transition-colors ${
+        className={`shrink-0 flex items-center justify-between gap-3 px-4 sm:px-6 py-3 sticky top-0 z-50 bg-[#0a0a0b] border-b transition-colors ${
           isScrolled ? "border-white/10" : "border-white/5"
         }`}
       >
@@ -47,11 +47,12 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
                 key={tab.href}
                 href={tab.href}
                 aria-current={isActive ? "page" : undefined}
+                style={isActive ? { background: "#c4f82a", color: "#000" } : undefined}
                 className={`group flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap ${
-                  isActive ? "bg-violet-600 text-white" : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
+                  isActive ? "" : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
                 }`}
               >
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-zinc-500 group-hover:text-zinc-300"}`} />
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-black" : "text-zinc-500 group-hover:text-zinc-300"}`} />
                 <span className="hidden sm:inline">{tab.name}</span>
               </Link>
             )
@@ -59,15 +60,15 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
         </div>
 
         <div className="flex items-center gap-2 text-xs font-mono text-zinc-500 shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-          <span className="hidden sm:inline">Pôle 01 actif</span>
+          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#c4f82a" }} />
+          <span className="hidden sm:inline">Pôle actif</span>
         </div>
       </div>
 
       {/* Main Content Area */}
-      <div 
+      <div
         id="acquisition-content-area"
-        className="flex-1 overflow-y-auto bg-[#060309] custom-scrollbar"
+        className="flex-1 overflow-y-auto bg-[#0a0a0b] custom-scrollbar"
       >
         <div className="min-h-full">
           {children}
