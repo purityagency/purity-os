@@ -13,6 +13,62 @@ export const revalidate = 0
 // (after()) : la fonction doit rester vivante assez longtemps pour scouter.
 export const maxDuration = 300
 
+// Entonnoir proportionnel réel : chaque étape = une barre dont la largeur
+// reflète le volume vs total. Honnête sur la détection de réponses (auto off).
+function Funnel({ total, contacted, replied, meetings, replyDetectionActive }: {
+  total: number; contacted: number; replied: number; meetings: number; replyDetectionActive: boolean
+}) {
+  const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0)
+  const w = (n: number) => `${total > 0 ? Math.max(2, Math.min(100, (n / total) * 100)) : 0}%`
+  const stages = [
+    { label: "Sourcés", value: String(total), sub: "100%", width: "100%", bar: "bg-zinc-400" },
+    { label: "Contactés", value: String(contacted), sub: `${pct(contacted)}%`, width: w(contacted), bar: "bg-violet-500" },
+    { label: "Répondu", value: replyDetectionActive ? String(replied) : "—", sub: replyDetectionActive ? `${pct(replied)}%` : "auto off", width: w(replied), bar: "bg-cyan-500" },
+    { label: "RDV", value: String(meetings), sub: `${pct(meetings)}%`, width: w(meetings), bar: meetings > 0 ? "bg-emerald-500" : "bg-white/10" },
+  ]
+  return (
+    <div className="grid grid-cols-4 gap-4">
+      {stages.map((s) => (
+        <div key={s.label}>
+          <div className="text-[9px] font-mono uppercase tracking-wider text-zinc-500">{s.label}</div>
+          <div className="flex items-baseline gap-1.5 mt-0.5">
+            <span className="text-2xl font-bold font-mono tabular-nums text-white leading-none">{s.value}</span>
+            <span className="text-[10px] font-mono text-zinc-500">{s.sub}</span>
+          </div>
+          <div className="mt-2 h-1 rounded-full bg-white/[0.06] overflow-hidden">
+            <div className={`h-full ${s.bar} transition-all`} style={{ width: s.width }} />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const ACTION_TONE: Record<string, { border: string; val: string }> = {
+  amber: { border: "border-amber-500/25 hover:border-amber-500/50", val: "text-amber-400" },
+  emerald: { border: "border-emerald-500/25 hover:border-emerald-500/50", val: "text-emerald-400" },
+  violet: { border: "border-violet-500/25 hover:border-violet-500/50", val: "text-violet-400" },
+}
+
+function ActionCard({ href, label, value, sub, cta, tone }: {
+  href: string; label: string; value: number; sub: string; cta: string; tone: keyof typeof ACTION_TONE
+}) {
+  const empty = value === 0
+  const t = ACTION_TONE[tone]
+  return (
+    <Link href={href} className={`group flex items-center justify-between gap-3 rounded-xl border bg-white/[0.02] hover:bg-white/[0.04] p-4 transition-colors ${empty ? "border-white/[0.08]" : t.border}`}>
+      <div className="min-w-0">
+        <div className="text-xs font-semibold text-zinc-300 truncate">{label}</div>
+        <div className="flex items-baseline gap-2 mt-1">
+          <span className={`text-3xl font-bold font-mono tabular-nums leading-none ${empty ? "text-zinc-600" : t.val}`}>{value}</span>
+          <span className="text-[10px] text-zinc-500 truncate">{sub}</span>
+        </div>
+      </div>
+      <span className="text-xs font-semibold text-zinc-500 group-hover:text-white transition-colors whitespace-nowrap shrink-0">{empty ? "à jour" : cta}</span>
+    </Link>
+  )
+}
+
 export default async function AdminAcquisitionPage() {
   await requireAdminSession()
 
@@ -72,8 +128,6 @@ export default async function AdminAcquisitionPage() {
   const repliedCount = statusCounts["REPLIED"] ?? 0
   const meetingCount = statusCounts["MEETING_BOOKED"] ?? 0
   const avgScore = avgScoreResult._avg.score ? Math.round(avgScoreResult._avg.score) : 0
-  const engagedCount = contactedCount + repliedCount + meetingCount
-  const conversionRate = totalLeads > 0 ? Math.round((engagedCount / totalLeads) * 100) : 0
 
   // Détection auto des réponses inactive tant que le Worker Cloudflare n'est pas
   // déployé : afficher "0 répondu" serait un mensonge (des réponses existent
@@ -93,10 +147,10 @@ export default async function AdminAcquisitionPage() {
           <div className="flex items-center gap-2">
             {/* Launch Mission Modal Trigger */}
             <details className="relative group">
-              <summary className="cursor-pointer list-none px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all shadow-md shadow-violet-600/20">
-                + Lancer Scan AI
+              <summary className="cursor-pointer list-none px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-colors">
+                + Lancer un scan
               </summary>
-              <div className="absolute right-0 top-10 z-30 w-80 p-4 rounded-xl border border-white/10 bg-[#0d0714] backdrop-blur-2xl shadow-2xl space-y-3">
+              <div className="absolute right-0 top-10 z-30 w-80 p-4 rounded-xl border border-white/10 bg-[#120c1c] shadow-2xl space-y-3">
                 <p className="font-bold text-xs text-white">Lancer une nouvelle mission de prospection</p>
                 <form action={launchMission} className="space-y-2.5">
                   <div>
@@ -132,44 +186,28 @@ export default async function AdminAcquisitionPage() {
           </div>
         </div>
 
-        {/* Compact KPI Strip (1 tight row) */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-xs">
-          <div className="p-2.5 rounded-xl border border-white/10 bg-white/[0.02]">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Missions</span>
-            <span className="text-base font-bold text-white tabular-nums">{activeMissionsCount} actives</span>
+        {/* Entonnoir réel + méta compacte */}
+        <div className="rounded-xl border border-white/10 bg-white/[0.02] p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Entonnoir</span>
+            <Link href="/admin/ai/acquisition/crm" className="text-[10px] font-mono text-zinc-500 hover:text-violet-300 transition-colors">
+              {totalLeads} leads · score moyen {avgScore}/100 · {activeMissionsCount} mission(s) active(s) →
+            </Link>
           </div>
-          
-          <Link href="/admin/ai/acquisition/crm" className="p-2.5 rounded-xl border border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:border-violet-500/50 transition-all cursor-pointer group">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate group-hover:text-violet-300 transition-colors">Leads Sourcés ↗</span>
-            <span className="text-base font-bold text-white tabular-nums">{totalLeads} total</span>
-          </Link>
-
-          <div className="p-2.5 rounded-xl border border-violet-500/20 bg-violet-500/5">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Score Qualité</span>
-            <span className="text-base font-bold text-violet-400 tabular-nums">{avgScore}/100</span>
-          </div>
-          <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5" title="Part des leads déjà contactés (envoyés + répondu + RDV) sur le total sourcé">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Taux contactés</span>
-            <span className="text-base font-bold text-emerald-400 tabular-nums">{conversionRate}%</span>
-          </div>
-
-          <Link href="/admin/ai/acquisition/drafts" className="p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 hover:border-amber-500/50 transition-all cursor-pointer group">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-amber-500/70 block truncate group-hover:text-amber-400 transition-colors">Brouillons ↗</span>
-            <span className="text-base font-bold text-amber-400 tabular-nums">{pendingDrafts.length} à valider</span>
-          </Link>
-
-          <Link href="/admin/ai/acquisition/outbox" className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all cursor-pointer group">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-500/70 block truncate group-hover:text-emerald-400 transition-colors">Envoyés ↗</span>
-            <span className="text-base font-bold text-emerald-400 tabular-nums">{contactedCount} mails</span>
-          </Link>
-
-          <Link href="/admin/ai/acquisition/calls" className="p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 hover:border-amber-500/50 transition-all cursor-pointer group">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-amber-500/70 block truncate group-hover:text-amber-400 transition-colors">À appeler ↗</span>
-            <span className="text-base font-bold text-amber-400 tabular-nums">{callableCount} tél.</span>
-          </Link>
+          <Funnel total={totalLeads} contacted={contactedCount} replied={repliedCount} meetings={meetingCount} replyDetectionActive={replyDetectionActive} />
         </div>
 
-        {/* Action puissante surfacée ici (plus seulement dans l'onglet Brouillons) */}
+        {/* À faire maintenant — le cœur pratique du cockpit */}
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">À faire maintenant</div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <ActionCard href="/admin/ai/acquisition/drafts" label="Brouillons à valider" value={pendingDrafts.length} sub="prêts à envoyer" cta="Valider →" tone="amber" />
+            <ActionCard href="/admin/ai/acquisition/calls" label="Appels prioritaires" value={callableCount} sub="joignables par tél." cta="Appeler →" tone="emerald" />
+            <ActionCard href="/admin/ai/acquisition/inbox" label="Réponses à traiter" value={repliedCount} sub="leads ont répondu" cta="Répondre →" tone="violet" />
+          </div>
+        </div>
+
+        {/* Envoi groupé quand il y a des brouillons */}
         {pendingDrafts.length > 0 && (
           <BulkSendBar scores={pendingDrafts.map((d) => d.lead.score ?? 0)} />
         )}
