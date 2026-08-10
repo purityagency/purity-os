@@ -136,7 +136,7 @@ export default async function CallPrepPage({ params }: { params: Promise<{ id: s
           <div style={{ marginTop: 10, fontSize: 13, color: "#6b7280" }}>Résultat : ☐ RDV pris ☐ Rappeler le ______ ☐ Envoyer mail ☐ Pas intéressé</div>
         </Section>
 
-        <div style={{ fontSize: 10, color: "#9ca3af", textAlign: "center", marginTop: 20 }}>Document interne Purity Agency — préparé automatiquement à partir de l&apos;audit du prospect. [TON PRÉNOM] / [TON NUMÉRO] à remplacer.</div>
+        <div style={{ fontSize: 10, color: "#9ca3af", textAlign: "center", marginTop: 20 }}>Document interne Purity Agency — préparé automatiquement à partir de l&apos;audit du prospect. Amir Kebiyeb · 0465 36 82 65</div>
       </div>
     </>
   )

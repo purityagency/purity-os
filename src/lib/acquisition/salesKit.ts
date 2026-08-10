@@ -68,6 +68,11 @@ export interface SalesKit {
   vitals: { title: string; value: string; good: boolean | null }[]
 }
 
+// Commercial qui passe l'appel (Amir). Utilisé dans les scripts au lieu de
+// placeholders [TON PRÉNOM]/[TON NUMÉRO].
+const REP_FIRST_NAME = "Amir"
+const REP_PHONE = "0465 36 82 65"
+
 function firstNameOf(contactName: string | null): string | null {
   if (!contactName) return null
   const n = contactName.trim().split(/\s+/)[0]
@@ -189,7 +194,7 @@ export function buildSalesKit(input: LeadKitInput): SalesKit {
   })()
 
   const callScript: CallScript = {
-    greeting: `${greetingLine(firstName)} je suis [TON PRÉNOM] de Purity Agency, une agence web basée en Wallonie. Je tombe bien, ${firstName ?? "vous avez"} deux minutes ?`,
+    greeting: `${greetingLine(firstName)} je suis ${REP_FIRST_NAME} de Purity Agency, une agence web basée en Wallonie. Je tombe bien, ${firstName ?? "vous avez"} deux minutes ?`,
     hook: hookByFinding,
     permission: `Je ne vais pas vous vendre quoi que ce soit au téléphone — je voulais juste vous montrer ce que j'ai repéré, et si ça vous parle, on en reparle. Ça vous va ?`,
     discovery: [
@@ -208,7 +213,7 @@ export function buildSalesKit(input: LeadKitInput): SalesKit {
       { trigger: "« Je vais réfléchir »", response: `Bien sûr. Pour vous aider à décider, je vous propose un truc simple : un mini-audit gratuit de votre présence en ligne, écrit noir sur blanc. Vous le lisez tranquillement. Je vous l'envoie ?` },
     ],
     close: `Je vous propose un appel de 20 minutes${input.contactName ? `, ${firstName}` : ""} — je vous montre précisément quoi prioriser pour ${company}, sans engagement. Vous préférez plutôt en début ou en fin de semaine ?`,
-    voicemail: `${greetingLine(firstName)} c'est [TON PRÉNOM] de Purity Agency. J'ai repéré un point précis sur la présence en ligne de ${company} qui vous fait sûrement perdre des clients, et c'est simple à corriger. Rappelez-moi au [TON NUMÉRO] ou je retente demain. Bonne journée${firstName ? `, ${firstName}` : ""} !`,
+    voicemail: `${greetingLine(firstName)} c'est ${REP_FIRST_NAME} de Purity Agency. J'ai repéré un point précis sur la présence en ligne de ${company} qui vous fait sûrement perdre des clients, et c'est simple à corriger. Rappelez-moi au ${REP_PHONE} ou je retente demain. Bonne journée${firstName ? `, ${firstName}` : ""} !`,
   }
 
   return {
