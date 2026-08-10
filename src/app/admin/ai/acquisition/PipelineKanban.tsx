@@ -31,6 +31,16 @@ function ScoreBadge({ score }: { score: number | null }) {
   return <span className={`text-[10px] font-bold font-mono ${color}`}>{score}</span>
 }
 
+// Ancienneté lisible ("il y a 3 j") — repère visuel des leads qui stagnent.
+function timeAgo(d: Date | string): string {
+  const diff = Date.now() - new Date(d).getTime()
+  const days = Math.floor(diff / 86_400_000)
+  if (days >= 1) return `il y a ${days} j`
+  const hours = Math.floor(diff / 3_600_000)
+  if (hours >= 1) return `il y a ${hours} h`
+  return "à l'instant"
+}
+
 function LeadCard({ lead }: { lead: Lead }) {
   const [expanded, setExpanded] = useState(false)
 
@@ -43,15 +53,21 @@ function LeadCard({ lead }: { lead: Lead }) {
     >
       <div className="flex items-start justify-between gap-1">
         <p className="text-[10px] font-semibold text-white truncate leading-tight flex-1">{lead.companyName}</p>
-        <ScoreBadge score={lead.score} />
+        <div className="flex items-center gap-1 shrink-0">
+          <ScoreBadge score={lead.score} />
+          <svg className={`w-2.5 h-2.5 text-zinc-600 transition-transform ${expanded ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 4.5 6 7.5 9 4.5" /></svg>
+        </div>
       </div>
 
-      {lead.location && (
-        <div className="flex items-center gap-1 text-[10px] text-zinc-500 truncate">
-          <LocationIcon className="w-3 h-3 text-zinc-500 shrink-0" />
-          <span className="truncate">{lead.location}</span>
-        </div>
-      )}
+      <div className="flex items-center justify-between gap-1 text-[10px] text-zinc-500">
+        {lead.location ? (
+          <span className="flex items-center gap-1 truncate">
+            <LocationIcon className="w-3 h-3 text-zinc-500 shrink-0" />
+            <span className="truncate">{lead.location}</span>
+          </span>
+        ) : <span />}
+        <span className="shrink-0 text-zinc-600">{timeAgo(lead.updatedAt)}</span>
+      </div>
 
       {expanded && (
         <div className="pt-2 border-t border-white/5 space-y-1.5 text-[10px] text-zinc-400">
@@ -163,7 +179,7 @@ export function PipelineKanban({
                       <LeadCard key={lead.id} lead={lead} />
                     ))}
                     {truncated && (
-                      <Link href="/admin/ai/acquisition/crm" className="block text-[9px] text-zinc-500 hover:text-violet-300 text-center py-1">
+                      <Link href={`/admin/ai/acquisition/crm?status=${stage.key}`} className="block text-[9px] text-zinc-500 hover:text-violet-300 text-center py-1">
                         + {realCount - stageLeads.length} autres — voir CRM
                       </Link>
                     )}

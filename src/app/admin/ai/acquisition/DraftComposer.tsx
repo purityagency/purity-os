@@ -99,10 +99,7 @@ export function DraftComposer({ draft }: { draft: Draft }) {
   const hasContactEmail = !!draft.lead.contactEmail
 
   return (
-    <div className="relative border border-white/10 rounded-xl bg-white/[0.01] backdrop-blur-xl overflow-hidden transition-all duration-300 hover:border-white/20 mb-6">
-      {/* Glow décoratif violet discret */}
-      <div className="absolute top-0 right-0 w-64 h-64 bg-violet-600/5 rounded-full blur-[80px] pointer-events-none" />
-
+    <div className="relative border border-white/10 rounded-xl bg-white/[0.02] overflow-hidden transition-colors hover:border-white/20 mb-6">
       {/* Grid Principal */}
       <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-white/10">
         
@@ -190,10 +187,10 @@ export function DraftComposer({ draft }: { draft: Draft }) {
                   disabled={isPending || isSaving || isSending || isRejecting}
                   className="bg-black/40 border border-white/10 rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-violet-500 transition-all cursor-pointer"
                 >
-                  <option value="Liquid Glass (Premium)">Liquid Glass (Premium)</option>
-                  <option value="Direct & Cash">Direct & Cash</option>
-                  <option value="Subtil & Conseil">Subtil & Conseil</option>
-                  <option value="Cyber-Futuriste">Cyber-Futuriste</option>
+                  <option value="Liquid Glass (Premium)">Premium sobre</option>
+                  <option value="Direct & Cash">Direct & cash</option>
+                  <option value="Subtil & Conseil">Subtil & conseil</option>
+                  <option value="Cyber-Futuriste">Moderne & tech</option>
                 </select>
 
                 <button
@@ -256,7 +253,7 @@ export function DraftComposer({ draft }: { draft: Draft }) {
             {/* Simulated Drafts (LinkedIn & Ads) */}
             {(draft.lead.auditData?.linkedinDraft || draft.lead.auditData?.adsBrief) && (
               <div className="mt-6 pt-4 border-t border-white/5 space-y-4">
-                <span className="text-[10px] uppercase tracking-wider text-white/40 font-mono block">Simulations multi-canal (Phase 4)</span>
+                <span className="text-[10px] uppercase tracking-wider text-white/40 font-mono block">Autres canaux (LinkedIn / Ads)</span>
                 
                 {draft.lead.auditData.linkedinDraft && (
                   <div className="rounded-lg bg-[#0A66C2]/10 border border-[#0A66C2]/20 p-4 space-y-2">

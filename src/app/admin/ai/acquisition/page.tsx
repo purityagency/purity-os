@@ -140,8 +140,8 @@ export default async function AdminAcquisitionPage() {
             <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Score Qualité</span>
             <span className="text-base font-bold text-violet-400 tabular-nums">{avgScore}/100</span>
           </div>
-          <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5">
-            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Engagement</span>
+          <div className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5" title="Part des leads déjà contactés (envoyés + répondu + RDV) sur le total sourcé">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Taux contactés</span>
             <span className="text-base font-bold text-emerald-400 tabular-nums">{conversionRate}%</span>
           </div>
 

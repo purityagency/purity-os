@@ -31,13 +31,13 @@ function MissionCard({ mission }: { mission: Mission }) {
           <span className={`w-1.5 h-1.5 shrink-0 ${mission.status === "ACTIVE" ? "bg-emerald-500 animate-pulse rounded-sm" : "bg-zinc-600 rounded-sm"}`} />
           <p className="font-mono font-bold text-[10px] text-white/90 truncate">{mission.name}</p>
         </div>
-        <span className={`shrink-0 text-[8px] uppercase tracking-wider font-mono ${style.classes}`}>
+        <span className={`shrink-0 text-[10px] uppercase tracking-wider font-mono ${style.classes}`}>
           [{style.label}]
         </span>
       </div>
       
       {params?.sectors && (
-        <div className="pl-3 text-[8px] font-mono text-zinc-500 truncate">
+        <div className="pl-3 text-[10px] font-mono text-zinc-500 truncate">
           &gt; TARGET: {params.sectors.join(", ")}
           {params.locations ? ` | LOC: ${params.locations.join(", ")}` : ""}
         </div>
@@ -45,7 +45,7 @@ function MissionCard({ mission }: { mission: Mission }) {
 
       {/* Progress bar terminal style */}
       <div className="pl-3 space-y-0.5">
-        <div className="flex items-center justify-between text-[8px] font-mono text-zinc-500">
+        <div className="flex items-center justify-between text-[10px] font-mono text-zinc-500">
           <span>{mission._count.leads} SRC&apos;D</span>
           <span>{progress}% [{maxLeads}]</span>
         </div>

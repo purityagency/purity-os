@@ -45,14 +45,22 @@ export default async function AcquisitionOutboxPage() {
             {sentEmails.map((email) => (
               <div key={email.id} className="p-4 bg-white/[0.02] border border-white/5 rounded-xl flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between hover:bg-white/[0.04] transition-colors">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">SENT</span>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span className="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">Envoyé</span>
                     <span className="text-xs text-zinc-500 font-mono">
-                      {email.updatedAt.toLocaleDateString("fr-BE", { hour: '2-digit', minute: '2-digit' })}
+                      {email.updatedAt.toLocaleDateString("fr-BE", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                     </span>
+                    <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${email.openedAt ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" : "bg-white/5 text-zinc-500 border-white/10"}`}>
+                      {email.openedAt ? `Ouvert ×${email.openCount}` : "Non ouvert"}
+                    </span>
+                    {email.clickedAt && (
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded border bg-violet-500/10 text-violet-300 border-violet-500/20">
+                        Clic ×{email.clickCount}
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-sm font-bold text-white truncate">{email.subject}</h3>
-                  <p className="text-xs text-zinc-400 truncate mt-1">À: {email.lead.contactEmail || email.lead.companyName}</p>
+                  <p className="text-xs text-zinc-400 truncate mt-1">À : {email.lead.contactEmail || email.lead.companyName}</p>
                 </div>
                 
                 <details className="w-full sm:w-auto mt-2 sm:mt-0 group shrink-0">

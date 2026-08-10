@@ -1,7 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { usePathname, useRouter, useSearchParams } from "next/navigation"
+import { LEAD_STATUS_ORDER, leadStatusLabel } from "@/lib/leadStatus"
+import { StatusBadge } from "@/components/StatusBadge"
 
 interface Lead {
   id: string
@@ -13,9 +16,28 @@ interface Lead {
 }
 
 export function LeadsExplorer({ initialLeads }: { initialLeads: Lead[] }) {
-  const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState("ALL")
-  const [minScore, setMinScore] = useState<number | "">("")
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  // Filtres initialisés depuis l'URL → persistés au retour depuis une fiche et
+  // partageables (ex. lien "voir les CONTACTED" depuis le Kanban).
+  const [search, setSearch] = useState(searchParams.get("q") ?? "")
+  const [statusFilter, setStatusFilter] = useState(searchParams.get("status") ?? "ALL")
+  const [minScore, setMinScore] = useState<number | "">(
+    searchParams.get("min") ? Number(searchParams.get("min")) : "",
+  )
+
+  // Synchronise l'URL quand les filtres changent (remplace, ne pollue pas
+  // l'historique).
+  useEffect(() => {
+    const p = new URLSearchParams()
+    if (search) p.set("q", search)
+    if (statusFilter !== "ALL") p.set("status", statusFilter)
+    if (minScore !== "") p.set("min", String(minScore))
+    const qs = p.toString()
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false })
+  }, [search, statusFilter, minScore, pathname, router])
 
   // Filter logic
   const filteredLeads = initialLeads.filter((lead) => {
@@ -54,10 +76,9 @@ export function LeadsExplorer({ initialLeads }: { initialLeads: Lead[] }) {
             className="bg-black/40 border border-white/10 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-violet-500 transition-all cursor-pointer"
           >
             <option value="ALL">Tous les statuts</option>
-            <option value="NEW">NEW</option>
-            <option value="ENRICHED">ENRICHED</option>
-            <option value="DRAFTED">DRAFTED</option>
-            <option value="CONTACTED">CONTACTED</option>
+            {LEAD_STATUS_ORDER.map((s) => (
+              <option key={s} value={s}>{leadStatusLabel(s)}</option>
+            ))}
           </select>
         </div>
 
@@ -90,9 +111,7 @@ export function LeadsExplorer({ initialLeads }: { initialLeads: Lead[] }) {
                   </p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold font-mono bg-white/10 text-zinc-300">
-                    {lead.status}
-                  </span>
+                  <StatusBadge status={lead.status} />
                   <span
                     className={`text-sm font-bold tabular-nums w-10 text-right ${
                       lead.score == null

@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { CopyButton } from "./CopyButton"
 import { GlobeIcon, LocationIcon, UserIcon, MailIcon } from "@/components/icons"
+import { StatusBadge } from "@/components/StatusBadge"
 import type { PageSpeedReport, PageSpeedMetric } from "@/lib/acquisition/pageSpeedInsights"
 
 export const dynamic = "force-dynamic"
@@ -21,11 +22,6 @@ interface AuditData {
   linkedinDraft?: unknown
   adsBrief?: unknown
   [k: string]: unknown
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  NEW: "Nouveau", ENRICHED: "Enrichi", DRAFTED: "Rédigé", CONTACTED: "Contacté",
-  REPLIED: "A répondu", MEETING_BOOKED: "RDV confirmé", BOUNCED: "Rebond",
 }
 
 function scoreColor(s: number) {
@@ -99,9 +95,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             </div>
             <h1 className="text-2xl font-bold text-white tracking-tight truncate">{lead.companyName}</h1>
             <div className="flex flex-wrap items-center gap-2 mt-2">
-              <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-violet-500/10 text-violet-300 border border-violet-500/20">
-                {STATUS_LABELS[lead.status] ?? lead.status}
-              </span>
+              <StatusBadge status={lead.status} />
               {lead.mission?.name && <span className="text-[11px] font-mono text-zinc-500">Mission : {lead.mission.name}</span>}
               {lead.optedOut && <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-red-500/10 text-red-400 border border-red-500/20">Désinscrit</span>}
             </div>

@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
-import Link from "next/link"
+import { Suspense } from "react"
 import { LeadsExplorer } from "../LeadsExplorer"
 import { TableIcon } from "@/components/icons"
 
@@ -34,7 +34,9 @@ export default async function AcquisitionCRMPage() {
 
       {/* Main Content */}
       <div className="flex-1 min-h-0 relative bg-white/[0.02] border border-white/5 rounded-xl p-4">
-        <LeadsExplorer initialLeads={allLeads} />
+        <Suspense fallback={<p className="text-xs text-zinc-500 p-4">Chargement…</p>}>
+          <LeadsExplorer initialLeads={allLeads} />
+        </Suspense>
       </div>
     </div>
   )
