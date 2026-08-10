@@ -5,6 +5,7 @@ import Link from "next/link"
 import { MissionTracker } from "./MissionTracker"
 import { PipelineKanban } from "./PipelineKanban"
 import { BulkSendBar } from "./BulkSendBar"
+import { AgentTeamPanel } from "./AgentTeamPanel"
 import { cleanBelgianPhone } from "@/lib/acquisition/phone"
 
 export const dynamic = "force-dynamic"
@@ -124,6 +125,49 @@ export default async function AdminAcquisitionPage() {
     (l) => cleanBelgianPhone((l.auditData as { contactPhone?: string } | null)?.contactPhone) !== null,
   ).length
 
+  // Preuve réelle du travail des 10 agents (aucun chiffre inventé) + statut réel.
+  const [proofRows, activityRows] = await Promise.all([
+    prisma.$queryRaw<Array<{ missions: number; audited: number; scored: number; drafted: number; sent: number; linkedin: number; ads: number; seo: number }>>`
+      SELECT
+        (SELECT COUNT(*) FROM "Mission")::int as missions,
+        (SELECT COUNT(*) FROM "Lead" WHERE "auditData" IS NOT NULL AND (("auditData"->>'painPoints') IS NOT NULL OR ("auditData"->>'performanceScore') IS NOT NULL OR ("auditData"->>'contactPhone') IS NOT NULL))::int as audited,
+        (SELECT COUNT(*) FROM "Lead" WHERE score IS NOT NULL)::int as scored,
+        (SELECT COUNT(*) FROM "EmailDraft")::int as drafted,
+        (SELECT COUNT(*) FROM "EmailDraft" WHERE status = 'SENT')::int as sent,
+        (SELECT COUNT(*) FROM "Lead" WHERE ("auditData"->'linkedinDraft') IS NOT NULL)::int as linkedin,
+        (SELECT COUNT(*) FROM "Lead" WHERE ("auditData"->'adsBrief') IS NOT NULL)::int as ads,
+        (SELECT COUNT(*) FROM "Lead" WHERE ("auditData"->'seoAudit') IS NOT NULL)::int as seo
+    `,
+    prisma.$queryRaw<Array<{ agentName: string; status: string; lastLog: string | null; updatedAt: Date }>>`
+      SELECT "agentName", status, "lastLog", "updatedAt" FROM "AgentActivity" WHERE department = '01_ACQUISITION'
+    `,
+  ])
+  const proof = proofRows[0] ?? { missions: 0, audited: 0, scored: 0, drafted: 0, sent: 0, linkedin: 0, ads: 0, seo: 0 }
+  const activityMap = new Map(activityRows.map((r) => [r.agentName, r]))
+  const DAY_MS = 24 * 60 * 60 * 1000
+  function agentState(names: string[]): { status: "active" | "idle" | "error"; lastLog: string | null } {
+    for (const n of names) {
+      const a = activityMap.get(n)
+      if (!a) continue
+      const status = a.status === "ERROR" ? "error" : Date.now() - new Date(a.updatedAt).getTime() < DAY_MS ? "active" : "idle"
+      const lastLog = a.lastLog ? a.lastLog.replace(/^\[[^\]]+\]\s*/, "") : null
+      return { status, lastLog }
+    }
+    return { status: "idle", lastLog: null }
+  }
+  const agents = [
+    { name: "Julien Servais", role: "Chef d'acquisition", proofValue: proof.missions, proofLabel: "missions pilotées", ...agentState(["Chief Acquisition AI"]) },
+    { name: "Léa Dumont", role: "Prospection web", proofValue: totalLeads, proofLabel: "leads sourcés", ...agentState(["Market Scout"]) },
+    { name: "Karim Haddad", role: "Audit technique", proofValue: proof.audited, proofLabel: "sites audités", ...agentState(["Intelligence Analyst"]) },
+    { name: "Yassine Bouzid", role: "Scoring leads", proofValue: proof.scored, proofLabel: "leads scorés", ...agentState(["Lead Scoring Analyst"]) },
+    { name: "Manon Verhoeven", role: "Rédaction emails", proofValue: proof.drafted, proofLabel: "emails rédigés", ...agentState(["Outreach Copywriter AI", "Creative Copywriter"]) },
+    { name: "Thibault Nguyen", role: "Envoi / RevOps", proofValue: proof.sent, proofLabel: "emails envoyés", ...agentState(["RevOps Automator"]) },
+    { name: "Adam Peeters", role: "Outreach LinkedIn", proofValue: proof.linkedin, proofLabel: "messages générés", ...agentState(["LinkedIn Outreach Specialist"]) },
+    { name: "Chloé Renard", role: "SEO local", proofValue: proof.seo, proofLabel: "audits SEO", ...agentState(["SEO Local Scout"]) },
+    { name: "Sofia Marchetti", role: "Stratégie pub", proofValue: proof.ads, proofLabel: "briefs Ads", ...agentState(["Ads Strategist"]) },
+    { name: "Emma Lambrecht", role: "Partenariats", proofValue: 0, proofLabel: "partenariats", ...agentState(["Referral Partnership Agent"]) },
+  ]
+
   const contactedCount = statusCounts["CONTACTED"] ?? 0
   const repliedCount = statusCounts["REPLIED"] ?? 0
   const meetingCount = statusCounts["MEETING_BOOKED"] ?? 0
@@ -135,9 +179,8 @@ export default async function AdminAcquisitionPage() {
   const replyDetectionActive = false
 
   return (
-    <div className="h-full flex flex-col space-y-4 p-4 lg:p-8">
-      {/* Top Header & Compact KPI Bar (Fixed) */}
-      <div className="shrink-0 space-y-3 border-b border-white/5 pb-3">
+    <div className="h-full overflow-y-auto p-4 lg:p-8 space-y-5 custom-scrollbar">
+      <div className="space-y-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-lg font-bold text-white tracking-tight">Cockpit acquisition</h1>
@@ -213,26 +256,23 @@ export default async function AdminAcquisitionPage() {
         )}
       </div>
 
-      {/* Main Fit-to-Screen Split Area (Flex 1) */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-4 gap-4 min-h-0 overflow-hidden">
-        <div className="lg:col-span-3 flex flex-col h-full overflow-hidden relative">
-          <div className="flex-1 min-h-0 relative">
-            <PipelineKanban
-              leads={allLeads}
-              counts={statusCounts}
-              total={totalLeads}
-              replyDetectionActive={replyDetectionActive}
-            />
-          </div>
+      {/* Équipe IA — preuve réelle des 10 agents du pôle */}
+      <AgentTeamPanel agents={agents} />
+
+      {/* Pipeline + Missions */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <div className="lg:col-span-3 h-[440px] overflow-hidden">
+          <PipelineKanban
+            leads={allLeads}
+            counts={statusCounts}
+            total={totalLeads}
+            replyDetectionActive={replyDetectionActive}
+          />
         </div>
 
-        {/* Right: Missions Sidebar (1/4 width) - Internal Scroll */}
-        <div className="flex flex-col h-full border-l border-white/5 bg-[#0a0510] p-4 overflow-hidden">
-          <h2 className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-3 shrink-0">
-            Missions
-          </h2>
-
-          <div className="flex-1 overflow-y-auto pr-1">
+        <div className="h-[440px] flex flex-col rounded-xl border border-white/[0.07] bg-white/[0.01] p-4 overflow-hidden">
+          <h2 className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-3 shrink-0">Missions</h2>
+          <div className="flex-1 overflow-y-auto pr-1 custom-scrollbar">
             <MissionTracker missions={missions as never} />
           </div>
         </div>
