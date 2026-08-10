@@ -2,12 +2,8 @@ import { LeadCapturedEvent } from '../events';
 import { IntelligenceAnalyst } from '../IntelligenceAnalyst';
 import { CreativeCopywriter } from '../CreativeCopywriter';
 import { LeadScoringAnalyst } from '../LeadScoringAnalyst';
-import { LinkedInOutreachSpecialist } from '../LinkedInOutreachSpecialist';
-import { AdsStrategist } from '../AdsStrategist';
-import { SEOLocalScout } from '../SEOLocalScout';
 import { logger } from '@/core/logger';
 import { prisma } from '@/lib/prisma';
-import type { Prisma } from '@prisma/client';
 
 export async function onLeadCaptured(event: LeadCapturedEvent): Promise<void> {
   logger.info(`[Handler] Received LeadCaptured for lead ${event.leadId}`);
@@ -15,7 +11,7 @@ export async function onLeadCaptured(event: LeadCapturedEvent): Promise<void> {
   try {
     const lead = await prisma.lead.findUnique({
       where: { id: event.leadId },
-      include: { mission: true }
+      select: { id: true },
     });
 
     if (!lead) {
@@ -35,60 +31,17 @@ export async function onLeadCaptured(event: LeadCapturedEvent): Promise<void> {
       logger.info(`[Handler] Aucun email trouvé pour le lead ${event.leadId}, brouillon annulé (Zéro gaspillage).`);
     }
 
+    // Scoring déterministe (aucun appel LLM). On NE déclenche PAS PageSpeed ici :
+    // il bloquait jusqu'à ~55 s par hot lead dans le chemin critique de la
+    // mission. Le cron dédié /api/cron/pagespeed s'en charge en tâche de fond.
     const scorer = new LeadScoringAnalyst();
-    await scorer.scoreLead(event.leadId);
+    await scorer.scoreLead(event.leadId, { runPageSpeed: false });
 
-    // Angles d'attaque complémentaires (LinkedIn, Ads, SEO). On ne les génère
-    // QUE pour un lead joignable (email trouvé) : inutile de dépenser du quota
-    // LLM sur un lead qu'on ne pourra pas contacter, et ça concentre l'effort
-    // sur les prospects qui comptent (recherche 2026 : précision > volume).
-    // Chaque agent est isolé — l'échec de l'un n'empêche pas les autres.
-    if (enrichedLead?.contactEmail) {
-      const sectors = (lead.mission?.parameters as { sectors?: unknown } | null)?.sectors;
-      const sector = Array.isArray(sectors) && sectors.length > 0 ? String(sectors[0]) : 'Secteur général';
-
-      let linkedinDraft: unknown = null;
-      let adsBrief: unknown = null;
-      let seoAudit: unknown = null;
-
-      try {
-        linkedinDraft = await new LinkedInOutreachSpecialist().draftPersonalizedMessage(event.leadId, "Manque de visibilité locale");
-      } catch (e) {
-        logger.error(`[Handler] LinkedInOutreachSpecialist échec pour ${event.leadId}:`, e);
-      }
-      try {
-        adsBrief = await new AdsStrategist().buildCampaignBrief(sector, "Faible flux de nouveaux clients");
-      } catch (e) {
-        logger.error(`[Handler] AdsStrategist échec pour ${event.leadId}:`, e);
-      }
-      try {
-        seoAudit = await new SEOLocalScout().compareAgainstCompetitor(event.leadId, `Concurrent local mieux référencé dans le secteur ${sector}`);
-      } catch (e) {
-        logger.error(`[Handler] SEOLocalScout échec pour ${event.leadId}:`, e);
-      }
-
-      if (linkedinDraft || adsBrief || seoAudit) {
-        const currentLead = await prisma.lead.findUnique({ where: { id: event.leadId } });
-        if (currentLead) {
-          const currentAuditData: Record<string, unknown> =
-            (typeof currentLead.auditData === 'object' && currentLead.auditData !== null)
-              ? currentLead.auditData as Record<string, unknown>
-              : {};
-
-          await prisma.lead.update({
-            where: { id: event.leadId },
-            data: {
-              auditData: {
-                ...currentAuditData,
-                linkedinDraft: linkedinDraft || currentAuditData.linkedinDraft,
-                adsBrief: adsBrief || currentAuditData.adsBrief,
-                seoAudit: seoAudit || currentAuditData.seoAudit,
-              } as Prisma.InputJsonValue,
-            },
-          });
-        }
-      }
-    }
+    // Les angles multi-canaux (LinkedIn / Ads / SEO) NE sont plus générés ici :
+    // ils ajoutaient 3 appels LLM sérialisés par lead (~20 s chacun via le
+    // throttle Gemini) dans le chemin critique de la mission, pour du contenu
+    // qu'on ne consulte que plus tard sur la fiche. Ils sont désormais générés
+    // À LA DEMANDE depuis la fiche prospect (action generateLeadAngles).
 
   } catch (err) {
     logger.error(`[Handler] Error processing LeadCaptured for ${event.leadId}:`, err);

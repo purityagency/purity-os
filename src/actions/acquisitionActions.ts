@@ -251,3 +251,55 @@ export async function regenerateDraftAction(
     return { ok: false, message }
   }
 }
+
+/**
+ * Génère À LA DEMANDE les angles multi-canaux (message LinkedIn, brief Ads,
+ * audit SEO comparatif) pour un lead, et les stocke dans auditData. Déplacé
+ * hors du chemin critique de la mission (OnLeadCaptured) où ces 3 appels LLM
+ * sérialisés alourdissaient chaque capture — ils ne sont utiles qu'ici, sur la
+ * fiche, quand l'humain décide d'attaquer ce prospect en multi-canal.
+ */
+export async function generateLeadAngles(leadId: string): Promise<ActionResult> {
+  await requireAdminSession()
+
+  const lead = await prisma.lead.findUnique({
+    where: { id: leadId },
+    include: { mission: { select: { parameters: true } } },
+  })
+  if (!lead) throw new NotFoundError("Lead")
+
+  const { LinkedInOutreachSpecialist } = await import("@/lib/agents/acquisition/LinkedInOutreachSpecialist")
+  const { AdsStrategist } = await import("@/lib/agents/acquisition/AdsStrategist")
+  const { SEOLocalScout } = await import("@/lib/agents/acquisition/SEOLocalScout")
+
+  const sectors = (lead.mission?.parameters as { sectors?: unknown } | null)?.sectors
+  const sector = Array.isArray(sectors) && sectors.length > 0 ? String(sectors[0]) : "Secteur général"
+
+  let linkedinDraft: unknown = null
+  let adsBrief: unknown = null
+  let seoAudit: unknown = null
+
+  try { linkedinDraft = await new LinkedInOutreachSpecialist().draftPersonalizedMessage(leadId, "Manque de visibilité locale") } catch { /* isolé */ }
+  try { adsBrief = await new AdsStrategist().buildCampaignBrief(sector, "Faible flux de nouveaux clients") } catch { /* isolé */ }
+  try { seoAudit = await new SEOLocalScout().compareAgainstCompetitor(leadId, `Concurrent local mieux référencé dans le secteur ${sector}`) } catch { /* isolé */ }
+
+  if (!linkedinDraft && !adsBrief && !seoAudit) {
+    return { ok: false, message: "Aucun angle n'a pu être généré (réessayez dans un instant)." }
+  }
+
+  const current = (typeof lead.auditData === "object" && lead.auditData !== null ? lead.auditData : {}) as Record<string, unknown>
+  await prisma.lead.update({
+    where: { id: leadId },
+    data: {
+      auditData: {
+        ...current,
+        linkedinDraft: linkedinDraft ?? current.linkedinDraft,
+        adsBrief: adsBrief ?? current.adsBrief,
+        seoAudit: seoAudit ?? current.seoAudit,
+      } as import("@prisma/client").Prisma.InputJsonValue,
+    },
+  })
+
+  revalidatePath(`/admin/ai/acquisition/crm/${leadId}`)
+  return { ok: true, message: "Angles multi-canaux générés." }
+}

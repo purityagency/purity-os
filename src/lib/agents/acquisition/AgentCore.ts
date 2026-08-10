@@ -33,7 +33,11 @@ const MOCK_API = false; // process.env.MOCK_API === 'true';
  * cogner le plafond RPM en silence. Cette file d'attente partagée force un
  * espacement minimal entre CHAQUE appel Gemini, tous agents confondus.
  */
-const MIN_INTERVAL_MS = 6_500; // ~9,2 req/min max, sous le plafond gratuit de 10
+// Espacement minimal entre appels Gemini. Défaut 6,5 s = ~9,2 req/min, sous le
+// plafond GRATUIT de 10 rpm. En tier PAYANT (RPM bien plus élevé), il suffit de
+// baisser cette valeur via l'env GEMINI_MIN_INTERVAL_MS (ex. 600) pour accélérer
+// fortement les missions — sans redéployer de logique. Borné à 100 ms minimum.
+const MIN_INTERVAL_MS = Math.max(100, Number(process.env.GEMINI_MIN_INTERVAL_MS) || 6_500);
 let geminiCallQueue: Promise<void> = Promise.resolve();
 
 function throttleGeminiCall(): Promise<void> {

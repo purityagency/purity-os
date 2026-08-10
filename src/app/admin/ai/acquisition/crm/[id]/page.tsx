@@ -3,6 +3,7 @@ import { requireAdminSession } from "@/lib/session"
 import { notFound } from "next/navigation"
 import Link from "next/link"
 import { CopyButton } from "./CopyButton"
+import { GenerateAnglesButton } from "./GenerateAnglesButton"
 import { GlobeIcon, LocationIcon, UserIcon, MailIcon } from "@/components/icons"
 import { StatusBadge } from "@/components/StatusBadge"
 import type { PageSpeedReport, PageSpeedMetric } from "@/lib/acquisition/pageSpeedInsights"
@@ -182,10 +183,22 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             {/* Test Google PageSpeed Insights (hot leads) */}
             {audit.pageSpeed && <PageSpeedSection report={audit.pageSpeed} />}
 
-            {/* Angles générés */}
-            <AngleBox title="Audit SEO comparatif" value={audit.seoAudit} />
-            <AngleBox title="Message LinkedIn (à envoyer manuellement)" value={audit.linkedinDraft} copyable />
-            <AngleBox title="Brief campagne Ads" value={audit.adsBrief} />
+            {/* Angles générés — à la demande (hors du chemin critique mission) */}
+            <section className="rounded-2xl border border-white/10 bg-white/[0.02] p-5">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <h2 className="text-sm font-bold uppercase tracking-wider text-white font-mono">Angles multi-canaux</h2>
+                <GenerateAnglesButton leadId={lead.id} hasAngles={!!(audit.seoAudit || audit.linkedinDraft || audit.adsBrief)} />
+              </div>
+              {audit.seoAudit || audit.linkedinDraft || audit.adsBrief ? (
+                <div className="space-y-4">
+                  <AngleBox title="Audit SEO comparatif" value={audit.seoAudit} />
+                  <AngleBox title="Message LinkedIn (à envoyer manuellement)" value={audit.linkedinDraft} copyable />
+                  <AngleBox title="Brief campagne Ads" value={audit.adsBrief} />
+                </div>
+              ) : (
+                <p className="text-xs text-zinc-500 italic">Aucun angle généré. Clique sur « Générer les angles multi-canaux » (LinkedIn, Ads, SEO).</p>
+              )}
+            </section>
 
             {/* Emails de prospection */}
             {lead.emailDrafts.length > 0 && (
