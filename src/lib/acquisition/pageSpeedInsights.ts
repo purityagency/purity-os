@@ -11,6 +11,8 @@
  * opportunités d'amélioration chiffrées.
  */
 
+import { getGoogleAccessToken } from "@/lib/googleServiceAccount"
+
 export interface PageSpeedMetric {
   id: string
   title: string
@@ -84,12 +86,21 @@ export async function runPageSpeedTest(
     const apiKey = process.env.PAGESPEED_API_KEY
     if (apiKey) params.set("key", apiKey)
 
+    // À défaut de clé API, on authentifie via le compte de service Google
+    // (token OAuth) : idem, quota attribué à notre projet plutôt qu'au pool
+    // anonyme partagé. Sans clé NI service account, appel non authentifié.
+    const headers: Record<string, string> = {}
+    if (!apiKey) {
+      const token = await getGoogleAccessToken()
+      if (token) headers.Authorization = `Bearer ${token}`
+    }
+
     const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params.toString()}`
     // PSI peut être lent (Lighthouse tourne côté Google) — timeout large mais borné.
-    const res = await fetch(endpoint, { signal: AbortSignal.timeout(55000) })
+    const res = await fetch(endpoint, { headers, signal: AbortSignal.timeout(55000) })
     if (!res.ok) {
       const detail = res.status === 429
-        ? "quota Google épuisé — ajoutez une clé PAGESPEED_API_KEY (gratuite, 25k/j)"
+        ? "quota Google épuisé — vérifiez GOOGLE_SERVICE_ACCOUNT_JSON ou PAGESPEED_API_KEY"
         : `HTTP ${res.status}`
       return { ...base, error: detail }
     }
