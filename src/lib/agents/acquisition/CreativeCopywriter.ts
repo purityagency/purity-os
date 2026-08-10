@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { AutonomousAgent } from './AgentCore';
-import { containsPlaceholder, stripPlaceholders } from '@/lib/emailPlaceholders';
+import { containsPlaceholder, stripPlaceholders, describeForbidden } from '@/lib/emailPlaceholders';
 
 const EmailDraftSchema = z.object({
   objectionPrediction: z.string().describe("Pourquoi ce prospect ne répondrait-il pas ? (Prix, temps, pas intéressé, déjà une agence, manque de confiance)"),
@@ -111,6 +111,13 @@ export class CreativeCopywriter extends AutonomousAgent {
            - JAMAIS de "Bonjour," / "Bonjour Madame, Monsieur" en ouverture générique : commence
              directement par le fait observé (Pattern Interrupt, règle 2).
            - JAMAIS de crochet [ ], parenthèse de gabarit, ou variable à remplir.
+           - JAMAIS de parenthèse-instruction ni d'artefact d'IA : "(voir image)", "(insérer …)",
+             "(lien vers …)", "(votre nom)", "(à compléter)". Ce sont des restes de gabarit. Écris
+             la phrase FINIE, ou n'écris rien à cet endroit.
+           - CET EMAIL EST DU TEXTE SEUL : il n'a AUCUNE image ni pièce jointe. Ne référence JAMAIS
+             une image, une capture d'écran, un logo visuel, "ci-joint" ou "en pièce jointe". Si tu
+             veux montrer un problème visuel, DÉCRIS-le en mots ("votre page d'accueil met plusieurs
+             secondes à s'afficher"), ne renvoie pas à une image.
 
         INSTRUCTIONS DE RÉFLEXION :
         Avant d'écrire, remplis le champ "objectionPrediction" : Pourquoi ce prospect ne répondrait-il pas ? (Prix, temps, pas intéressé, déjà une agence, manque de confiance).
@@ -127,27 +134,38 @@ export class CreativeCopywriter extends AutonomousAgent {
       let attempts = 1;
       while (
         (!result.humanDetectorPassed || result.selfCritiqueScore < 8 || containsPlaceholder(result.bodyHtml)) &&
-        attempts <= 2
+        attempts <= 3
       ) {
-        const hadPlaceholder = containsPlaceholder(result.bodyHtml);
+        const forbidden = describeForbidden(result.bodyHtml);
         await this.logger.startTask(
-          hadPlaceholder
-            ? `Email contient un placeholder non rempli — réécriture forcée...`
+          forbidden
+            ? `Email contient du contenu interdit (${forbidden}) — réécriture forcée...`
             : `Email refusé par le Human Detector (Note: ${result.selfCritiqueScore}/10). Réécriture en cours...`
         );
-        const placeholderWarning = hadPlaceholder
-          ? "\n\nTON EMAIL CONTENAIT UN PLACEHOLDER (crochet à remplir) — c'est une faute grave. Réécris SANS aucun crochet ni nom inventé ; si le nom du contact est inconnu, n'adresse personne par son nom."
+        const placeholderWarning = forbidden
+          ? `\n\nTON EMAIL CONTENAIT DU CONTENU INTERDIT : ${forbidden}. C'est une faute grave qui fera rejeter le mail automatiquement. Réécris SANS ce contenu : pas de crochet, pas de parenthèse-instruction type "(voir image)", pas de référence à une image/pièce jointe, pas de code Mxx, pas de prix. Si le nom du contact est inconnu, n'adresse personne par son nom.`
           : "";
-        const retryPrompt = `${prompt}\n\nTa précédente tentative a échoué. Voici ta propre critique : "${result.selfCritique}".${placeholderWarning}\n\nL'email sonnait trop commercial ou comme une IA. Réécris un email totalement différent, beaucoup plus naturel, cassant encore plus les codes (Pattern Interrupt), et qui passe le Human Detector.`;
+        const retryPrompt = `${prompt}\n\nTa précédente tentative a échoué. Voici ta propre critique : "${result.selfCritique}".${placeholderWarning}\n\nRéécris un email totalement différent, beaucoup plus naturel, cassant encore plus les codes (Pattern Interrupt), et qui passe le Human Detector.`;
         result = await this.think<EmailDraftResponse>(retryPrompt, `Génération de l'email (Essai ${attempts + 1})`, EmailDraftSchema);
         attempts++;
       }
 
-      // Filet final : si un placeholder subsiste malgré les réécritures, on le
-      // retire avant sauvegarde — jamais un crochet n'atteint un prospect.
+      // Filet final : nettoyage best-effort de ce qui est nettoyable
+      // (crochets/accolades/parenthèses de gabarit).
       if (containsPlaceholder(result.bodyHtml)) {
-        await this.logger.logError(`Placeholder persistant après réécritures pour ${lead.companyName} — nettoyage appliqué.`);
         result.bodyHtml = stripPlaceholders(result.bodyHtml);
+      }
+
+      // COHÉRENCE : si après réécritures + nettoyage le mail reste interdit
+      // (typiquement un code Mxx ou un prix, non nettoyables), on NE crée PAS un
+      // brouillon condamné à l'auto-refus. On loggue et on laisse le lead
+      // ENRICHED pour un nouvel essai — jamais de brouillon voué au rejet.
+      const stillForbidden = describeForbidden(result.bodyHtml);
+      if (stillForbidden && !regeneratingDraftId) {
+        await this.logger.logError(
+          `Brouillon NON créé pour ${lead.companyName} : contenu interdit persistant (${stillForbidden}). Le lead reste ENRICHED pour régénération.`,
+        );
+        return;
       }
 
       if (regeneratingDraftId) {
@@ -215,6 +233,9 @@ export class CreativeCopywriter extends AutonomousAgent {
         3. LÉGER, PAS INSISTANT : le ton reste celui de quelqu'un qui rend service, pas d'un commercial qui presse.
         4. VOUVOIEMENT B2B strict. Aucune salutation nominative inventée : si le nom est INCONNU, n'adresse personne par son nom.
         5. ZÉRO PLACEHOLDER + ZÉRO code module (Mxx) + ZÉRO prix en euros + pas de "Bonjour" générique. Fautes graves.
+           Aussi INTERDIT : parenthèse-instruction "(voir image)", "(insérer …)", et toute référence à
+           une image / capture / pièce jointe — ce mail est du texte seul. Décris en mots, ne renvoie
+           jamais à un visuel.
         6. CTA micro-engageant et contextuel (une question simple).
 
         Remplis objectionPrediction, puis écris, puis selfCritique + note. Human Detector strict.
@@ -225,15 +246,25 @@ export class CreativeCopywriter extends AutonomousAgent {
       let attempts = 1;
       while (
         (!result.humanDetectorPassed || result.selfCritiqueScore < 8 || containsPlaceholder(result.bodyHtml)) &&
-        attempts <= 2
+        attempts <= 3
       ) {
-        const retryPrompt = `${prompt}\n\nTa tentative a échoué : "${result.selfCritique}". Réécris, encore plus naturel et plus court, en apportant un angle VRAIMENT nouveau, sans aucun placeholder.`;
+        const forbidden = describeForbidden(result.bodyHtml);
+        const warn = forbidden ? ` Contenu interdit détecté (${forbidden}) — retire-le absolument.` : "";
+        const retryPrompt = `${prompt}\n\nTa tentative a échoué : "${result.selfCritique}".${warn}\n\nRéécris, encore plus naturel et plus court, en apportant un angle VRAIMENT nouveau, sans aucun placeholder ni parenthèse-instruction ni référence à une image.`;
         result = await this.think<EmailDraftResponse>(retryPrompt, `Relance ${relanceNumber} (Essai ${attempts + 1})`, EmailDraftSchema);
         attempts++;
       }
 
       if (containsPlaceholder(result.bodyHtml)) {
         result.bodyHtml = stripPlaceholders(result.bodyHtml);
+      }
+
+      // Cohérence : jamais de relance condamnée. Si un contenu interdit non
+      // nettoyable persiste, on n'écrit rien et on n'incrémente pas le compteur.
+      const stillForbidden = describeForbidden(result.bodyHtml);
+      if (stillForbidden) {
+        await this.logger.logError(`Relance ${relanceNumber} NON créée pour ${lead.companyName} : contenu interdit persistant (${stillForbidden}).`);
+        return;
       }
 
       // Brouillon de relance + incrément du compteur, en transaction : on ne

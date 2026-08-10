@@ -14,6 +14,16 @@ const CHECKS: { re: RegExp; label: string }[] = [
   { re: /\d[\d\s.,]*\s*€|€\s*\d/, label: "prix en euros" },
   // Formules de gabarit explicites
   { re: /\bnom du (contact|destinataire|dirigeant)\b|\bvotre (nom|prénom)\b|\[prénom\]|ins[ée]rez|à compl[ée]ter|\bxxx+\b/i, label: "formule de gabarit" },
+  // Parenthèses de gabarit / artefacts d'IA : "(voir image)", "(insérer X)",
+  // "(lien vers…)", "(votre nom)"… — le LLM les glisse comme instruction à
+  // remplir. On ne bloque PAS toute parenthèse (usage légitime en français),
+  // seulement celles contenant un mot-clé d'instruction/placeholder.
+  {
+    re: /\((?:[^)\n]*\b(voir|insérer|insere|ins[ée]rez|lien|image|images|photo|capture|screenshot|logo|prénom|nom du|votre nom|à compl[ée]ter|à remplir|remplir|placeholder|exemple ici|ex\s*:|à personnaliser|adapter ici)\b[^)\n]*)\)/i,
+    label: "parenthèse de gabarit (voir image…)",
+  },
+  // Références à une image / pièce jointe : un cold email texte n'en a pas.
+  { re: /\b(voir (l['e ]|la |le )?(image|capture|photo|pièce jointe)|ci-joint|en pi[èe]ce jointe|pi[èe]ce jointe|capture d['e ]écran)\b/i, label: "référence image / pièce jointe" },
 ]
 
 export function containsPlaceholder(html: string): boolean {
@@ -35,7 +45,11 @@ export function stripPlaceholders(html: string): string {
     .replace(/(Bonjour|Bonsoir|Salut|Cher|Chère)\s*\[[^\]\n]{0,40}\]\s*,?/gi, "")
     .replace(/\[[^\]\n]{0,60}\]/g, "")
     .replace(/\{\{?[^}\n]{0,60}\}?\}/g, "")
+    // Parenthèses de gabarit ("(voir image)", "(insérer X)"…) : on retire la
+    // parenthèse entière plutôt que de la laisser polluer le mail.
+    .replace(/\s*\((?:[^)\n]*\b(voir|insérer|insere|ins[ée]rez|lien|image|images|photo|capture|screenshot|logo|prénom|nom du|votre nom|à compl[ée]ter|à remplir|remplir|placeholder|exemple ici|ex\s*:|à personnaliser|adapter ici)\b[^)\n]*)\)/gi, "")
     .replace(/<p>\s*,?\s*<\/p>/gi, "")
+    .replace(/\s+([.,;:!?])/g, "$1")
     .replace(/\s{2,}/g, " ")
     .trim()
 }
