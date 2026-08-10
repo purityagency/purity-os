@@ -1,7 +1,8 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
 import { notFound } from "next/navigation"
-import { PrintButton } from "./PrintButton"
+import { PrintButton } from "@/components/PrintButton"
+import { buildSalesKit } from "@/lib/acquisition/salesKit"
 import type { PageSpeedReport } from "@/lib/acquisition/pageSpeedInsights"
 
 export const dynamic = "force-dynamic"
@@ -41,7 +42,10 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
   await requireAdminSession()
   const { id } = await params
 
-  const lead = await prisma.lead.findUnique({ where: { id } })
+  const lead = await prisma.lead.findUnique({
+    where: { id },
+    include: { mission: { select: { parameters: true } } },
+  })
   if (!lead) notFound()
 
   const audit = (lead.auditData as AuditData | null) ?? {}
@@ -53,8 +57,23 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
   const seo = psi?.scores.seo ?? audit.seoScore ?? null
   const a11y = psi?.scores.accessibility ?? null
   const bp = psi?.scores.bestPractices ?? null
-  const painPoints = audit.painPoints ?? []
   const dateStr = new Date().toLocaleDateString("fr-BE", { day: "numeric", month: "long", year: "numeric" })
+
+  const sectors = (lead.mission?.parameters as { sectors?: unknown } | null)?.sectors
+  const sector = Array.isArray(sectors) && sectors.length > 0 ? String(sectors[0]) : null
+  const kit = buildSalesKit({
+    companyName: lead.companyName,
+    location: lead.location,
+    contactName: lead.contactName,
+    contactRole: lead.contactRole,
+    websiteUrl: lead.websiteUrl,
+    contactPhone: null,
+    sector,
+    performanceScore: audit.performanceScore ?? null,
+    seoScore: audit.seoScore ?? null,
+    painPoints: audit.painPoints,
+    pageSpeed: audit.pageSpeed ?? null,
+  })
 
   return (
     <>
@@ -78,6 +97,7 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
           <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: "#7c3aed", fontWeight: 700 }}>Préparé pour</div>
           <h1 style={{ fontSize: 28, fontWeight: 800, margin: "4px 0 2px" }}>{lead.companyName}</h1>
           {lead.websiteUrl && <div style={{ fontSize: 13, color: "#6b7280" }}>{lead.websiteUrl.replace(/^https?:\/\/(www\.)?/, "")}{lead.location ? ` · ${lead.location}` : ""}</div>}
+          <p style={{ fontSize: 15, color: "#374151", marginTop: 12, maxWidth: 640, lineHeight: 1.5 }}>{kit.oneLiner}</p>
         </div>
 
         {/* Scores */}
@@ -109,18 +129,21 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
           </div>
         )}
 
-        {/* Points de douleur */}
-        {painPoints.length > 0 && (
+        {/* Constat — langage humain, dérivé des vrais chiffres */}
+        {kit.findings.length > 0 && (
           <div style={{ marginBottom: 24 }}>
             <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>Ce qui vous coûte des clients aujourd&apos;hui</div>
-            <ul style={{ margin: 0, paddingLeft: 0, listStyle: "none" }}>
-              {painPoints.map((p, i) => (
-                <li key={i} style={{ display: "flex", gap: 10, padding: "6px 0", fontSize: 14, color: "#374151" }}>
-                  <span style={{ color: "#dc2626", fontWeight: 800 }}>›</span>
-                  <span>{p}</span>
-                </li>
+            <div style={{ display: "grid", gap: 10 }}>
+              {kit.findings.map((f, i) => (
+                <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                  <span style={{ color: f.severity === "critique" ? "#dc2626" : "#d97706", fontWeight: 800, fontSize: 16 }}>›</span>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>{f.title}</div>
+                    {f.detail && <div style={{ fontSize: 14, color: "#4b5563", marginTop: 2 }}>{f.detail}</div>}
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           </div>
         )}
 
@@ -140,6 +163,19 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
             </table>
           </div>
         )}
+
+        {/* Ce qu'on vous apporte */}
+        <div style={{ marginBottom: 24, breakInside: "avoid" }}>
+          <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>Ce qu&apos;on vous apporte</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            {kit.valueProps.map((v, i) => (
+              <div key={i} style={{ border: "1px solid #ede9fe", background: "#faf5ff", borderRadius: 10, padding: 14 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#6d28d9" }}>{v.title}</div>
+                <div style={{ fontSize: 13, color: "#4b5563", marginTop: 3 }}>{v.detail}</div>
+              </div>
+            ))}
+          </div>
+        </div>
 
         {/* CTA */}
         <div style={{ background: "#111827", color: "#ffffff", borderRadius: 12, padding: 24, marginTop: 8 }}>

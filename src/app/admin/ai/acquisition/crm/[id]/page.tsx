@@ -101,15 +101,18 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               {lead.optedOut && <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-red-500/10 text-red-400 border border-red-500/20">Désinscrit</span>}
             </div>
           </div>
-          <div className="shrink-0 flex items-center gap-4">
-            <a
-              href={`/admin/ai/acquisition/crm/${lead.id}/audit`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-mono px-3 py-2 rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20 transition-colors whitespace-nowrap"
-            >
-              📄 PDF d&apos;audit
-            </a>
+          <div className="shrink-0 flex items-center gap-3">
+            <div className="flex flex-col gap-1.5">
+              <a href={`/admin/ai/acquisition/crm/${lead.id}/audit`} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono px-3 py-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20 transition-colors whitespace-nowrap text-center">
+                📄 PDF d&apos;audit
+              </a>
+              <a href={`/admin/ai/acquisition/crm/${lead.id}/deck`} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono px-3 py-1.5 rounded-lg border border-white/15 bg-white/5 text-zinc-200 hover:bg-white/10 transition-colors whitespace-nowrap text-center">
+                🖥️ Deck présentation
+              </a>
+              <a href={`/admin/ai/acquisition/crm/${lead.id}/call`} target="_blank" rel="noopener noreferrer" className={`text-[11px] font-mono px-3 py-1.5 rounded-lg border transition-colors whitespace-nowrap text-center ${phone ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20" : "border-white/15 bg-white/5 text-zinc-300 hover:bg-white/10"}`}>
+                📞 Fiche d&apos;appel{phone ? "" : " (pas de n°)"}
+              </a>
+            </div>
             {score !== null && (
               <div className="text-right">
                 <div className={`text-4xl font-bold tabular-nums ${scoreColor(score)}`}>{score}<span className="text-lg text-zinc-600">/100</span></div>
