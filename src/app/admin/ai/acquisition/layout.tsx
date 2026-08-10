@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { InboxIcon, MailIcon, OverviewIcon, TableIcon, SparklesIcon } from "@/components/icons"
+import { InboxIcon, MailIcon, OverviewIcon, TableIcon, SparklesIcon, PhoneIcon } from "@/components/icons"
 import { useState, useEffect } from "react"
 
 export default function AcquisitionLayout({ children }: { children: React.ReactNode }) {
@@ -24,6 +24,7 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
     { name: "Overview", href: "/admin/ai/acquisition", Icon: OverviewIcon },
     { name: "Inbox", href: "/admin/ai/acquisition/inbox", Icon: InboxIcon },
     { name: "Outbox", href: "/admin/ai/acquisition/outbox", Icon: MailIcon },
+    { name: "Appels", href: "/admin/ai/acquisition/calls", Icon: PhoneIcon },
     { name: "CRM", href: "/admin/ai/acquisition/crm", Icon: TableIcon },
     { name: "Brouillons", href: "/admin/ai/acquisition/drafts", Icon: SparklesIcon },
   ]

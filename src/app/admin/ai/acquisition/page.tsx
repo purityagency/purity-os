@@ -5,6 +5,7 @@ import Link from "next/link"
 import { MissionTracker } from "./MissionTracker"
 import { PipelineKanban } from "./PipelineKanban"
 import { BulkSendBar } from "./BulkSendBar"
+import { cleanBelgianPhone } from "@/lib/acquisition/phone"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -52,11 +53,20 @@ export default async function AdminAcquisitionPage() {
   const statusCounts: Record<string, number> = {}
   for (const g of grouped) statusCounts[g.status] = g._count._all
 
-  const [totalLeads, avgScoreResult, activeMissionsCount] = await Promise.all([
+  const [totalLeads, avgScoreResult, activeMissionsCount, phoneRows] = await Promise.all([
     prisma.lead.count(),
     prisma.lead.aggregate({ _avg: { score: true } }),
     prisma.mission.count({ where: { status: "ACTIVE" } }),
+    // Leads joignables par téléphone (numéro valide, non désinscrits, pas déjà en RDV).
+    prisma.lead.findMany({
+      where: { optedOut: false, status: { notIn: ["MEETING_BOOKED"] } },
+      select: { auditData: true },
+    }),
   ])
+
+  const callableCount = phoneRows.filter(
+    (l) => cleanBelgianPhone((l.auditData as { contactPhone?: string } | null)?.contactPhone) !== null,
+  ).length
 
   const contactedCount = statusCounts["CONTACTED"] ?? 0
   const repliedCount = statusCounts["REPLIED"] ?? 0
@@ -128,7 +138,7 @@ export default async function AdminAcquisitionPage() {
         </div>
 
         {/* Compact KPI Strip (1 tight row) */}
-        <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-xs">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 text-xs">
           <div className="p-2.5 rounded-xl border border-white/10 bg-white/[0.02]">
             <span className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 block truncate">Missions</span>
             <span className="text-base font-bold text-white tabular-nums">{activeMissionsCount} actives</span>
@@ -156,6 +166,11 @@ export default async function AdminAcquisitionPage() {
           <Link href="/admin/ai/acquisition/outbox" className="p-2.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/50 transition-all cursor-pointer group">
             <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-500/70 block truncate group-hover:text-emerald-400 transition-colors">Envoyés ↗</span>
             <span className="text-base font-bold text-emerald-400 tabular-nums">{contactedCount} mails</span>
+          </Link>
+
+          <Link href="/admin/ai/acquisition/calls" className="p-2.5 rounded-xl border border-amber-500/20 bg-amber-500/5 hover:bg-amber-500/10 hover:border-amber-500/50 transition-all cursor-pointer group">
+            <span className="text-[9px] font-mono uppercase tracking-wider text-amber-500/70 block truncate group-hover:text-amber-400 transition-colors">À appeler ↗</span>
+            <span className="text-base font-bold text-amber-400 tabular-nums">{callableCount} tél.</span>
           </Link>
         </div>
 
