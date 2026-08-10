@@ -57,6 +57,28 @@ export interface CallScript {
   voicemail: string
 }
 
+// Technique de persuasion issue d'un cadre reconnu, appliquée à CE prospect.
+export interface PsychTactic {
+  name: string
+  source: string
+  when: string
+  example: string
+}
+
+export interface CallMechanics {
+  talkListen: string
+  monologueMax: string
+  questionTarget: string
+  bestWindow: string
+  persistence: string
+  tone: string
+}
+
+export interface DossierRow {
+  label: string
+  value: string
+}
+
 export interface SalesKit {
   firstName: string | null
   scores: { performance: number | null; seo: number | null; accessibility: number | null; bestPractices: number | null }
@@ -66,6 +88,13 @@ export interface SalesKit {
   callScript: CallScript
   hasPhone: boolean
   vitals: { title: string; value: string; good: boolean | null }[]
+  // Couche préparation d'appel (études réelles : Voss, Cialdini, Rackham,
+  // Kahneman/Tversky, données Gong.io).
+  dossier: DossierRow[]
+  psychology: PsychTactic[]
+  mechanics: CallMechanics
+  openers: { noOriented: string; accusationAudit: string; patternInterrupt: string }
+  afterCall: string[]
 }
 
 // Commercial qui passe l'appel (Amir). Utilisé dans les scripts au lieu de
@@ -216,6 +245,96 @@ export function buildSalesKit(input: LeadKitInput): SalesKit {
     voicemail: `${greetingLine(firstName)} c'est ${REP_FIRST_NAME} de Purity Agency. J'ai repéré un point précis sur la présence en ligne de ${company} qui vous fait sûrement perdre des clients, et c'est simple à corriger. Rappelez-moi au ${REP_PHONE} ou je retente demain. Bonne journée${firstName ? `, ${firstName}` : ""} !`,
   }
 
+  // ---- Dossier prospect (ce qu'on sait, pour arriver préparé) ----
+  const dossier: DossierRow[] = [
+    { label: "Entreprise", value: company },
+    { label: "Secteur", value: input.sector || "—" },
+    { label: "Zone", value: input.location || "—" },
+    { label: "Site", value: input.websiteUrl ? input.websiteUrl.replace(/^https?:\/\/(www\.)?/, "") : "aucun site" },
+    { label: "Interlocuteur", value: input.contactName ? `${input.contactName}${input.contactRole ? ` (${input.contactRole})` : ""}` : "inconnu — demander qui décide" },
+    { label: "Perf. mobile", value: perf !== null ? `${perf}/100` : "non mesurée" },
+    { label: "SEO", value: seo !== null ? `${seo}/100` : "non mesuré" },
+    { label: "Point de bascule", value: worst.title },
+  ]
+
+  // ---- Psychologie appliquée (cadres réels, personnalisés à ce prospect) ----
+  const psychology: PsychTactic[] = [
+    {
+      name: "Audit d'accusation",
+      source: "Chris Voss — Never Split the Difference (FBI)",
+      when: "Dès l'ouverture, pour désamorcer la méfiance avant qu'elle ne monte.",
+      example: `« Vous allez sûrement vous dire : encore un qui veut me vendre un site. C'est justement pas mon but. » — nommer l'objection la vide de sa force.`,
+    },
+    {
+      name: "Question orientée « non »",
+      source: "Chris Voss",
+      when: "À l'ouverture. Un « non » rassure et redonne le contrôle au prospect.",
+      example: `« Est-ce que je tombe à un mauvais moment ? » plutôt que « vous avez 2 minutes ? ». Le « non » ouvre la conversation au lieu de la fermer.`,
+    },
+    {
+      name: "Étiquetage émotionnel (labeling)",
+      source: "Chris Voss",
+      when: "Quand le prospect hésite ou résiste. Nommer son émotion la désamorce.",
+      example: `« On dirait que le digital n'est pas vraiment votre priorité en ce moment… » puis SILENCE. Laissez-le compléter.`,
+    },
+    {
+      name: "Aversion à la perte",
+      source: "Kahneman & Tversky — Prospect Theory (une perte pèse ~2× un gain)",
+      when: "Dans l'accroche et le pitch. Parlez de ce qu'il PERD, pas de ce qu'il gagnerait.",
+      example: hasSite
+        ? `« Chaque semaine, des gens qui cherchent ${sector}${where} tombent sur vos concurrents parce que votre site ${band(perf) === "critique" ? "est trop lent" : "n'est pas visible"}. » Le client perdu marque plus que le client gagné.`
+        : `« Sans site, les clients qui vous cherchent en ligne atterrissent chez vos concurrents. C'est du chiffre qui part chaque semaine. »`,
+    },
+    {
+      name: "Preuve sociale",
+      source: "Robert Cialdini — Influence",
+      when: "Quand il doute de la faisabilité ou du sérieux.",
+      example: `« On vient de refaire le site d'un(e) ${sector.toLowerCase()} ${input.location ? `sur ${input.location}` : "en Wallonie"}, ils reçoivent nettement plus de demandes qu'avant. » (Cite un cas réel dès que tu en as un.)`,
+    },
+    {
+      name: "Micro-engagements (cohérence)",
+      source: "Robert Cialdini",
+      when: "Tout au long. Enchaîner des petits « oui » mène au grand oui.",
+      example: `« Vous seriez d'accord pour dire qu'un client de plus par semaine, ça vaut le coup d'y regarder ? » → petit oui → RDV.`,
+    },
+    {
+      name: "Ancrage par la donnée précise",
+      source: "Cialdini (autorité) + effet de spécificité",
+      when: "Dans l'accroche. Un chiffre exact = crédibilité immédiate.",
+      example: perf !== null ? `« Votre site est à ${perf}/100 en vitesse mobile chez Google. » Un chiffre précis prouve que vous avez vraiment regardé.` : `Cite un fait précis observé sur leur présence en ligne — la spécificité crée la crédibilité.`,
+    },
+    {
+      name: "Découverte SPIN",
+      source: "Neil Rackham — SPIN Selling",
+      when: "Phase de découverte : faire dire au prospect lui-même le coût du problème.",
+      example: `Situation → Problème → Implication (« ça vous coûte combien de clients, à votre avis ? ») → Bénéfice (« et si on réglait ça ? »).`,
+    },
+  ]
+
+  // ---- Mécanique de l'appel (données Gong.io + bonnes pratiques) ----
+  const mechanics: CallMechanics = {
+    talkListen: "Vise ~43 % de parole / 57 % d'écoute (analyse Gong.io de 25 000+ appels gagnants). Tu poses, il parle.",
+    monologueMax: "Aucun monologue > 30-40 s. Si tu dépasses, tu perds l'attention — repasse-lui la parole par une question.",
+    questionTarget: "Vise 3 à 4 vraies questions de découverte avant de parler de toi.",
+    bestWindow: "Meilleurs créneaux B2B : mardi-jeudi, 8h-9h ou 16h-17h. Évite lundi matin et vendredi après-midi.",
+    persistence: "Il faut souvent 6+ tentatives pour joindre un décideur. Un « pas maintenant » n'est pas un « non » — planifie le rappel.",
+    tone: "Souris en parlant (ça s'entend), ralentis, fais des silences. Le silence après une question fait parler l'autre.",
+  }
+
+  const openers = {
+    noOriented: `Bonjour${firstName ? ` ${firstName}` : ""}, ${REP_FIRST_NAME} de Purity Agency. Est-ce que je tombe à un mauvais moment ?`,
+    accusationAudit: `Bonjour${firstName ? ` ${firstName}` : ""}, ${REP_FIRST_NAME} de Purity. Vous allez sûrement vous dire « encore un appel commercial » — c'est justement pas le but. J'ai vu un truc précis sur ${company} et je voulais juste vous le signaler.`,
+    patternInterrupt: hookByFinding,
+  }
+
+  const afterCall: string[] = [
+    "Noter le résultat MAINTENANT (à chaud) : RDV / rappeler le … / mail / pas intéressé.",
+    "Si intéressé : envoyer le PDF d'audit dans l'heure (réciprocité + fer chaud).",
+    "Planifier tde suite le prochain contact (date précise, pas « je rappellerai »).",
+    "Mettre à jour le statut du lead dans le CRM.",
+    "Noter 1 chose apprise sur lui (à réutiliser au prochain contact).",
+  ]
+
   return {
     firstName,
     scores: { performance: perf, seo, accessibility: a11y, bestPractices: bp },
@@ -225,5 +344,10 @@ export function buildSalesKit(input: LeadKitInput): SalesKit {
     callScript,
     hasPhone: !!input.contactPhone,
     vitals,
+    dossier,
+    psychology,
+    mechanics,
+    openers,
+    afterCall,
   }
 }

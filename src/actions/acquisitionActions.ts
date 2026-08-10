@@ -253,6 +253,56 @@ export async function regenerateDraftAction(
 }
 
 /**
+ * Fournit le kit de préparation d'appel d'un lead (dossier, psychologie,
+ * script, objections) à la demande — pour le panneau "Fiche d'appel" qui
+ * s'ouvre en overlay (pas de navigation). Déterministe, sans LLM.
+ */
+export async function getCallSheet(leadId: string) {
+  await requireAdminSession()
+  const { buildSalesKit } = await import("@/lib/acquisition/salesKit")
+  const { cleanBelgianPhone } = await import("@/lib/acquisition/phone")
+
+  const lead = await prisma.lead.findUnique({
+    where: { id: leadId },
+    include: { mission: { select: { parameters: true } } },
+  })
+  if (!lead) throw new NotFoundError("Lead")
+
+  const audit = (lead.auditData as { performanceScore?: number | null; seoScore?: number | null; painPoints?: string[]; contactPhone?: string | null; pageSpeed?: unknown } | null) ?? {}
+  const sectors = (lead.mission?.parameters as { sectors?: unknown } | null)?.sectors
+  const sector = Array.isArray(sectors) && sectors.length > 0 ? String(sectors[0]) : null
+  const phone = cleanBelgianPhone(audit.contactPhone)
+
+  const kit = buildSalesKit({
+    companyName: lead.companyName,
+    location: lead.location,
+    contactName: lead.contactName,
+    contactRole: lead.contactRole,
+    websiteUrl: lead.websiteUrl,
+    contactPhone: audit.contactPhone ?? null,
+    sector,
+    performanceScore: audit.performanceScore ?? null,
+    seoScore: audit.seoScore ?? null,
+    painPoints: audit.painPoints,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    pageSpeed: (audit.pageSpeed as any) ?? null,
+  })
+
+  return {
+    id: lead.id,
+    companyName: lead.companyName,
+    websiteUrl: lead.websiteUrl,
+    location: lead.location,
+    googleMapsUrl: lead.googleMapsUrl,
+    phone: phone ? { display: phone.display, dial: phone.dial } : null,
+    score: lead.score,
+    kit,
+  }
+}
+
+export type CallSheetData = Awaited<ReturnType<typeof getCallSheet>>
+
+/**
  * Enrichit À LA DEMANDE un lead resté en NEW (audit + contact + brouillon +
  * score). Rattrape les leads dont l'enrichissement de fond n'a jamais tourné
  * (fonction du scan tuée avant la fin). Réutilise exactement le pipeline

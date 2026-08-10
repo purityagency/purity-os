@@ -5,6 +5,7 @@ import Link from "next/link"
 import { CopyButton } from "./CopyButton"
 import { GenerateAnglesButton } from "./GenerateAnglesButton"
 import { EnrichButton } from "./EnrichButton"
+import { CallSheetButton } from "./CallSheetButton"
 import { GlobeIcon, LocationIcon, UserIcon, MailIcon } from "@/components/icons"
 import { StatusBadge } from "@/components/StatusBadge"
 import type { PageSpeedReport, PageSpeedMetric } from "@/lib/acquisition/pageSpeedInsights"
@@ -110,9 +111,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               <a href={`/admin/ai/acquisition/crm/${lead.id}/deck`} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono px-3 py-1.5 rounded-lg border border-white/15 bg-white/5 text-zinc-200 hover:bg-white/10 transition-colors whitespace-nowrap text-center">
                 🖥️ Deck présentation
               </a>
-              <a href={`/admin/ai/acquisition/crm/${lead.id}/call`} target="_blank" rel="noopener noreferrer" className={`text-[11px] font-mono px-3 py-1.5 rounded-lg border transition-colors whitespace-nowrap text-center ${phone ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20" : "border-white/15 bg-white/5 text-zinc-300 hover:bg-white/10"}`}>
-                📞 Fiche d&apos;appel{phone ? "" : " (pas de n°)"}
-              </a>
+              <CallSheetButton leadId={lead.id} label={`📞 Fiche d'appel${phone ? "" : " (pas de n°)"}`} className={`text-[11px] font-mono px-3 py-1.5 rounded-lg border transition-colors whitespace-nowrap text-center cursor-pointer ${phone ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/20" : "border-white/15 bg-white/5 text-zinc-300 hover:bg-white/10"}`} />
             </div>
             {score !== null && (
               <div className="text-right">

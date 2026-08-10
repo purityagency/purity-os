@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
-import Link from "next/link"
 import { cleanBelgianPhone } from "@/lib/acquisition/phone"
 import { StatusBadge } from "@/components/StatusBadge"
 import { leadStatusLabel } from "@/lib/leadStatus"
+import { CallSheetButton } from "@/app/admin/ai/acquisition/crm/[id]/CallSheetButton"
 
 export const dynamic = "force-dynamic"
 
@@ -36,9 +36,7 @@ function CallRow({ r }: { r: Row }) {
         <p className="text-xs text-zinc-500 truncate mt-0.5">{r.location ?? "Localisation inconnue"} · {leadStatusLabel(r.status)}</p>
       </div>
       <a href={`tel:${r.phoneDial}`} className="text-sm font-mono text-emerald-300 hover:text-emerald-200 whitespace-nowrap shrink-0">📞 {r.phoneDisplay}</a>
-      <Link href={`/admin/ai/acquisition/crm/${r.id}/call`} target="_blank" className="text-[11px] font-mono px-2.5 py-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20 transition-colors whitespace-nowrap shrink-0">
-        Fiche d&apos;appel →
-      </Link>
+      <CallSheetButton leadId={r.id} label="Fiche d'appel →" className="text-[11px] font-mono px-2.5 py-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20 transition-colors whitespace-nowrap shrink-0 cursor-pointer" />
     </div>
   )
 }
