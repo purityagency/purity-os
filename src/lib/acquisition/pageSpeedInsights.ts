@@ -78,12 +78,20 @@ export async function runPageSpeedTest(
     params.set("url", url)
     params.set("strategy", strategy)
     for (const c of categories) params.append("category", c)
+    // Avec une clé API Google (API PageSpeed activée), le quota passe à ~25k/j
+    // attribués à NOTRE projet. Sans clé, on tape le quota anonyme partagé de
+    // Google — souvent épuisé (HTTP 429). La clé rend la feature fiable.
+    const apiKey = process.env.PAGESPEED_API_KEY
+    if (apiKey) params.set("key", apiKey)
 
     const endpoint = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?${params.toString()}`
     // PSI peut être lent (Lighthouse tourne côté Google) — timeout large mais borné.
     const res = await fetch(endpoint, { signal: AbortSignal.timeout(55000) })
     if (!res.ok) {
-      return { ...base, error: `PSI HTTP ${res.status}` }
+      const detail = res.status === 429
+        ? "quota Google épuisé — ajoutez une clé PAGESPEED_API_KEY (gratuite, 25k/j)"
+        : `HTTP ${res.status}`
+      return { ...base, error: detail }
     }
 
     const data = await res.json()
