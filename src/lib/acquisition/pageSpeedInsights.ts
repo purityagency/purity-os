@@ -1,9 +1,8 @@
 /**
  * Test Google PageSpeed Insights (Lighthouse) approfondi, réservé aux HOT leads
- * (score > 60). On n'appelle l'API que sur ce petit sous-ensemble, donc le
- * volume reste sous les limites de l'endpoint public v5 — pas besoin de clé
- * (on n'a de toute façon pas de clé Google Cloud avec l'API PageSpeed activée ;
- * .gsc-key et la clé Gemini ne sont pas compatibles).
+ * (score > 60). Authentifié via compte de service Google (token OAuth, voir
+ * googleServiceAccount.ts) pour attribuer le quota à notre projet ; sinon clé
+ * PAGESPEED_API_KEY ; en dernier recours appel anonyme (quota partagé, 429).
  *
  * Contrairement au mini-audit d'enrichissement (IntelligenceAnalyst) qui ne
  * gardait que 2 scores, ici on capture le rapport complet réellement utile pour
