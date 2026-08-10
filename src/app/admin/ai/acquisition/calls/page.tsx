@@ -4,6 +4,7 @@ import { cleanBelgianPhone } from "@/lib/acquisition/phone"
 import { StatusBadge } from "@/components/StatusBadge"
 import { leadStatusLabel } from "@/lib/leadStatus"
 import { CallSheetButton } from "@/app/admin/ai/acquisition/crm/[id]/CallSheetButton"
+import { PageHeader } from "@/components/acquisition/PageHeader"
 
 export const dynamic = "force-dynamic"
 
@@ -74,15 +75,11 @@ export default async function CallsPage() {
 
   return (
     <div className="h-full flex flex-col p-4 lg:p-8 overflow-hidden">
-      <div className="flex items-center justify-between mb-4 shrink-0">
-        <div>
-          <h1 className="text-lg font-bold text-white flex items-center gap-2">📞 Canal d&apos;appel</h1>
-          <p className="text-xs text-zinc-400">Leads joignables par téléphone, triés par score. Priorité à ceux sans email.</p>
-        </div>
-        <div className="text-xs font-mono px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20">
-          {rows.length} à appeler
-        </div>
-      </div>
+      <PageHeader
+        title="Canal d'appel"
+        subtitle="Leads joignables par téléphone, triés par score. Priorité à ceux sans email."
+        count={{ value: rows.length, label: "à appeler", tone: "emerald" }}
+      />
 
       <div className="flex-1 overflow-y-auto pr-2 space-y-6 custom-scrollbar">
         {rows.length === 0 ? (

@@ -3,6 +3,7 @@ import { requireAdminSession } from "@/lib/session"
 import { DraftComposer } from "../DraftComposer"
 import { BulkSendBar } from "../BulkSendBar"
 import { MailIcon } from "@/components/icons"
+import { PageHeader } from "@/components/acquisition/PageHeader"
 
 export default async function AcquisitionDraftsPage() {
   await requireAdminSession()
@@ -31,23 +32,11 @@ export default async function AcquisitionDraftsPage() {
 
   return (
     <div className="h-full flex flex-col p-4 lg:p-8 overflow-hidden">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between mb-6 shrink-0">
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-lg font-bold text-white flex items-center gap-2">
-              <MailIcon className="w-5 h-5 text-amber-500" />
-              Brouillons à Valider
-            </h1>
-            <p className="text-xs text-zinc-400">
-              Validez ou modifiez les emails générés par Manon Verhoeven (Creative Copywriter).
-            </p>
-          </div>
-        </div>
-        <div className="text-xs font-mono px-3 py-1 bg-amber-500/10 text-amber-400 rounded-lg border border-amber-500/20">
-          {draftsCount} attente(s)
-        </div>
-      </div>
+      <PageHeader
+        title="Brouillons à valider"
+        subtitle="Emails générés par l'agent rédacteur, prêts à envoyer ou à corriger."
+        count={{ value: draftsCount, label: "en attente", tone: "amber" }}
+      />
 
       {/* Envoi groupé sécurisé au seuil de score */}
       {draftsCount > 0 && (

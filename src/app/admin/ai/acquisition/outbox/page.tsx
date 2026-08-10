@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
-import Link from "next/link"
 import { MailIcon } from "@/components/icons"
+import { PageHeader } from "@/components/acquisition/PageHeader"
 
 export default async function AcquisitionOutboxPage() {
   await requireAdminSession()
@@ -15,23 +15,11 @@ export default async function AcquisitionOutboxPage() {
 
   return (
     <div className="h-full flex flex-col p-4 lg:p-8 overflow-hidden">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between mb-6 shrink-0">
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-lg font-bold text-white flex items-center gap-2">
-              <MailIcon className="w-5 h-5 text-emerald-500" />
-              Historique des Envois
-            </h1>
-            <p className="text-xs text-zinc-400">
-              Liste de tous les emails expédiés par le RevOps Automator.
-            </p>
-          </div>
-        </div>
-        <div className="text-xs font-mono px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg border border-emerald-500/20">
-          {sentEmails.length} envoyé(s)
-        </div>
-      </div>
+      <PageHeader
+        title="Emails envoyés"
+        subtitle="Historique des envois, avec le suivi d'ouverture et de clic."
+        count={{ value: sentEmails.length, label: "envoyés", tone: "emerald" }}
+      />
 
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">

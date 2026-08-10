@@ -2,7 +2,7 @@ import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
 import { Suspense } from "react"
 import { LeadsExplorer } from "../LeadsExplorer"
-import { TableIcon } from "@/components/icons"
+import { PageHeader } from "@/components/acquisition/PageHeader"
 
 export default async function AcquisitionCRMPage() {
   await requireAdminSession()
@@ -14,23 +14,11 @@ export default async function AcquisitionCRMPage() {
 
   return (
     <div className="h-full flex flex-col p-4 lg:p-8 overflow-hidden">
-      {/* Top Bar */}
-      <div className="flex items-center justify-between mb-6 shrink-0">
-        <div className="flex items-center gap-3">
-          <div>
-            <h1 className="text-lg font-bold text-white flex items-center gap-2">
-              <TableIcon className="w-5 h-5 text-violet-500" />
-              Base CRM de Leads
-            </h1>
-            <p className="text-xs text-zinc-400">
-              Recherche et filtres avancés sur la base qualifiée par les agents d&apos;Acquisition.
-            </p>
-          </div>
-        </div>
-        <div className="text-xs font-mono px-3 py-1 bg-violet-500/10 text-violet-400 rounded-lg border border-violet-500/20">
-          {allLeads.length} leads
-        </div>
-      </div>
+      <PageHeader
+        title="Base de leads"
+        subtitle="Recherche et filtres sur tous les prospects qualifiés par les agents."
+        count={{ value: allLeads.length, label: "leads", tone: "violet" }}
+      />
 
       {/* Main Content */}
       <div className="flex-1 min-h-0 relative bg-white/[0.02] border border-white/5 rounded-xl p-4">

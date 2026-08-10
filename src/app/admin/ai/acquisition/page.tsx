@@ -86,13 +86,8 @@ export default async function AdminAcquisitionPage() {
       <div className="shrink-0 space-y-3 border-b border-white/5 pb-3">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]" />
-              <span className="text-[10px] font-mono text-zinc-500 uppercase tracking-wider">Acquisition · Pôle 01</span>
-            </div>
-            <h1 className="text-xl font-bold uppercase tracking-wider text-white font-mono flex items-center gap-2">
-              Pôle 01: Pipeline Prospection
-            </h1>
+            <h1 className="text-lg font-bold text-white tracking-tight">Cockpit acquisition</h1>
+            <p className="text-xs text-zinc-500 mt-0.5">Ton pipeline de prospection en un coup d&apos;œil, et quoi faire maintenant.</p>
           </div>
 
           <div className="flex items-center gap-2">
@@ -194,13 +189,12 @@ export default async function AdminAcquisitionPage() {
         </div>
 
         {/* Right: Missions Sidebar (1/4 width) - Internal Scroll */}
-        <div className="flex flex-col h-full border-l border-white/5 bg-[#0a0510] p-4 overflow-hidden relative">
-          <div className="absolute inset-0 bg-violet-900/5 backdrop-blur-[2px]"></div>
-          <h2 className="text-xs font-bold uppercase tracking-wider text-white font-mono mb-3 shrink-0 relative z-10">
-            Suivi des Missions d&apos;Acquisition
+        <div className="flex flex-col h-full border-l border-white/5 bg-[#0a0510] p-4 overflow-hidden">
+          <h2 className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-3 shrink-0">
+            Missions
           </h2>
 
-          <div className="flex-1 overflow-y-auto pr-1 relative z-10">
+          <div className="flex-1 overflow-y-auto pr-1">
             <MissionTracker missions={missions as never} />
           </div>
         </div>

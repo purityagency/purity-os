@@ -21,12 +21,12 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
   }, [])
 
   const TABS = [
-    { name: "Overview", href: "/admin/ai/acquisition", Icon: OverviewIcon },
-    { name: "Inbox", href: "/admin/ai/acquisition/inbox", Icon: InboxIcon },
-    { name: "Outbox", href: "/admin/ai/acquisition/outbox", Icon: MailIcon },
-    { name: "Appels", href: "/admin/ai/acquisition/calls", Icon: PhoneIcon },
-    { name: "CRM", href: "/admin/ai/acquisition/crm", Icon: TableIcon },
+    { name: "Cockpit", href: "/admin/ai/acquisition", Icon: OverviewIcon },
+    { name: "Leads", href: "/admin/ai/acquisition/crm", Icon: TableIcon },
     { name: "Brouillons", href: "/admin/ai/acquisition/drafts", Icon: SparklesIcon },
+    { name: "Appels", href: "/admin/ai/acquisition/calls", Icon: PhoneIcon },
+    { name: "Réponses", href: "/admin/ai/acquisition/inbox", Icon: InboxIcon },
+    { name: "Envoyés", href: "/admin/ai/acquisition/outbox", Icon: MailIcon },
   ]
 
   return (
