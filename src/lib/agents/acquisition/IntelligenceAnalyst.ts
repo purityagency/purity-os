@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { AutonomousAgent } from './AgentCore';
+import { cleanBelgianPhone } from '@/lib/acquisition/phone';
 
 const EMAIL_DOMAIN_BLOCKLIST = [
   'wixpress.com', 'sentry.io', 'godaddy.com', 'cloudflare.com',
@@ -86,7 +87,24 @@ async function fetchHtml(url: string): Promise<string> {
 }
 
 // Pages où un email de contact se cache le plus souvent, au-delà de l'accueil.
-const CONTACT_PATHS = ['/contact', '/contact.html', '/contactez-nous', '/nous-contacter', '/a-propos', '/about', '/mentions-legales'];
+const CONTACT_PATHS = [
+  '/contact', '/contact.html', '/contact-us', '/contactez-nous', '/nous-contacter',
+  '/a-propos', '/about', '/qui-sommes-nous', '/equipe', '/notre-equipe', '/team',
+  '/mentions-legales', '/cgv', '/rendez-vous', '/reservation', '/prendre-rendez-vous',
+];
+
+// Beaucoup de sites masquent l'email pour éviter les robots :
+// "nom [at] domaine [dot] be", "nom (at) domaine.be", "nom arobase domaine.be".
+// On dé-obfusque ces formes fréquentes avant d'extraire (formes crochets /
+// parenthèses / "arobase" uniquement — jamais " at "/" point " nus, trop
+// courants en anglais/français pour être fiables).
+function deobfuscateEmails(html: string): string {
+  return html
+    .replace(/\s*[[(]\s*at\s*[\])]\s*/gi, '@')
+    .replace(/\s*[[(]\s*dot\s*[\])]\s*/gi, '.')
+    .replace(/\s+arobase\s+/gi, '@')
+    .replace(/&#0?64;/g, '@');
+}
 
 const ContactExtractionSchema = z.object({
   contactName: z.string().nullable(),
@@ -174,15 +192,22 @@ export class IntelligenceAnalyst extends AutonomousAgent {
       return { contactName: null, contactRole: null, contactEmail: null, contactPhone: null, techOpportunity };
     }
 
-    // Emails depuis : texte brut + liens mailto: + décodage Cloudflare.
-    const plainEmails = Array.from(html.matchAll(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g)).map((m) => m[0]);
+    // Emails depuis : texte brut + texte dé-obfusqué + liens mailto: + Cloudflare.
+    const EMAIL_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+    const plainEmails = Array.from(html.matchAll(EMAIL_RE)).map((m) => m[0]);
+    const deobEmails = Array.from(deobfuscateEmails(html).matchAll(EMAIL_RE)).map((m) => m[0]);
     const mailtoEmails = Array.from(html.matchAll(/mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi)).map((m) => m[1]);
     const cfEmails = decodeCloudflareEmails(html);
-    const realEmails = [...new Set([...mailtoEmails, ...cfEmails, ...plainEmails])].filter(
+    const realEmails = [...new Set([...mailtoEmails, ...cfEmails, ...plainEmails, ...deobEmails])].filter(
       (email) => !EMAIL_DOMAIN_BLOCKLIST.some((domain) => email.toLowerCase().endsWith(domain))
     );
 
-    const contactPhone = extractBelgianPhone(html);
+    // Cohérence extraction ↔ affichage : on ne stocke QUE des numéros belges
+    // réellement composables (mêmes règles que cleanBelgianPhone côté liste
+    // d'appels), au format normalisé. Le bruit ("0901778076"…) est écarté à la
+    // source plutôt que stocké puis filtré à l'affichage.
+    const rawPhone = extractBelgianPhone(html);
+    const contactPhone = cleanBelgianPhone(rawPhone)?.display ?? null;
 
     if (realEmails.length === 0) {
       return { contactName: null, contactRole: null, contactEmail: null, contactPhone, techOpportunity };

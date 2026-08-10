@@ -79,17 +79,28 @@ export class LeadScoringAnalyst extends AutonomousAgent {
     if (email) {
       const localPart = email.split('@')[0];
       const isGeneric = /^(info|contact|hello|bonjour|admin|sales|commercial|accueil|welcome|mail|no-?reply)/.test(localPart);
-      emailPts = isGeneric ? 15 : 25;
+      emailPts = isGeneric ? 18 : 25;
       breakdown.push({ criterion: 'Joignabilité email', points: emailPts, reason: isGeneric ? `Email générique (${email})` : `Email nominatif (${email})` });
     } else {
-      breakdown.push({ criterion: 'Joignabilité email', points: 0, reason: 'Aucun email — lead injoignable' });
+      breakdown.push({ criterion: 'Joignabilité email', points: 0, reason: 'Aucun email — lead injoignable par mail' });
     }
     score += emailPts;
 
-    // 4. Téléphone présent (0-10) — canal de secours réel.
-    const phonePts = audit?.contactPhone ? 10 : 0;
+    // 4. Téléphone présent (0-12) — canal réel (appel direct, cf. fiche d'appel).
+    const hasPhone = !!audit?.contactPhone;
+    const phonePts = hasPhone ? 12 : 0;
     if (phonePts) breakdown.push({ criterion: 'Téléphone', points: phonePts, reason: audit?.contactPhone ?? '' });
     score += phonePts;
+
+    // 4bis. Bonus multi-canal (0-8) : joignable À LA FOIS par email ET téléphone
+    // = prospect qu'on peut travailler sur deux fronts, vrai signal de
+    // convertibilité rapide. Sans ce bonus, les leads plafonnaient sous 70 alors
+    // que les meilleurs (joignables partout, site à refaire) méritent le haut du
+    // panier (finding cohérence 2026-08-10).
+    if (email && hasPhone) {
+      score += 8;
+      breakdown.push({ criterion: 'Joignable multi-canal', points: 8, reason: 'Email + téléphone présents' });
+    }
 
     // 5. ENGAGEMENT (0-15) — signal fort seulement quand il existe vraiment
     // (réponse/RDV). Avant l'envoi, quasi neutre : ne doit pas gonfler le score
