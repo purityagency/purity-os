@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Link from "next/link"
 
 interface Lead {
   id: string
@@ -81,7 +82,7 @@ export function LeadsExplorer({ initialLeads }: { initialLeads: Lead[] }) {
         ) : (
           <div className="divide-y divide-white/10">
             {filteredLeads.map((lead) => (
-              <div key={lead.id} className="p-4 flex items-center justify-between gap-4 hover:bg-white/[0.02] transition-colors">
+              <Link key={lead.id} href={`/admin/ai/acquisition/crm/${lead.id}`} className="p-4 flex items-center justify-between gap-4 hover:bg-white/[0.02] transition-colors">
                 <div className="min-w-0">
                   <p className="font-semibold text-white truncate text-sm">{lead.companyName}</p>
                   <p className="text-xs text-zinc-400 truncate mt-0.5">
@@ -105,8 +106,9 @@ export function LeadsExplorer({ initialLeads }: { initialLeads: Lead[] }) {
                   >
                     {lead.score ?? "—"}
                   </span>
+                  <span className="text-violet-400 text-xs">→</span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         )}

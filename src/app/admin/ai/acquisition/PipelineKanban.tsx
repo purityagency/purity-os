@@ -77,7 +77,7 @@ function LeadCard({ lead }: { lead: Lead }) {
             </a>
           )}
           <Link
-            href={`/admin/ai/acquisition/crm?lead=${lead.id}`}
+            href={`/admin/ai/acquisition/crm/${lead.id}`}
             onClick={e => e.stopPropagation()}
             className="inline-block text-violet-300 hover:text-violet-200 hover:underline"
           >
