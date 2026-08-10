@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { CopyButton } from "./CopyButton"
 import { GlobeIcon, LocationIcon, UserIcon, MailIcon } from "@/components/icons"
+import type { PageSpeedReport, PageSpeedMetric } from "@/lib/acquisition/pageSpeedInsights"
 
 export const dynamic = "force-dynamic"
 
@@ -15,6 +16,7 @@ interface AuditData {
   painPoints?: string[]
   recommendedModules?: string[]
   lastAuditAt?: string
+  pageSpeed?: PageSpeedReport
   seoAudit?: unknown
   linkedinDraft?: unknown
   adsBrief?: unknown
@@ -173,6 +175,9 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               )}
             </section>
 
+            {/* Test Google PageSpeed Insights (hot leads) */}
+            {audit.pageSpeed && <PageSpeedSection report={audit.pageSpeed} />}
+
             {/* Angles générés */}
             <AngleBox title="Audit SEO comparatif" value={audit.seoAudit} />
             <AngleBox title="Message LinkedIn (à envoyer manuellement)" value={audit.linkedinDraft} copyable />
@@ -267,6 +272,68 @@ function MetaRow({ label, value }: { label: string; value: string }) {
       <span className="text-[11px] font-mono uppercase tracking-wider text-zinc-500">{label}</span>
       <span className="text-zinc-300 truncate">{value}</span>
     </div>
+  )
+}
+
+function psiRing(score: number | null) {
+  return score === null ? "text-zinc-600" : score >= 90 ? "text-emerald-400" : score >= 50 ? "text-amber-400" : "text-red-400"
+}
+
+function PsiScore({ label, value }: { label: string; value: number | null }) {
+  return (
+    <div className="rounded-xl border border-white/5 bg-black/30 p-3 text-center">
+      <div className={`text-2xl font-bold tabular-nums ${psiRing(value)}`}>{value ?? "—"}</div>
+      <div className="text-[9px] font-mono uppercase tracking-wider text-zinc-500 mt-0.5">{label}</div>
+    </div>
+  )
+}
+
+function PsiMetricRow({ m }: { m: PageSpeedMetric }) {
+  const color = m.score === null ? "text-zinc-400" : m.score >= 0.9 ? "text-emerald-400" : m.score >= 0.5 ? "text-amber-400" : "text-red-400"
+  return (
+    <div className="flex items-center justify-between gap-3 py-1.5 border-b border-white/5 last:border-0">
+      <span className="text-sm text-zinc-300 truncate">{m.title}</span>
+      <span className={`text-sm font-mono tabular-nums shrink-0 ${color}`}>{m.displayValue || "—"}</span>
+    </div>
+  )
+}
+
+function PageSpeedSection({ report }: { report: PageSpeedReport }) {
+  return (
+    <section className="rounded-2xl border border-violet-500/20 bg-violet-500/[0.03] p-5">
+      <div className="flex items-center justify-between gap-2 mb-1">
+        <h2 className="text-sm font-bold uppercase tracking-wider text-white font-mono flex items-center gap-2">
+          <GlobeIcon className="w-4 h-4 text-violet-400" /> Google PageSpeed Insights
+        </h2>
+        <span className="text-[10px] font-mono text-zinc-500">{report.strategy} · {new Date(report.fetchedAt).toLocaleDateString("fr-BE")}</span>
+      </div>
+      {report.finalUrl && <p className="text-[11px] font-mono text-zinc-500 mb-4 truncate">{report.finalUrl}</p>}
+
+      {report.error ? (
+        <p className="text-xs text-amber-400/80 italic">Test indisponible ({report.error}). Il sera relancé au prochain scoring.</p>
+      ) : (
+        <>
+          <div className="grid grid-cols-4 gap-2 mb-4">
+            <PsiScore label="Perf." value={report.scores.performance} />
+            <PsiScore label="SEO" value={report.scores.seo} />
+            <PsiScore label="Accessib." value={report.scores.accessibility} />
+            <PsiScore label="Bonnes prat." value={report.scores.bestPractices} />
+          </div>
+          {report.coreWebVitals.length > 0 && (
+            <div className="mb-4">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-1">Core Web Vitals</div>
+              {report.coreWebVitals.map((m) => <PsiMetricRow key={m.id} m={m} />)}
+            </div>
+          )}
+          {report.opportunities.length > 0 && (
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-1">Principales opportunités (gain temps)</div>
+              {report.opportunities.map((m) => <PsiMetricRow key={m.id} m={m} />)}
+            </div>
+          )}
+        </>
+      )}
+    </section>
   )
 }
 

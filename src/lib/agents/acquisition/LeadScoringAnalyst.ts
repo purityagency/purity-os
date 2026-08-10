@@ -1,5 +1,11 @@
 import { prisma } from '@/lib/prisma';
+import type { Prisma } from '@prisma/client';
 import { AutonomousAgent } from './AgentCore';
+import { runPageSpeedTest, isPageSpeedFresh } from '@/lib/acquisition/pageSpeedInsights';
+
+// Seuil "hot lead" : au-delà, on déclenche un vrai test Google PageSpeed
+// Insights complet sur le site du prospect (volume faible = pas de rate-limit).
+const HOT_LEAD_THRESHOLD = 60;
 
 export interface LeadScore {
   leadId: string;
@@ -18,7 +24,8 @@ export class LeadScoringAnalyst extends AutonomousAgent {
     );
   }
 
-  public async scoreLead(leadId: string): Promise<LeadScore> {
+  public async scoreLead(leadId: string, opts: { runPageSpeed?: boolean } = {}): Promise<LeadScore> {
+    const { runPageSpeed = true } = opts;
     await this.logger.startTask(`Scoring du lead ${leadId}`);
 
     const lead = await prisma.lead.findUnique({ where: { id: leadId }, include: { mission: true } });
@@ -100,8 +107,46 @@ export class LeadScoringAnalyst extends AutonomousAgent {
     // ça le score était calculé puis jeté, invisible dans l'admin.
     await prisma.lead.update({ where: { id: leadId }, data: { score } });
 
+    // HOT LEAD → test Google PageSpeed Insights complet sur son site. On garde
+    // le rapport dans auditData.pageSpeed pour l'afficher sur la fiche prospect.
+    // Gardé par la fraîcheur : on ne relance pas à chaque re-scoring.
+    if (runPageSpeed && score > HOT_LEAD_THRESHOLD && lead.websiteUrl) {
+      await this.runPageSpeedForHotLead(leadId, lead.websiteUrl, lead.companyName);
+    }
+
     await this.logger.finishTask(`Lead ${lead.companyName} scoré: ${score}/100`);
     return { leadId, score, breakdown };
+  }
+
+  /**
+   * Lance le test PageSpeed Insights pour un hot lead et fusionne le rapport
+   * dans auditData.pageSpeed. Non bloquant pour le scoring : toute erreur est
+   * loguée mais n'échoue jamais le scoreLead (le score reste valide sans PSI).
+   */
+  public async runPageSpeedForHotLead(leadId: string, websiteUrl: string, companyName: string): Promise<void> {
+    try {
+      const current = await prisma.lead.findUnique({ where: { id: leadId }, select: { auditData: true } });
+      const audit = (current?.auditData as Record<string, unknown> | null) ?? {};
+      if (isPageSpeedFresh(audit.pageSpeed)) return; // rapport récent : on ne relance pas
+
+      await this.logger.startTask(`Test PageSpeed Insights (hot lead) — ${companyName}`);
+      const report = await runPageSpeedTest(websiteUrl, 'mobile');
+
+      await prisma.lead.update({
+        where: { id: leadId },
+        data: { auditData: { ...audit, pageSpeed: report } as unknown as Prisma.InputJsonValue },
+      });
+
+      if (report.error) {
+        await this.logger.logError(`PageSpeed indisponible pour ${companyName}: ${report.error}`);
+      } else {
+        await this.logger.finishTask(
+          `PageSpeed ${companyName}: perf ${report.scores.performance ?? '?'}/100, SEO ${report.scores.seo ?? '?'}/100`,
+        );
+      }
+    } catch (e) {
+      await this.logger.logError(`Échec test PageSpeed pour ${companyName}: ${e instanceof Error ? e.message : e}`);
+    }
   }
 
   public async rescoreMission(missionId: string): Promise<LeadScore[]> {

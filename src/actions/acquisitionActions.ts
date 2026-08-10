@@ -194,7 +194,11 @@ export async function rescoreAllLeads(_prevState: ActionResult | null): Promise<
   let done = 0
   for (const { id } of leads) {
     try {
-      await analyst.scoreLead(id)
+      // On ne déclenche PAS le test PageSpeed ici : un re-scoring en masse
+      // enchaînerait des dizaines d'appels PSI (jusqu'à ~55 s chacun) et ferait
+      // timeout la server action. Les hot leads sont testés par le pipeline
+      // à la capture, et rafraîchis par le cron /api/cron/pagespeed.
+      await analyst.scoreLead(id, { runPageSpeed: false })
       done++
     } catch {
       /* un lead en échec ne bloque pas le lot */
