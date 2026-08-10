@@ -209,9 +209,9 @@ export class CreativeCopywriter extends AutonomousAgent {
    * nouvel angle, une observation), jamais un "je reviens vers vous" creux.
    * Incrémente lead.relanceCount pour ne pas régénérer indéfiniment.
    */
-  public async draftFollowUp(leadId: string, relanceNumber: 1 | 2): Promise<void> {
+  public async draftFollowUp(leadId: string, relanceNumber: 1 | 2): Promise<string | null> {
     const lead = await prisma.lead.findUnique({ where: { id: leadId } });
-    if (!lead || lead.status !== 'CONTACTED' || lead.optedOut || !lead.contactEmail) return;
+    if (!lead || lead.status !== 'CONTACTED' || lead.optedOut || !lead.contactEmail) return null;
 
     await this.logger.startTask(`Relance ${relanceNumber} pour ${lead.companyName} (Outreach Copywriter)`);
 
@@ -264,12 +264,12 @@ export class CreativeCopywriter extends AutonomousAgent {
       const stillForbidden = describeForbidden(result.bodyHtml);
       if (stillForbidden) {
         await this.logger.logError(`Relance ${relanceNumber} NON créée pour ${lead.companyName} : contenu interdit persistant (${stillForbidden}).`);
-        return;
+        return null;
       }
 
       // Brouillon de relance + incrément du compteur, en transaction : on ne
       // veut jamais incrémenter sans créer le brouillon (ni l'inverse).
-      await prisma.$transaction([
+      const [created] = await prisma.$transaction([
         prisma.emailDraft.create({
           data: {
             leadId: lead.id,
@@ -283,8 +283,10 @@ export class CreativeCopywriter extends AutonomousAgent {
       ]);
 
       await this.logger.finishTask(`Relance ${relanceNumber} générée pour ${lead.companyName} (Note AI: ${result.selfCritiqueScore}/10).`);
+      return created.id;
     } catch (error) {
       await this.logger.logError(`Échec relance ${relanceNumber} pour ${lead.companyName}: ${error}`);
+      return null;
     }
   }
 }

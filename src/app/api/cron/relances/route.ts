@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { CreativeCopywriter } from "@/lib/agents/acquisition/CreativeCopywriter"
+import { deliverDraft } from "@/lib/acquisition/deliverDraft"
 
 export const dynamic = "force-dynamic"
 export const maxDuration = 300 // relances = appels LLM séquentiels espacés (throttle Gemini)
@@ -58,16 +59,30 @@ export async function GET(request: Request) {
     return NextResponse.json({ status: "ok", generated: 0, message: "Aucune relance à générer." })
   }
 
+  // Relances AUTOMATIQUES : une relance est une séquence déjà engagée (le lead a
+  // reçu le 1er mail) → on ne la laisse pas dormir dans la file de validation, on
+  // la GÉNÈRE puis on l'ENVOIE directement. deliverDraft applique tous les
+  // garde-fous (désinscrit, placeholder, email manquant) : une relance non
+  // parfaite n'est jamais envoyée. Si l'envoi est bloqué, le brouillon reste en
+  // attente de validation manuelle (statut PENDING_APPROVAL inchangé).
   const copywriter = new CreativeCopywriter()
   let generated = 0
+  let sent = 0
+  let blocked = 0
   for (const job of jobs) {
     try {
-      await copywriter.draftFollowUp(job.id, job.n)
+      const draftId = await copywriter.draftFollowUp(job.id, job.n)
+      if (!draftId) continue
       generated++
+      const draft = await prisma.emailDraft.findUnique({ where: { id: draftId }, include: { lead: true } })
+      if (!draft) continue
+      const r = await deliverDraft(draft)
+      if (r.ok) sent++
+      else blocked++
     } catch {
       /* un échec unitaire ne stoppe pas le lot */
     }
   }
 
-  return NextResponse.json({ status: "ok", generated, considered: jobs.length })
+  return NextResponse.json({ status: "ok", generated, sent, blocked, considered: jobs.length })
 }
