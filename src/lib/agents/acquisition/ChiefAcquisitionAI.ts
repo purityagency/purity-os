@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { after } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { MarketScout } from './MarketScout';
 import { MissionOrder } from './types';
@@ -135,9 +136,18 @@ export class ChiefAcquisitionAI extends AutonomousAgent {
 
     await this.logger.finishTask(`Mission enregistrée (ID: ${missionRecord.id}). Délégation au Market Scout.`);
 
-    // Version asynchrone fire-and-forget — utilisée par le déclenchement manuel.
-    getScout().executeMission(missionOrder).catch(err => {
-      this.logger.logError(`Erreur critique du Scout sur la mission ${missionRecord.id}: ${err}`);
+    // Exécution du Scout via after() : sur Vercel (serverless), un simple
+    // fire-and-forget non attendu était TUÉ dès que la server action renvoyait
+    // sa réponse → le scout ne tournait jamais et la mission restait bloquée
+    // ACTIVE à 0 lead (bug observé 2026-08-10). after() garde la fonction
+    // vivante après la réponse pour finir le travail de scouting.
+    after(async () => {
+      try {
+        await getScout().executeMission(missionOrder);
+        await prisma.mission.update({ where: { id: missionRecord.id }, data: { status: 'COMPLETED' } });
+      } catch (err) {
+        await this.logger.logError(`Erreur critique du Scout sur la mission ${missionRecord.id}: ${err}`);
+      }
     });
 
     return missionRecord;

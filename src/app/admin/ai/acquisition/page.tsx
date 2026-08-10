@@ -8,6 +8,9 @@ import { BulkSendBar } from "./BulkSendBar"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
+// Le lancement manuel d'une mission exécute le Market Scout en tâche de fond
+// (after()) : la fonction doit rester vivante assez longtemps pour scouter.
+export const maxDuration = 300
 
 export default async function AdminAcquisitionPage() {
   await requireAdminSession()
