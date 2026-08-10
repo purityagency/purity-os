@@ -253,6 +253,30 @@ export async function regenerateDraftAction(
 }
 
 /**
+ * Enrichit À LA DEMANDE un lead resté en NEW (audit + contact + brouillon +
+ * score). Rattrape les leads dont l'enrichissement de fond n'a jamais tourné
+ * (fonction du scan tuée avant la fin). Réutilise exactement le pipeline
+ * standard (onLeadCaptured).
+ */
+export async function enrichLeadNow(leadId: string): Promise<ActionResult> {
+  await requireAdminSession()
+
+  const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { id: true, websiteUrl: true } })
+  if (!lead) throw new NotFoundError("Lead")
+  if (!lead.websiteUrl) return { ok: false, message: "Ce lead n'a pas de site web — rien à auditer." }
+
+  try {
+    const { onLeadCaptured } = await import("@/lib/agents/acquisition/handlers/OnLeadCaptured")
+    const { LeadCapturedEvent } = await import("@/lib/agents/acquisition/events")
+    await onLeadCaptured(new LeadCapturedEvent(leadId))
+    revalidatePath(`/admin/ai/acquisition/crm/${leadId}`)
+    return { ok: true, message: "Lead enrichi (audit, contact, brouillon, score)." }
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Échec de l'enrichissement." }
+  }
+}
+
+/**
  * Génère À LA DEMANDE les angles multi-canaux (message LinkedIn, brief Ads,
  * audit SEO comparatif) pour un lead, et les stocke dans auditData. Déplacé
  * hors du chemin critique de la mission (OnLeadCaptured) où ces 3 appels LLM

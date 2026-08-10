@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import Link from "next/link"
 import { CopyButton } from "./CopyButton"
 import { GenerateAnglesButton } from "./GenerateAnglesButton"
+import { EnrichButton } from "./EnrichButton"
 import { GlobeIcon, LocationIcon, UserIcon, MailIcon } from "@/components/icons"
 import { StatusBadge } from "@/components/StatusBadge"
 import type { PageSpeedReport, PageSpeedMetric } from "@/lib/acquisition/pageSpeedInsights"
@@ -179,7 +180,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                 </div>
               )}
               {!perf && !seo && !audit.painPoints?.length && (
-                <p className="text-xs text-zinc-500 italic">Pas encore d&apos;audit détaillé pour ce lead.</p>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <p className="text-xs text-zinc-500 italic">Lead pas encore enrichi (audit, contact, brouillon manquants).</p>
+                  {lead.websiteUrl && <EnrichButton leadId={lead.id} />}
+                </div>
               )}
             </section>
 

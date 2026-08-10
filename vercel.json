@@ -5,6 +5,7 @@
     { "path": "/api/cron/relances", "schedule": "0 7 * * *" },
     { "path": "/api/cron/kernel", "schedule": "*/10 * * * *" },
     { "path": "/api/cron/autosend", "schedule": "0 9-17/2 * * *" },
-    { "path": "/api/cron/pagespeed", "schedule": "30 6-18/3 * * *" }
+    { "path": "/api/cron/pagespeed", "schedule": "30 6-18/3 * * *" },
+    { "path": "/api/cron/enrich", "schedule": "*/20 * * * *" }
   ]
 }
