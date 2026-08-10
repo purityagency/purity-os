@@ -319,6 +319,16 @@ model EmailDraft {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Tracking d'engagement (pixel d'ouverture + liens tracés). Renseigné après
+  // l'envoi, quand le prospect ouvre le mail / clique un lien. openCount peut
+  // être gonflé par les proxies (Gmail/Apple Mail Privacy) — le clic est le
+  // signal fiable ; l'ouverture reste directionnelle.
+  openCount    Int       @default(0)
+  openedAt     DateTime? // 1re ouverture
+  lastOpenedAt DateTime?
+  clickCount   Int       @default(0)
+  clickedAt    DateTime? // 1er clic
+
   lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([leadId, status])

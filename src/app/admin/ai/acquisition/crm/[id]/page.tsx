@@ -106,12 +106,22 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
               {lead.optedOut && <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-red-500/10 text-red-400 border border-red-500/20">Désinscrit</span>}
             </div>
           </div>
-          {score !== null && (
-            <div className="shrink-0 text-right">
-              <div className={`text-4xl font-bold tabular-nums ${scoreColor(score)}`}>{score}<span className="text-lg text-zinc-600">/100</span></div>
-              <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Score qualité</div>
-            </div>
-          )}
+          <div className="shrink-0 flex items-center gap-4">
+            <a
+              href={`/admin/ai/acquisition/crm/${lead.id}/audit`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs font-mono px-3 py-2 rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20 transition-colors whitespace-nowrap"
+            >
+              📄 PDF d&apos;audit
+            </a>
+            {score !== null && (
+              <div className="text-right">
+                <div className={`text-4xl font-bold tabular-nums ${scoreColor(score)}`}>{score}<span className="text-lg text-zinc-600">/100</span></div>
+                <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500">Score qualité</div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Actions rapides / liens */}
@@ -191,7 +201,21 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                   {lead.emailDrafts.map((d) => (
                     <div key={d.id} className="rounded-xl border border-white/5 bg-black/30 p-4">
                       <div className="flex items-center justify-between gap-2 mb-2">
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-zinc-400">{d.status} · {d.tone}</span>
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-zinc-400">{d.status} · {d.tone}</span>
+                          {d.status === "SENT" && (
+                            <>
+                              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${d.openedAt ? "bg-emerald-500/10 text-emerald-300 border-emerald-500/20" : "bg-white/5 text-zinc-500 border-white/10"}`}>
+                                {d.openedAt ? `Ouvert ×${d.openCount}` : "Non ouvert"}
+                              </span>
+                              {d.clickedAt && (
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                                  Clic ×{d.clickCount}
+                                </span>
+                              )}
+                            </>
+                          )}
+                        </div>
                         <CopyButton text={d.subject + "\n\n" + d.bodyHtml.replace(/<[^>]+>/g, "")} label="Copier" />
                       </div>
                       <div className="text-sm font-semibold text-white mb-1">{d.subject}</div>

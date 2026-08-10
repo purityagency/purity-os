@@ -1,0 +1,160 @@
+import { prisma } from "@/lib/prisma"
+import { requireAdminSession } from "@/lib/session"
+import { notFound } from "next/navigation"
+import { PrintButton } from "./PrintButton"
+import type { PageSpeedReport } from "@/lib/acquisition/pageSpeedInsights"
+
+export const dynamic = "force-dynamic"
+
+// Rapport d'audit CLIENT-FACING (destiné à être enregistré en PDF et présenté /
+// attaché en RDV). Règle stricte : AUCUN code module interne (M07) ni prix — ce
+// document parle au prospect, pas à l'équipe. Thème clair, brandé Purity.
+
+interface AuditData {
+  performanceScore?: number | null
+  seoScore?: number | null
+  techOpportunity?: number | null
+  painPoints?: string[]
+  lastAuditAt?: string
+  pageSpeed?: PageSpeedReport
+}
+
+function grade(score: number | null): { label: string; color: string } {
+  if (score === null) return { label: "N/A", color: "#9ca3af" }
+  if (score >= 90) return { label: "Excellent", color: "#059669" }
+  if (score >= 50) return { label: "À améliorer", color: "#d97706" }
+  return { label: "Critique", color: "#dc2626" }
+}
+
+function ScoreBlock({ label, score }: { label: string; score: number | null }) {
+  const g = grade(score)
+  return (
+    <div style={{ flex: 1, textAlign: "center", padding: "16px 8px", border: "1px solid #e5e7eb", borderRadius: 10 }}>
+      <div style={{ fontSize: 34, fontWeight: 800, color: g.color, lineHeight: 1 }}>{score ?? "—"}</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: g.color, marginTop: 4 }}>{g.label}</div>
+      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 0.5, color: "#6b7280", marginTop: 6 }}>{label}</div>
+    </div>
+  )
+}
+
+export default async function AuditReportPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireAdminSession()
+  const { id } = await params
+
+  const lead = await prisma.lead.findUnique({ where: { id } })
+  if (!lead) notFound()
+
+  const audit = (lead.auditData as AuditData | null) ?? {}
+  const psi = audit.pageSpeed && !audit.pageSpeed.error ? audit.pageSpeed : null
+
+  // On privilégie les scores PSI réels ; sinon on retombe sur l'audit
+  // d'enrichissement. Aucun code interne exposé.
+  const perf = psi?.scores.performance ?? audit.performanceScore ?? null
+  const seo = psi?.scores.seo ?? audit.seoScore ?? null
+  const a11y = psi?.scores.accessibility ?? null
+  const bp = psi?.scores.bestPractices ?? null
+  const painPoints = audit.painPoints ?? []
+  const dateStr = new Date().toLocaleDateString("fr-BE", { day: "numeric", month: "long", year: "numeric" })
+
+  return (
+    <>
+      <PrintButton />
+      <style>{`
+        @media print { .no-print { display: none !important; } @page { margin: 16mm; } }
+        body { background: #f3f4f6; }
+      `}</style>
+      <div style={{ maxWidth: 820, margin: "0 auto", padding: 40, background: "#ffffff", color: "#111827", fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif" }}>
+        {/* En-tête brandé */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "3px solid #111827", paddingBottom: 16, marginBottom: 24 }}>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5 }}>PURITY<span style={{ color: "#7c3aed" }}>.</span>AGENCY</div>
+            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>Audit de présence digitale</div>
+          </div>
+          <div style={{ textAlign: "right", fontSize: 12, color: "#6b7280" }}>{dateStr}</div>
+        </div>
+
+        {/* Prospect */}
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: "#7c3aed", fontWeight: 700 }}>Préparé pour</div>
+          <h1 style={{ fontSize: 28, fontWeight: 800, margin: "4px 0 2px" }}>{lead.companyName}</h1>
+          {lead.websiteUrl && <div style={{ fontSize: 13, color: "#6b7280" }}>{lead.websiteUrl.replace(/^https?:\/\/(www\.)?/, "")}{lead.location ? ` · ${lead.location}` : ""}</div>}
+        </div>
+
+        {/* Scores */}
+        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>Diagnostic technique</div>
+        <div style={{ display: "flex", gap: 10, marginBottom: 8 }}>
+          <ScoreBlock label="Vitesse mobile" score={perf} />
+          <ScoreBlock label="Référencement" score={seo} />
+          <ScoreBlock label="Accessibilité" score={a11y} />
+          <ScoreBlock label="Bonnes pratiques" score={bp} />
+        </div>
+        <div style={{ fontSize: 10, color: "#9ca3af", marginBottom: 24 }}>
+          Mesures Google Lighthouse (0-100){psi ? `, testé le ${new Date(psi.fetchedAt).toLocaleDateString("fr-BE")} sur mobile` : ""}.
+        </div>
+
+        {/* Core Web Vitals */}
+        {psi && psi.coreWebVitals.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>Expérience de chargement</div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <tbody>
+                {psi.coreWebVitals.map((m) => (
+                  <tr key={m.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                    <td style={{ padding: "8px 0", color: "#374151" }}>{m.title}</td>
+                    <td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: (m.score ?? 1) >= 0.9 ? "#059669" : (m.score ?? 0) >= 0.5 ? "#d97706" : "#dc2626" }}>{m.displayValue}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Points de douleur */}
+        {painPoints.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>Ce qui vous coûte des clients aujourd&apos;hui</div>
+            <ul style={{ margin: 0, paddingLeft: 0, listStyle: "none" }}>
+              {painPoints.map((p, i) => (
+                <li key={i} style={{ display: "flex", gap: 10, padding: "6px 0", fontSize: 14, color: "#374151" }}>
+                  <span style={{ color: "#dc2626", fontWeight: 800 }}>›</span>
+                  <span>{p}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Opportunités PSI chiffrées */}
+        {psi && psi.opportunities.length > 0 && (
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>Leviers d&apos;amélioration prioritaires</div>
+            <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+              <tbody>
+                {psi.opportunities.map((m) => (
+                  <tr key={m.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
+                    <td style={{ padding: "8px 0", color: "#374151" }}>{m.title}</td>
+                    <td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: "#7c3aed" }}>{m.displayValue}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* CTA */}
+        <div style={{ background: "#111827", color: "#ffffff", borderRadius: 12, padding: 24, marginTop: 8 }}>
+          <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>On corrige tout ça pour vous.</div>
+          <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>
+            Purity Agency conçoit et déploie des sites rapides, bien référencés et pensés pour convertir.
+            Parlons de votre projet — un échange de 20 minutes suffit pour vous dire précisément quoi prioriser.
+          </div>
+          <div style={{ fontSize: 13, marginTop: 12, color: "#a78bfa", fontWeight: 700 }}>purity-agency.be</div>
+        </div>
+
+        <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 20, textAlign: "center" }}>
+          Audit réalisé par Purity Agency à partir de données publiques (Google Lighthouse). Document sans engagement.
+        </div>
+      </div>
+    </>
+  )
+}

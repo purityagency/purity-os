@@ -7,6 +7,7 @@ import { sanitizeEmailHtml } from "@/lib/sanitizeHtml"
 import { makeUnsubscribeToken } from "@/lib/unsubscribeToken"
 import { getBaseUrl } from "@/lib/utils"
 import { containsPlaceholder } from "@/lib/emailPlaceholders"
+import { injectEmailTracking } from "@/lib/acquisition/emailTracking"
 import { eventBus } from "@/core/events"
 import { DraftReviewedEvent } from "@/lib/agents/acquisition/events"
 
@@ -45,7 +46,10 @@ export async function deliverDraft(draft: DraftWithLead): Promise<DeliverResult>
       subject: draft.subject,
       from: prospectingFrom(),
       bccSelf: false,
-      html: withAgentSignature(sanitizeEmailHtml(draft.bodyHtml), {
+      // Ordre : on assainit le corps, on injecte le tracking (pixel + liens
+      // tracés) sur ce corps, PUIS on ajoute la signature — la désinscription
+      // et les liens de signature ne sont jamais tracés.
+      html: withAgentSignature(injectEmailTracking(sanitizeEmailHtml(draft.bodyHtml), draft.id), {
         unsubscribeUrl,
         source: draft.lead.source,
         websiteUrl: draft.lead.websiteUrl,
