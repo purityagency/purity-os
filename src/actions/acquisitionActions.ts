@@ -44,7 +44,7 @@ export async function launchMission(formData: FormData) {
   const chief = new ChiefAcquisitionAI()
   await chief.launchMission(name, sectors, locations, maxLeads)
 
-  revalidatePath("/admin/acquisition")
+  revalidateAcquisition()
 }
 
 /**
@@ -221,7 +221,7 @@ export async function updateDraftAction(
       where: { id: draftId },
       data: { subject, bodyHtml }
     })
-    revalidatePath("/admin/acquisition")
+    revalidateAcquisition()
     return { ok: true, message: "Brouillon mis à jour avec succès." }
   } catch (e) {
     const message = e instanceof Error ? e.message : "Erreur de mise à jour."
@@ -244,7 +244,7 @@ export async function regenerateDraftAction(
   try {
     const copywriter = new CreativeCopywriter()
     await copywriter.draftEmail(draft.leadId, tone, draft.id)
-    revalidatePath("/admin/acquisition")
+    revalidateAcquisition()
     return { ok: true, message: `Brouillon régénéré avec succès (ton: ${tone}).` }
   } catch (e) {
     const message = e instanceof Error ? e.message : "Erreur de régénération."

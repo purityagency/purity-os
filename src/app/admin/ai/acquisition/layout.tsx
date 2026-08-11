@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation"
 import { InboxIcon, MailIcon, OverviewIcon, TableIcon, SparklesIcon, PhoneIcon } from "@/components/icons"
 import { useState, useEffect } from "react"
 
-import { SpaceStarsBackground } from "@/components/acquisition/SpaceStarsBackground"
 
 export default function AcquisitionLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -48,62 +47,54 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
   ]
 
   return (
-    <SpaceStarsBackground>
-      <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden bg-transparent">
-        {/* Sub-Navigation Header Bar (semi-transparent glass) */}
-        <div
-          className={`shrink-0 flex items-center justify-between gap-3 px-4 sm:px-8 py-2.5 sticky top-0 z-50 bg-[#0a0a0b]/70 backdrop-blur-xl border-b transition-colors ${
-            isScrolled ? "border-white/10" : "border-white/[0.06]"
-          }`}
-        >
-          <div className="flex items-center gap-1 bg-[#141417]/80 backdrop-blur-md border border-white/[0.08] rounded-xl p-1 overflow-x-auto max-w-full custom-scrollbar">
-            {TABS.map((tab) => {
-              const isActive = pathname === tab.href
-              const Icon = tab.Icon
-              return (
-                <Link
-                  key={tab.href}
-                  href={tab.href}
-                  aria-current={isActive ? "page" : undefined}
-                  style={isActive ? { background: "#c4f82a", color: "#000" } : undefined}
-                  className={`group flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
-                    isActive
-                      ? "shadow-sm shadow-[#c4f82a]/20"
-                      : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
-                  }`}
-                >
-                  <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-black" : "text-zinc-500 group-hover:text-zinc-300"}`} />
-                  <span>{tab.name}</span>
-                  {tab.badge > 0 && (
-                    <span
-                      className={`ml-0.5 min-w-[16px] h-4 px-1 grid place-items-center rounded-full text-[10px] font-bold font-mono tabular-nums ${
-                        isActive ? "bg-black/80 text-[#c4f82a]" : "bg-[#c4f82a] text-black"
-                      }`}
-                    >
-                      {tab.badge > 99 ? "99+" : tab.badge}
-                    </span>
-                  )}
-                </Link>
-              )
-            })}
-          </div>
-
-          <div className="flex items-center gap-2 text-xs font-mono text-zinc-400 shrink-0">
-            <span className="w-2 h-2 rounded-full bg-[#c4f82a] animate-pulse" />
-            <span className="hidden sm:inline">VPS Strasbourg En Ligne</span>
-          </div>
+    <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden bg-[#f6f7f9]">
+      {/* Barre de navigation — claire, épurée */}
+      <div
+        className={`shrink-0 flex items-center justify-between gap-3 px-4 sm:px-8 py-2.5 sticky top-0 z-50 bg-white border-b transition-colors ${
+          isScrolled ? "border-[#e0e2e7] shadow-sm" : "border-[#e6e7eb]"
+        }`}
+      >
+        <div className="flex items-center gap-1 overflow-x-auto max-w-full custom-scrollbar">
+          {TABS.map((tab) => {
+            const isActive = pathname === tab.href
+            const Icon = tab.Icon
+            return (
+              <Link
+                key={tab.href}
+                href={tab.href}
+                aria-current={isActive ? "page" : undefined}
+                className={`group flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? "bg-[#17171a] text-white"
+                    : "text-[#5b616e] hover:text-[#17171a] hover:bg-[#f0f1f4]"
+                }`}
+              >
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-[#9ca3af] group-hover:text-[#5b616e]"}`} />
+                <span>{tab.name}</span>
+                {tab.badge > 0 && (
+                  <span
+                    className={`ml-0.5 min-w-[16px] h-4 px-1 grid place-items-center rounded-full text-[10px] font-bold tabular-nums ${
+                      isActive ? "bg-white/20 text-white" : "bg-[#4f46e5] text-white"
+                    }`}
+                  >
+                    {tab.badge > 99 ? "99+" : tab.badge}
+                  </span>
+                )}
+              </Link>
+            )
+          })}
         </div>
 
-        {/* Main Content Scroll Container */}
-        <div
-          id="acquisition-content-area"
-          className="flex-1 overflow-y-auto bg-transparent custom-scrollbar"
-        >
-          <div className="min-h-full">
-            {children}
-          </div>
+        <div className="flex items-center gap-2 text-xs font-medium text-[#8a909c] shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
+          <span className="hidden sm:inline">Pôle actif</span>
         </div>
       </div>
-    </SpaceStarsBackground>
+
+      {/* Conteneur de contenu */}
+      <div id="acquisition-content-area" className="flex-1 overflow-y-auto bg-[#f6f7f9] custom-scrollbar">
+        <div className="min-h-full">{children}</div>
+      </div>
+    </div>
   )
 }

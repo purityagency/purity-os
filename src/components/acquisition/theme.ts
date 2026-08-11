@@ -1,30 +1,38 @@
-// Système de design unique du pôle Acquisition — une seule source de vérité.
-// Direction : cockpit d'opérations dense, near-black chaud, UN accent lime
-// signal (jamais de violet générique, jamais de glow/glass). Chiffres en mono
-// tabulaire, séparateurs en hairline plutôt que cartes imbriquées.
+// Système de design unique du pôle Acquisition — thème CLAIR, épuré, dense,
+// pensé pour tenir en paysage (16:9) avec un minimum de scroll. Références :
+// dashboards SaaS modernes clairs (Linear light, Vercel, Attio, Stripe).
+// Contraste WCAG AA respecté (texte quasi-noir sur blanc), UN seul accent.
 
-export const ACCENT = "#c4f82a" // lime signal — action primaire + état actif
-export const ACCENT_INK = "#000000" // texte sur accent
+// Fonds & surfaces (famille de gris froids, claire).
+export const BG = "#f6f7f9"       // canvas
+export const SURFACE = "#ffffff"  // cartes
+export const SURFACE_2 = "#f0f1f4" // zones secondaires / hover
+export const BORDER = "#e6e7eb"   // hairline
 
-// Fonds & surfaces (une seule famille de gris, chaude).
-export const BG = "#0a0a0b"
-export const SURFACE = "#141416"
-export const SURFACE_2 = "#1b1b1e"
+// Texte (contraste élevé).
+export const T_PRIMARY = "#17171a"
+export const T_SECONDARY = "#5b616e"
+export const T_MUTED = "#8a909c"
 
-// Classes réutilisables (Tailwind) pour rester cohérent partout.
-export const CARD = "rounded-2xl border border-white/[0.07] bg-[#141416]"
-export const CARD_HOVER = "hover:border-white/[0.14] transition-colors"
+// Accent unique, lisible sur blanc (~7:1). Interactif / score haut / highlight.
+export const ACCENT = "#4f46e5"      // indigo
+export const ACCENT_SOFT = "#eef0fe" // fond d'accent très clair
+
+// Bouton primaire = quasi-noir + texte blanc (style Linear/Vercel, contraste max).
+export const INK = "#17171a"
+
+// Couleurs de statut (toutes AA sur blanc).
+export const OK = "#059669"     // vert
+export const WARN = "#b45309"   // ambre foncé
+export const BAD = "#dc2626"    // rouge
+
+// Classes réutilisables.
+export const CARD = "rounded-xl border border-[#e6e7eb] bg-white"
+export const CARD_HOVER = "hover:border-[#d4d6dc] transition-colors"
 export const INPUT =
-  "w-full rounded-lg bg-black/40 border border-white/10 px-3 py-2 text-xs text-white placeholder:text-[#5a5a54] focus:outline-none focus:border-[#c4f82a] transition-colors"
-export const LABEL = "block text-[10px] font-mono uppercase tracking-wider text-[#7a7a72] mb-1"
-
-// Texte
-export const T_DIM = "text-[#c9c9c2]"
-export const T_MUTED = "text-[#7a7a72]"
-export const T_FAINT = "text-[#5a5a54]"
-
-// Bouton primaire lime (à composer avec style={{ background: ACCENT }} ou la classe).
+  "w-full rounded-lg bg-white border border-[#e6e7eb] px-3 py-2 text-sm text-[#17171a] placeholder:text-[#a2a7b0] focus:outline-none focus:border-[#4f46e5] focus:ring-1 focus:ring-[#4f46e5]/30 transition-colors"
+export const LABEL = "block text-[11px] font-medium text-[#5b616e] mb-1"
 export const BTN_PRIMARY =
-  "inline-flex items-center justify-center gap-1.5 rounded-full px-5 py-2.5 text-sm font-bold text-black transition hover:brightness-95 active:scale-[0.98]"
+  "inline-flex items-center justify-center gap-1.5 rounded-lg px-4 py-2 text-sm font-semibold text-white bg-[#17171a] transition hover:bg-[#000] active:scale-[0.98]"
 export const BTN_GHOST =
-  "inline-flex items-center justify-center gap-1.5 rounded-full border border-white/12 px-4 py-2 text-xs font-semibold text-white transition hover:bg-white/5 active:scale-[0.98]"
+  "inline-flex items-center justify-center gap-1.5 rounded-lg border border-[#e6e7eb] px-3 py-2 text-sm font-medium text-[#17171a] bg-white transition hover:bg-[#f6f7f9] active:scale-[0.98]"

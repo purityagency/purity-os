@@ -11,7 +11,7 @@ import {
 } from "@/lib/adminFormat"
 import { POLES } from "@/lib/agentRoster"
 import { DashboardTabs } from "./DashboardTabs"
-import { OverviewIcon, SparklesIcon, UsersIcon, ProjectsIcon, PaymentsIcon } from "@/components/icons"
+import { OverviewIcon, SparklesIcon } from "@/components/icons"
 
 export default async function AdminDashboard() {
   await requireAdminSession()
@@ -158,7 +158,7 @@ export default async function AdminDashboard() {
 
           <div className="flex items-center gap-2">
             <Link
-              href="/admin/acquisition"
+              href="/admin/ai/acquisition"
               className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-violet-600 hover:bg-violet-700 text-white transition-all flex items-center gap-1.5 shadow-md shadow-violet-600/20"
             >
               <span>Prospection & Leads</span>
@@ -237,7 +237,7 @@ export default async function AdminDashboard() {
                 <SparklesIcon className="w-4 h-4 text-violet-400" />
                 <h2 className="text-xs font-bold uppercase tracking-wider text-white font-mono">Matrice 7 Pôles IA</h2>
               </div>
-              <Link href="/admin/ecosystem" className="text-[10px] text-violet-400 hover:underline font-mono">
+              <Link href="/admin/ai/ecosystem" className="text-[10px] text-violet-400 hover:underline font-mono">
                 Roster →
               </Link>
             </div>

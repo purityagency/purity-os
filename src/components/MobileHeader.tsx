@@ -20,7 +20,7 @@ export function MobileHeader({ session, isAdmin = false }: { session: Session; i
 
   const adminLinks = [
     { name: "Vue d'ensemble", href: "/admin" },
-    { name: "Acquisition (IA)", href: "/admin/acquisition" },
+    { name: "Acquisition (IA)", href: "/admin/ai/acquisition" },
     { name: "Clients", href: "/admin/clients" },
     { name: "Documents", href: "/admin/documents" },
     { name: "Paiements", href: "/admin/payments" },

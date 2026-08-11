@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { SparklesIcon, UserIcon } from "@/components/icons"
 
 export type AgentStatus = "active" | "idle" | "error"
 
@@ -18,132 +17,73 @@ export interface AgentInfo {
   updatedAt?: string
 }
 
-const ACCENT = "#c4f82a"
+// Thème clair, dense, lisible. Un accent indigo, statuts sémantiques.
+const DOT: Record<AgentStatus, string> = {
+  active: "bg-[#059669]",
+  error: "bg-[#dc2626]",
+  idle: "bg-[#c2c6cf]",
+}
+const STATUS_LABEL: Record<AgentStatus, string> = {
+  active: "actif",
+  error: "erreur",
+  idle: "en veille",
+}
 
 export function AgentCommandGrid({ agents }: { agents: AgentInfo[] }) {
-  const [selectedAgent, setSelectedAgent] = useState<AgentInfo | null>(null)
-
-  const statusDot = (s: AgentStatus) => {
-    switch (s) {
-      case "active":
-        return "bg-[#c4f82a] shadow-[0_0_8px_#c4f82a]"
-      case "error":
-        return "bg-rose-500 shadow-[0_0_8px_#f43f5e]"
-      default:
-        return "bg-zinc-600"
-    }
-  }
-
-  const statusBadgeClass = (s: AgentStatus) => {
-    switch (s) {
-      case "active":
-        return "bg-[#c4f82a]/10 text-[#c4f82a] border-[#c4f82a]/30"
-      case "error":
-        return "bg-rose-500/10 text-rose-400 border-rose-500/30"
-      default:
-        return "bg-zinc-800/50 text-zinc-400 border-zinc-700/40"
-    }
-  }
+  const [selected, setSelected] = useState<AgentInfo | null>(null)
+  const active = agents.filter((a) => a.status === "active").length
 
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <SparklesIcon className="w-4 h-4 text-[#c4f82a]" />
-          <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400 font-bold">
-            Escouade IA · 10 Agents Spécialisés
-          </h2>
-        </div>
-        <span className="text-[11px] font-mono text-zinc-500">
-          {agents.filter((a) => a.status === "active").length}/10 actifs · Orchestration VPS OVH
-        </span>
+    <div className="rounded-xl border border-[#e6e7eb] bg-white p-5">
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[11px] font-medium uppercase tracking-wider text-[#8a909c]">Équipe IA · 10 agents</span>
+        <span className="text-[11px] font-medium text-[#5b616e] tabular-nums">{active}/10 actifs aujourd&apos;hui</span>
       </div>
 
-      {/* Grid of 10 Agents */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2.5">
-        {agents.map((agent) => {
-          const initials = agent.name
-            .split(" ")
-            .map((p) => p[0])
-            .join("")
-            .slice(0, 2)
-
-          const isSelected = selectedAgent?.id === agent.id
-
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2.5">
+        {agents.map((a) => {
+          const initials = a.name.split(" ").map((p) => p[0]).join("").slice(0, 2)
+          const isSel = selected?.id === a.id
           return (
-            <div
-              key={agent.name}
-              onClick={() => setSelectedAgent(isSelected ? null : agent)}
-              className={`group relative rounded-2xl border p-3.5 transition-all duration-300 cursor-pointer overflow-hidden backdrop-blur-md ${
-                isSelected
-                  ? "border-[#c4f82a]/50 bg-[#19191d]/90 shadow-[0_0_20px_rgba(196,248,42,0.15)]"
-                  : "border-white/[0.1] bg-[#121214]/70 hover:border-white/30 hover:bg-[#161619]/85 shadow-lg shadow-black/40"
-              }`}
+            <button
+              key={a.id}
+              type="button"
+              onClick={() => setSelected(isSel ? null : a)}
+              className={`text-left rounded-lg border p-3 transition-colors ${isSel ? "border-[#4f46e5] bg-[#f7f7ff]" : "border-[#e6e7eb] bg-white hover:border-[#c9ccd4] hover:bg-[#fafbfc]"}`}
             >
-              {/* Top Row: Avatar + Status */}
-              <div className="flex items-start justify-between gap-2">
-                <div className="relative w-8 h-8 rounded-xl bg-white/[0.04] border border-white/10 flex items-center justify-center text-xs font-bold text-zinc-200 group-hover:scale-105 transition-transform">
+              <div className="flex items-center gap-2">
+                <div className="relative w-8 h-8 rounded-lg bg-[#f0f1f4] grid place-items-center text-[11px] font-semibold text-[#3a3f4a] shrink-0">
                   {initials}
-                  <span
-                    className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-[#121214] ${statusDot(
-                      agent.status
-                    )}`}
-                  />
+                  <span className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 border-white ${DOT[a.status]}`} title={STATUS_LABEL[a.status]} />
                 </div>
-                <span
-                  className={`text-[9px] font-mono font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md border ${statusBadgeClass(
-                    agent.status
-                  )}`}
-                >
-                  {agent.status}
-                </span>
-              </div>
-
-              {/* Identity */}
-              <div className="mt-2.5">
-                <div className="text-xs font-bold text-white truncate group-hover:text-[#c4f82a] transition-colors">
-                  {agent.name}
-                </div>
-                <div className="text-[10px] font-mono text-zinc-400 truncate">
-                  {agent.role}
+                <div className="min-w-0">
+                  <div className="text-[13px] font-semibold text-[#17171a] truncate">{a.name}</div>
+                  <div className="text-[11px] text-[#8a909c] truncate">{a.role}</div>
                 </div>
               </div>
-
-              {/* Metric output */}
-              <div className="mt-3 pt-2.5 border-t border-white/[0.06] flex items-baseline justify-between">
-                <span className="text-[10px] font-mono text-zinc-500">{agent.valueLabel}</span>
-                <span className="text-base font-bold font-mono tabular-nums text-white group-hover:text-[#c4f82a] transition-colors">
-                  {agent.value}
-                </span>
+              <div className="mt-2.5 pt-2 border-t border-[#eceef2] flex items-baseline justify-between">
+                <span className="text-[10px] text-[#8a909c] truncate">{a.valueLabel}</span>
+                <span className="text-base font-bold tabular-nums text-[#17171a]">{a.value}</span>
               </div>
-            </div>
+            </button>
           )
         })}
       </div>
 
-      {/* Expanded Detail Panel if Selected */}
-      {selectedAgent && (
-        <div className="rounded-2xl border border-[#c4f82a]/30 bg-[#16161a] p-4 text-xs space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
-          <div className="flex items-center justify-between border-b border-white/10 pb-2">
-            <div className="flex items-center gap-2">
-              <span className="font-bold text-white text-sm">{selectedAgent.name}</span>
-              <span className="text-zinc-400">({selectedAgent.persona})</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-zinc-300 border border-white/10">
-                {selectedAgent.role}
-              </span>
+      {selected && (
+        <div className="mt-3 rounded-lg border border-[#4f46e5]/30 bg-[#f7f7ff] p-4 text-sm">
+          <div className="flex items-center justify-between gap-2 border-b border-[#e6e7eb] pb-2 mb-2">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="font-semibold text-[#17171a]">{selected.name}</span>
+              <span className="text-[#5b616e] text-[13px] truncate">· {selected.persona}</span>
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded bg-white text-[#5b616e] border border-[#e6e7eb]">{STATUS_LABEL[selected.status]}</span>
             </div>
-            <button
-              onClick={() => setSelectedAgent(null)}
-              className="text-zinc-400 hover:text-white text-xs px-2 py-1"
-            >
-              ✕ Fermer
-            </button>
+            <button onClick={() => setSelected(null)} className="text-[#8a909c] hover:text-[#17171a] text-xs px-2 py-1 shrink-0">✕</button>
           </div>
-          <p className="text-zinc-300">{selectedAgent.description}</p>
-          {selectedAgent.lastLog && (
-            <div className="mt-2 pt-2 border-t border-white/5 font-mono text-[11px] text-zinc-400 bg-black/40 p-2 rounded-lg">
-              <span className="text-[#c4f82a] font-bold">Dernier journal : </span>
-              {selectedAgent.lastLog}
+          <p className="text-[#3a3f4a] leading-relaxed">{selected.description}</p>
+          {selected.lastLog && (
+            <div className="mt-2.5 text-[12px] text-[#5b616e] bg-white border border-[#e6e7eb] rounded-lg p-2.5">
+              <span className="text-[#4f46e5] font-semibold">Dernière action : </span>{selected.lastLog.replace(/^\[[^\]]+\]\s*/, "")}
             </div>
           )}
         </div>

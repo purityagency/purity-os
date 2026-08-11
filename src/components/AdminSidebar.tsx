@@ -14,7 +14,6 @@ import {
   DocumentsIcon,
   EcosystemIcon,
   AcquisitionIcon,
-  BrandIcon,
   FinanceIcon,
   SettingsIcon,
   SparklesIcon,
