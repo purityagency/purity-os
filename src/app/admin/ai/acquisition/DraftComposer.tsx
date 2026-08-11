@@ -99,57 +99,57 @@ export function DraftComposer({ draft }: { draft: Draft }) {
   const hasContactEmail = !!draft.lead.contactEmail
 
   return (
-    <div className="relative border border-white/10 rounded-xl bg-white/[0.02] overflow-hidden transition-colors hover:border-white/20 mb-6">
+    <div className="relative border border-[#2a2b30] rounded-xl bg-[#212226] overflow-hidden transition-colors hover:border-[#3a3b42] mb-6">
       {/* Grid Principal */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-white/10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-[#242529]">
         
         {/* Colonne Gauche : Détails du Prospect (1/3) */}
-        <div className="p-5 lg:p-6 bg-black/10">
+        <div className="p-5 lg:p-6 bg-[#212226]">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-[10px] uppercase tracking-wider text-white/40 font-mono">Fiche Prospect</span>
-            <div className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-[#c4f82a]/10 text-[#c4f82a] border border-[#c4f82a]/25">
+            <span className="text-[10px] uppercase tracking-wider text-[#737884] font-mono">Fiche Prospect</span>
+            <div className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-indigo-500/15 text-[#6366f1] border border-indigo-500/30">
               Score: {draft.lead.score || "N/A"}
             </div>
           </div>
 
-          <h3 className="text-base font-bold text-white mb-1">{draft.lead.companyName}</h3>
+          <h3 className="text-base font-bold text-[#e8eaed] mb-1">{draft.lead.companyName}</h3>
           
           {draft.lead.websiteUrl && (
             <a 
               href={draft.lead.websiteUrl} 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="text-xs text-[#c4f82a] hover:underline inline-flex items-center gap-1 mb-4"
+              className="text-xs text-[#6366f1] hover:underline inline-flex items-center gap-1 mb-4"
             >
               🌐 {draft.lead.websiteUrl.replace(/^https?:\/\/(www\.)?/, '')}
             </a>
           )}
 
-          <div className="space-y-3.5 text-xs text-white/70 border-t border-white/5 pt-4">
+          <div className="space-y-3.5 text-xs text-[#a3a9b4] border-t border-[#2a2b30] pt-4">
             <div>
-              <span className="text-white/40 block mb-0.5">Contact</span>
-              <span className="font-medium text-white">{draft.lead.contactName || "Inconnu"}</span>
-              {draft.lead.contactRole && <span className="text-white/40 font-mono text-[10px] ml-1.5">({draft.lead.contactRole})</span>}
+              <span className="text-[#737884] block mb-0.5">Contact</span>
+              <span className="font-medium text-[#e8eaed]">{draft.lead.contactName || "Inconnu"}</span>
+              {draft.lead.contactRole && <span className="text-[#737884] font-mono text-[10px] ml-1.5">({draft.lead.contactRole})</span>}
             </div>
 
             <div>
-              <span className="text-white/40 block mb-0.5">E-mail de destination</span>
-              <span className="font-mono text-white/90 break-all">{draft.lead.contactEmail || "Aucun e-mail trouvé"}</span>
+              <span className="text-[#737884] block mb-0.5">E-mail de destination</span>
+              <span className="font-mono text-[#cbd0d8] break-all">{draft.lead.contactEmail || "Aucun e-mail trouvé"}</span>
             </div>
 
             {draft.lead.location && (
               <div>
-                <span className="text-white/40 block mb-0.5">Localisation</span>
-                <span className="text-white/90">📍 {draft.lead.location}</span>
+                <span className="text-[#737884] block mb-0.5">Localisation</span>
+                <span className="text-[#cbd0d8]">📍 {draft.lead.location}</span>
               </div>
             )}
 
             {painPoints.length > 0 && (
               <div>
-                <span className="text-white/40 block mb-1">Faiblesses détectées</span>
+                <span className="text-[#737884] block mb-1">Faiblesses détectées</span>
                 <div className="flex flex-wrap gap-1">
                   {painPoints.map((p: string, idx: number) => (
-                    <span key={idx} className="px-2 py-0.5 rounded bg-red-500/5 border border-red-500/10 text-red-400 text-[10px]">
+                    <span key={idx} className="px-2 py-0.5 rounded bg-red-500/15 border border-red-500/30 text-red-400 text-[10px]">
                       {p}
                     </span>
                   ))}
@@ -159,10 +159,10 @@ export function DraftComposer({ draft }: { draft: Draft }) {
 
             {recommendedModules.length > 0 && (
               <div>
-                <span className="text-white/40 block mb-1">Modules recommandés</span>
+                <span className="text-[#737884] block mb-1">Modules recommandés</span>
                 <div className="flex flex-wrap gap-1">
                   {recommendedModules.map((m: string, idx: number) => (
-                    <span key={idx} className="px-2 py-0.5 rounded bg-[#c4f82a]/10 border border-[#c4f82a]/20 text-[#c4f82a] text-[10px]">
+                    <span key={idx} className="px-2 py-0.5 rounded bg-indigo-500/15 border border-indigo-500/30 text-[#6366f1] text-[10px]">
                       {m}
                     </span>
                   ))}
@@ -176,16 +176,16 @@ export function DraftComposer({ draft }: { draft: Draft }) {
         <div className="lg:col-span-2 p-5 lg:p-6 flex flex-col justify-between">
           <div>
             {/* Barre de contrôle du Tone et de l'état */}
-            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-bottom border-white/5">
-              <span className="text-[10px] uppercase tracking-wider text-white/40 font-mono">Brouillon IA</span>
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-bottom border-[#2a2b30]">
+              <span className="text-[10px] uppercase tracking-wider text-[#737884] font-mono">Brouillon IA</span>
               
               <div className="flex items-center gap-2">
-                <span className="text-[11px] text-white/60">Ton :</span>
+                <span className="text-[11px] text-[#737884]">Ton :</span>
                 <select
                   value={tone}
                   onChange={(e) => setTone(e.target.value)}
                   disabled={isPending || isSaving || isSending || isRejecting}
-                  className="bg-black/40 border border-white/10 rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-[#c4f82a] transition-all cursor-pointer"
+                  className="bg-[#1a1b1e] border border-[#2a2b30] rounded px-2.5 py-1 text-xs text-[#e8eaed] focus:outline-none focus:border-[#6366f1] transition-all cursor-pointer"
                 >
                   <option value="Manon Verhoeven — Audit & Accroche Sur-Mesure">Manon Verhoeven — Sur-Mesure</option>
                   <option value="Direct & Cash">Direct & cash</option>
@@ -196,11 +196,11 @@ export function DraftComposer({ draft }: { draft: Draft }) {
                 <button
                   onClick={handleRegenerate}
                   disabled={isPending || isSaving || isSending || isRejecting}
-                  className="px-3 py-1 bg-white/5 hover:bg-white/10 border border-white/10 rounded text-xs font-semibold text-white transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5"
+                  className="px-3 py-1 bg-[#212226] hover:bg-[#e8eaef] border border-[#2a2b30] rounded text-xs font-semibold text-[#e8eaed] transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer flex items-center gap-1.5"
                 >
                   {isPending ? (
                     <>
-                      <span className="w-2.5 h-2.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      <span className="w-2.5 h-2.5 border-2 border-[#3a3b42] border-t-white rounded-full animate-spin" />
                       <span>Régénération...</span>
                     </>
                   ) : (
@@ -215,34 +215,34 @@ export function DraftComposer({ draft }: { draft: Draft }) {
               {isEditing ? (
                 <div className="space-y-3">
                   <div>
-                    <label className="text-[10px] uppercase font-mono text-white/40 block mb-1">Sujet</label>
+                    <label className="text-[10px] uppercase font-mono text-[#737884] block mb-1">Sujet</label>
                     <input
                       type="text"
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c4f82a] transition-all"
+                      className="w-full bg-[#1a1b1e] border border-[#2a2b30] rounded-lg px-3 py-2 text-xs text-[#e8eaed] focus:outline-none focus:border-[#6366f1] transition-all"
                     />
                   </div>
                   <div>
-                    <label className="text-[10px] uppercase font-mono text-white/40 block mb-1">Corps (HTML)</label>
+                    <label className="text-[10px] uppercase font-mono text-[#737884] block mb-1">Corps (HTML)</label>
                     <textarea
                       value={bodyHtml}
                       onChange={(e) => setBodyHtml(e.target.value)}
                       rows={8}
-                      className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#c4f82a] transition-all resize-y"
+                      className="w-full bg-[#1a1b1e] border border-[#2a2b30] rounded-lg px-3 py-2 text-xs text-[#e8eaed] font-mono focus:outline-none focus:border-[#6366f1] transition-all resize-y"
                     />
                   </div>
                 </div>
               ) : (
-                <div className="rounded-lg bg-black/20 border border-white/5 p-4 space-y-3">
+                <div className="rounded-lg bg-[#212226] border border-[#2a2b30] p-4 space-y-3">
                   <div>
-                    <span className="text-white/40 text-[10px] font-mono block">Objet :</span>
-                    <span className="text-xs font-semibold text-white">{subject}</span>
+                    <span className="text-[#737884] text-[10px] font-mono block">Objet :</span>
+                    <span className="text-xs font-semibold text-[#e8eaed]">{subject}</span>
                   </div>
-                  <div className="border-t border-white/5 pt-3">
-                    <span className="text-white/40 text-[10px] font-mono block mb-1.5">Corps du message :</span>
+                  <div className="border-t border-[#2a2b30] pt-3">
+                    <span className="text-[#737884] text-[10px] font-mono block mb-1.5">Corps du message :</span>
                     <div 
-                      className="text-xs text-white/80 space-y-2 prose prose-invert max-w-none"
+                      className="text-xs text-[#cbd0d8] space-y-2 prose prose-invert max-w-none"
                       dangerouslySetInnerHTML={{ __html: sanitizeEmailHtml(bodyHtml) }}
                     />
                   </div>
@@ -252,28 +252,28 @@ export function DraftComposer({ draft }: { draft: Draft }) {
 
             {/* Simulated Drafts (LinkedIn & Ads) */}
             {(draft.lead.auditData?.linkedinDraft || draft.lead.auditData?.adsBrief) && (
-              <div className="mt-6 pt-4 border-t border-white/5 space-y-4">
-                <span className="text-[10px] uppercase tracking-wider text-white/40 font-mono block">Autres canaux (LinkedIn / Ads)</span>
+              <div className="mt-6 pt-4 border-t border-[#2a2b30] space-y-4">
+                <span className="text-[10px] uppercase tracking-wider text-[#737884] font-mono block">Autres canaux (LinkedIn / Ads)</span>
                 
                 {draft.lead.auditData.linkedinDraft && (
                   <div className="rounded-lg bg-[#0A66C2]/10 border border-[#0A66C2]/20 p-4 space-y-2">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-[10px] font-mono text-[#0A66C2] bg-[#0A66C2]/20 px-2 py-0.5 rounded">LinkedIn</span>
-                      <span className="text-[10px] text-white/40">Signal: {draft.lead.auditData.linkedinDraft.signalUsed}</span>
+                      <span className="text-[10px] text-[#737884]">Signal: {draft.lead.auditData.linkedinDraft.signalUsed}</span>
                     </div>
-                    <p className="text-xs text-white/80 font-mono whitespace-pre-wrap">{draft.lead.auditData.linkedinDraft.message}</p>
+                    <p className="text-xs text-[#cbd0d8] font-mono whitespace-pre-wrap">{draft.lead.auditData.linkedinDraft.message}</p>
                   </div>
                 )}
 
                 {draft.lead.auditData.adsBrief && (
                   <div className="rounded-lg bg-pink-500/10 border border-pink-500/20 p-4 space-y-2">
                     <div className="flex items-center gap-2 mb-2">
-                      <span className="text-[10px] font-mono text-pink-400 bg-pink-500/20 px-2 py-0.5 rounded">Ads Brief</span>
-                      <span className="text-[10px] text-white/40">Ciblage: {draft.lead.auditData.adsBrief.targetingNotes}</span>
+                      <span className="text-[10px] font-mono text-pink-300 bg-pink-500/15 px-2 py-0.5 rounded">Ads Brief</span>
+                      <span className="text-[10px] text-[#737884]">Ciblage: {draft.lead.auditData.adsBrief.targetingNotes}</span>
                     </div>
                     <div>
-                      <p className="text-xs font-bold text-white mb-1">{draft.lead.auditData.adsBrief.headline}</p>
-                      <p className="text-xs text-white/80">{draft.lead.auditData.adsBrief.primaryText}</p>
+                      <p className="text-xs font-bold text-[#e8eaed] mb-1">{draft.lead.auditData.adsBrief.headline}</p>
+                      <p className="text-xs text-[#cbd0d8]">{draft.lead.auditData.adsBrief.primaryText}</p>
                     </div>
                   </div>
                 )}
@@ -282,14 +282,14 @@ export function DraftComposer({ draft }: { draft: Draft }) {
           </div>
 
           {/* Boutons d'Action (Modifier, Sauvegarder, Annuler, Rejeter, Envoyer) */}
-          <div className="mt-5 pt-4 border-t border-white/5 flex flex-wrap items-center justify-between gap-3">
+          <div className="mt-5 pt-4 border-t border-[#2a2b30] flex flex-wrap items-center justify-between gap-3">
             <div>
               {isEditing ? (
                 <div className="flex items-center gap-2">
                   <button
                     onClick={handleSave}
                     disabled={isSaving}
-                    className="px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-lg transition-all cursor-pointer"
+                    className="px-4 py-2 bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/20 text-emerald-400 text-xs font-semibold rounded-lg transition-all cursor-pointer"
                   >
                     {isSaving ? "Sauvegarde..." : "Sauvegarder"}
                   </button>
@@ -299,7 +299,7 @@ export function DraftComposer({ draft }: { draft: Draft }) {
                       setBodyHtml(draft.bodyHtml)
                       setIsEditing(false)
                     }}
-                    className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 text-xs font-semibold rounded-lg transition-all cursor-pointer"
+                    className="px-4 py-2 bg-[#212226] hover:bg-[#e8eaef] border border-[#2a2b30] text-[#cbd0d8] text-xs font-semibold rounded-lg transition-all cursor-pointer"
                   >
                     Annuler
                   </button>
@@ -308,7 +308,7 @@ export function DraftComposer({ draft }: { draft: Draft }) {
                 <button
                   onClick={() => setIsEditing(true)}
                   disabled={isPending || isSaving || isSending || isRejecting}
-                  className="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 text-white text-xs font-semibold rounded-lg transition-all cursor-pointer"
+                  className="px-4 py-2 bg-[#212226] hover:bg-[#e8eaef] border border-[#2a2b30] text-[#e8eaed] text-xs font-semibold rounded-lg transition-all cursor-pointer"
                 >
                   📝 Modifier
                 </button>
@@ -320,7 +320,7 @@ export function DraftComposer({ draft }: { draft: Draft }) {
               <button
                 onClick={handleReject}
                 disabled={isPending || isSaving || isSending || isRejecting}
-                className="px-4 py-2 text-xs font-semibold rounded-lg border border-red-500/20 hover:border-red-500/40 hover:bg-red-500/5 text-red-400 transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                className="px-4 py-2 text-xs font-semibold rounded-lg border border-red-500/30 hover:border-red-500/40 hover:bg-red-500/15 text-red-400 transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
               >
                 {isRejecting ? "Rejet..." : "Rejeter"}
               </button>
@@ -328,11 +328,11 @@ export function DraftComposer({ draft }: { draft: Draft }) {
               <button
                 onClick={handleSend}
                 disabled={!hasContactEmail || isPending || isSaving || isSending || isRejecting}
-                className="px-5 py-2 text-xs font-semibold rounded-lg bg-[#c4f82a] hover:brightness-95 text-black transition flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                className="px-5 py-2 text-xs font-semibold rounded-lg bg-[#6366f1] hover:bg-[#5b52e8] text-white transition flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
               >
                 {isSending ? (
                   <>
-                    <span className="w-3.5 h-3.5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                    <span className="w-3.5 h-3.5 border-2 border-[#3a3b42] border-t-white rounded-full animate-spin" />
                     <span>Envoi...</span>
                   </>
                 ) : (

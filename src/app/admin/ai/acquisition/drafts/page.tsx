@@ -48,10 +48,10 @@ export default async function AcquisitionDraftsPage() {
       {/* Main Content */}
       <div className="flex-1 overflow-y-auto pr-2 space-y-4">
         {draftsCount === 0 ? (
-          <div className="p-12 text-center border border-dashed border-white/10 rounded-xl bg-white/[0.01] flex flex-col items-center">
-            <MailIcon className="w-8 h-8 text-zinc-600 mb-3" />
-            <p className="text-sm font-semibold text-zinc-300">Aucun brouillon en attente de validation.</p>
-            <p className="text-xs text-zinc-500 mt-1">Les nouveaux brouillons apparaîtront ici après l&apos;enrichissement de l&apos;équipe.</p>
+          <div className="p-12 text-center border border-dashed border-[#2a2b30] rounded-xl bg-[#212226] flex flex-col items-center">
+            <MailIcon className="w-8 h-8 text-[#737884] mb-3" />
+            <p className="text-sm font-semibold text-[#cbd0d8]">Aucun brouillon en attente de validation.</p>
+            <p className="text-xs text-[#737884] mt-1">Les nouveaux brouillons apparaîtront ici après l&apos;enrichissement de l&apos;équipe.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">

@@ -1,10 +1,10 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
 import { cleanBelgianPhone } from "@/lib/acquisition/phone"
-import { StatusBadge } from "@/components/StatusBadge"
 import { leadStatusLabel } from "@/lib/leadStatus"
 import { CallSheetButton } from "@/app/admin/ai/acquisition/crm/[id]/CallSheetButton"
 import { PageHeader } from "@/components/acquisition/PageHeader"
+import { scoreTone, scoreBar } from "@/components/acquisition/theme"
 
 export const dynamic = "force-dynamic"
 
@@ -19,26 +19,64 @@ interface Row {
   phoneDial: string
 }
 
-function scoreColor(s: number | null) {
-  if (s === null) return "text-zinc-600"
-  return s >= 70 ? "text-emerald-400" : s >= 40 ? "text-amber-400" : "text-zinc-400"
-}
-
+// Une ligne d'appel : dense (~44px), hiérarchie par la typo, couleur réservée
+// au score. Le téléphone est un lien mono discret ; l'action « Fiche » n'apparaît
+// qu'au survol pour garder la ligne calme (réf. Linear / Attio).
 function CallRow({ r }: { r: Row }) {
   return (
-    <div className="grid grid-cols-[2.5rem_1fr_auto] sm:grid-cols-[2.5rem_minmax(0,1fr)_auto_auto] gap-3 items-center px-3 py-2.5 rounded-xl border border-white/[0.06] bg-[#141416] hover:border-white/[0.14] transition-colors">
-      <div className={`text-lg font-bold font-mono tabular-nums text-center ${scoreColor(r.score)}`}>{r.score ?? "—"}</div>
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <p className="font-semibold text-white truncate text-sm">{r.companyName}</p>
-          {!r.hasEmail && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 shrink-0">seul canal</span>}
-        </div>
-        <p className="text-[11px] text-[#7a7a72] truncate mt-0.5">{r.location ?? "?"} · {leadStatusLabel(r.status)}</p>
+    <div className="grid grid-cols-[3.25rem_minmax(0,1fr)_auto] gap-4 items-center px-5 h-[58px] border-b border-[#242529] last:border-0 hover:bg-[#212226] transition-colors group">
+      {/* Score + barre fine */}
+      <div className="flex flex-col gap-1.5">
+        <span className={`text-lg font-bold font-mono tabular-nums leading-none ${scoreTone(r.score)}`}>{r.score ?? "—"}</span>
+        <span className="h-[3px] w-9 rounded-full bg-[#242529] overflow-hidden">
+          <span className={`block h-full rounded-full ${scoreBar(r.score)}`} style={{ width: `${Math.min(100, r.score ?? 0)}%` }} />
+        </span>
       </div>
-      <CallSheetButton leadId={r.id} label="Fiche →" className="hidden sm:inline-flex text-[11px] font-mono px-2.5 py-2 rounded-lg border border-[#c4f82a]/30 bg-[#c4f82a]/10 text-[#c4f82a] hover:bg-[#c4f82a]/18 transition-colors whitespace-nowrap cursor-pointer" />
-      <a href={`tel:${r.phoneDial}`} className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors whitespace-nowrap shrink-0">
-        <span aria-hidden>📞</span><span className="font-mono">{r.phoneDisplay}</span>
-      </a>
+
+      {/* Entreprise + méta inline */}
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-[15px] font-semibold text-[#e8eaed] truncate">{r.companyName}</span>
+          {!r.hasEmail && (
+            <span className="shrink-0 text-[11px] font-medium px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-300">seul canal</span>
+          )}
+        </div>
+        <span className="block text-[13px] text-[#a3a9b4] truncate leading-tight mt-0.5">
+          {r.location ?? "?"} · {leadStatusLabel(r.status)}
+        </span>
+      </div>
+
+      {/* Cluster droit : Fiche (au survol) + téléphone (toujours) */}
+      <div className="flex items-center gap-4 shrink-0">
+        <CallSheetButton
+          leadId={r.id}
+          label="Fiche"
+          className="hidden sm:inline-flex text-[13px] font-medium px-3 py-1.5 rounded-md border border-[#2a2b30] bg-[#1a1b1e] text-[#a3a9b4] hover:text-[#e8eaed] hover:border-[#737884] transition-colors cursor-pointer opacity-0 group-hover:opacity-100 focus-within:opacity-100"
+        />
+        <a
+          href={`tel:${r.phoneDial}`}
+          className="inline-flex items-center gap-2 text-[15px] font-mono tabular-nums font-medium text-[#cbd0d8] group-hover:text-[#6366f1] whitespace-nowrap transition-colors"
+        >
+          <svg viewBox="0 0 16 16" className="w-4 h-4 text-[#737884] group-hover:text-[#6366f1] transition-colors" fill="currentColor"><path d="M3.6 2h2.2l1 2.6-1.4 1a8 8 0 0 0 3 3l1-1.4 2.6 1V13c0 .6-.5 1-1 1A11 11 0 0 1 2.6 3c0-.6.4-1 1-1z"/></svg>
+          {r.phoneDisplay}
+        </a>
+      </div>
+    </div>
+  )
+}
+
+function Section({ title, count, rows, muted }: { title: string; count: number; rows: Row[]; muted?: boolean }) {
+  return (
+    <div className="rounded-2xl border border-[#2a2b30] bg-[#1a1b1e] overflow-hidden shadow-[0_1px_3px_rgba(16,24,40,0.06),0_1px_2px_rgba(16,24,40,0.04)]">
+      <div className="flex items-center gap-2 px-5 h-11 bg-[#212226] border-b border-[#2a2b30]">
+        <h2 className={`text-[12px] font-bold uppercase tracking-wider ${muted ? "text-[#a3a9b4]" : "text-[#fbbf24]"}`}>{title}</h2>
+        <span className="text-[12px] font-mono tabular-nums text-[#737884]">{count}</span>
+      </div>
+      {rows.length === 0 ? (
+        <p className="text-xs text-[#737884] italic px-4 py-6 text-center">Aucun.</p>
+      ) : (
+        rows.map((r) => <CallRow key={r.id} r={r} />)
+      )}
     </div>
   )
 }
@@ -82,32 +120,15 @@ export default async function CallsPage() {
         count={{ value: rows.length, label: "à appeler", tone: "emerald" }}
       />
 
-      <div className="flex-1 overflow-y-auto pr-2 space-y-6 custom-scrollbar">
+      <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar">
         {rows.length === 0 ? (
-          <div className="p-12 text-center border border-dashed border-white/10 rounded-xl bg-white/[0.01]">
-            <p className="text-sm font-semibold text-zinc-300">Aucun lead avec un numéro valide pour l&apos;instant.</p>
+          <div className="p-12 text-center border border-dashed border-[#2a2b30] rounded-xl bg-[#212226]">
+            <p className="text-sm font-semibold text-[#cbd0d8]">Aucun lead avec un numéro valide pour l&apos;instant.</p>
           </div>
         ) : (
           <>
-            <section>
-              <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-amber-300 font-mono">Prioritaire — l&apos;appel est le seul canal</h2>
-                <span className="text-[10px] font-mono text-zinc-500">{phoneOnly.length}</span>
-              </div>
-              <div className="space-y-2">
-                {phoneOnly.length === 0 ? <p className="text-xs text-zinc-500 italic">Aucun.</p> : phoneOnly.map((r) => <CallRow key={r.id} r={r} />)}
-              </div>
-            </section>
-
-            <section>
-              <div className="flex items-center gap-2 mb-2">
-                <h2 className="text-xs font-bold uppercase tracking-wider text-zinc-300 font-mono">Aussi joignables par téléphone</h2>
-                <span className="text-[10px] font-mono text-zinc-500">{alsoEmail.length}</span>
-              </div>
-              <div className="space-y-2">
-                {alsoEmail.length === 0 ? <p className="text-xs text-zinc-500 italic">Aucun.</p> : alsoEmail.map((r) => <CallRow key={r.id} r={r} />)}
-              </div>
-            </section>
+            <Section title="Prioritaire — l'appel est le seul canal" count={phoneOnly.length} rows={phoneOnly} />
+            <Section title="Aussi joignables par téléphone" count={alsoEmail.length} rows={alsoEmail} muted />
           </>
         )}
       </div>

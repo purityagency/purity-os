@@ -21,10 +21,10 @@ interface AuditData {
 }
 
 function grade(score: number | null): { label: string; color: string } {
-  if (score === null) return { label: "N/A", color: "#9ca3af" }
-  if (score >= 90) return { label: "Excellent", color: "#059669" }
+  if (score === null) return { label: "N/A", color: "#737884" }
+  if (score >= 90) return { label: "Excellent", color: "#34d399" }
   if (score >= 50) return { label: "À améliorer", color: "#d97706" }
-  return { label: "Critique", color: "#dc2626" }
+  return { label: "Critique", color: "#f87171" }
 }
 
 function ScoreBlock({ label, score }: { label: string; score: number | null }) {
@@ -33,7 +33,7 @@ function ScoreBlock({ label, score }: { label: string; score: number | null }) {
     <div style={{ flex: 1, textAlign: "center", padding: "16px 8px", border: "1px solid #e5e7eb", borderRadius: 10 }}>
       <div style={{ fontSize: 34, fontWeight: 800, color: g.color, lineHeight: 1 }}>{score ?? "—"}</div>
       <div style={{ fontSize: 11, fontWeight: 700, color: g.color, marginTop: 4 }}>{g.label}</div>
-      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 0.5, color: "#6b7280", marginTop: 6 }}>{label}</div>
+      <div style={{ fontSize: 10, textTransform: "uppercase", letterSpacing: 0.5, color: "#a3a9b4", marginTop: 6 }}>{label}</div>
     </div>
   )
 }
@@ -82,22 +82,22 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
         @media print { .no-print { display: none !important; } @page { margin: 16mm; } }
         body { background: #f3f4f6; }
       `}</style>
-      <div style={{ maxWidth: 820, margin: "0 auto", padding: 40, background: "#ffffff", color: "#111827", fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif" }}>
+      <div style={{ maxWidth: 820, margin: "0 auto", padding: 40, background: "#1a1b1e", color: "#111827", fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif" }}>
         {/* En-tête brandé */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "3px solid #111827", paddingBottom: 16, marginBottom: 24 }}>
           <div>
             <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: -0.5 }}>PURITY<span style={{ color: "#7c3aed" }}>.</span>AGENCY</div>
-            <div style={{ fontSize: 12, color: "#6b7280", marginTop: 2 }}>Audit de présence digitale</div>
+            <div style={{ fontSize: 12, color: "#a3a9b4", marginTop: 2 }}>Audit de présence digitale</div>
           </div>
-          <div style={{ textAlign: "right", fontSize: 12, color: "#6b7280" }}>{dateStr}</div>
+          <div style={{ textAlign: "right", fontSize: 12, color: "#a3a9b4" }}>{dateStr}</div>
         </div>
 
         {/* Prospect */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 1, color: "#7c3aed", fontWeight: 700 }}>Préparé pour</div>
           <h1 style={{ fontSize: 28, fontWeight: 800, margin: "4px 0 2px" }}>{lead.companyName}</h1>
-          {lead.websiteUrl && <div style={{ fontSize: 13, color: "#6b7280" }}>{lead.websiteUrl.replace(/^https?:\/\/(www\.)?/, "")}{lead.location ? ` · ${lead.location}` : ""}</div>}
-          <p style={{ fontSize: 15, color: "#374151", marginTop: 12, maxWidth: 640, lineHeight: 1.5 }}>{kit.oneLiner}</p>
+          {lead.websiteUrl && <div style={{ fontSize: 13, color: "#a3a9b4" }}>{lead.websiteUrl.replace(/^https?:\/\/(www\.)?/, "")}{lead.location ? ` · ${lead.location}` : ""}</div>}
+          <p style={{ fontSize: 15, color: "#cbd0d8", marginTop: 12, maxWidth: 640, lineHeight: 1.5 }}>{kit.oneLiner}</p>
         </div>
 
         {/* Scores */}
@@ -108,7 +108,7 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
           <ScoreBlock label="Accessibilité" score={a11y} />
           <ScoreBlock label="Bonnes pratiques" score={bp} />
         </div>
-        <div style={{ fontSize: 10, color: "#9ca3af", marginBottom: 24 }}>
+        <div style={{ fontSize: 10, color: "#737884", marginBottom: 24 }}>
           Mesures Google Lighthouse (0-100){psi ? `, testé le ${new Date(psi.fetchedAt).toLocaleDateString("fr-BE")} sur mobile` : ""}.
         </div>
 
@@ -120,8 +120,8 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
               <tbody>
                 {psi.coreWebVitals.map((m) => (
                   <tr key={m.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                    <td style={{ padding: "8px 0", color: "#374151" }}>{m.title}</td>
-                    <td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: (m.score ?? 1) >= 0.9 ? "#059669" : (m.score ?? 0) >= 0.5 ? "#d97706" : "#dc2626" }}>{m.displayValue}</td>
+                    <td style={{ padding: "8px 0", color: "#cbd0d8" }}>{m.title}</td>
+                    <td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: (m.score ?? 1) >= 0.9 ? "#34d399" : (m.score ?? 0) >= 0.5 ? "#d97706" : "#f87171" }}>{m.displayValue}</td>
                   </tr>
                 ))}
               </tbody>
@@ -136,7 +136,7 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
             <div style={{ display: "grid", gap: 10 }}>
               {kit.findings.map((f, i) => (
                 <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                  <span style={{ color: f.severity === "critique" ? "#dc2626" : "#d97706", fontWeight: 800, fontSize: 16 }}>›</span>
+                  <span style={{ color: f.severity === "critique" ? "#f87171" : "#d97706", fontWeight: 800, fontSize: 16 }}>›</span>
                   <div>
                     <div style={{ fontSize: 15, fontWeight: 700, color: "#111827" }}>{f.title}</div>
                     {f.detail && <div style={{ fontSize: 14, color: "#4b5563", marginTop: 2 }}>{f.detail}</div>}
@@ -155,7 +155,7 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
               <tbody>
                 {psi.opportunities.map((m) => (
                   <tr key={m.id} style={{ borderBottom: "1px solid #f3f4f6" }}>
-                    <td style={{ padding: "8px 0", color: "#374151" }}>{m.title}</td>
+                    <td style={{ padding: "8px 0", color: "#cbd0d8" }}>{m.title}</td>
                     <td style={{ padding: "8px 0", textAlign: "right", fontWeight: 700, color: "#7c3aed" }}>{m.displayValue}</td>
                   </tr>
                 ))}
@@ -178,7 +178,7 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
         </div>
 
         {/* CTA */}
-        <div style={{ background: "#111827", color: "#ffffff", borderRadius: 12, padding: 24, marginTop: 8 }}>
+        <div style={{ background: "#111827", color: "#1a1b1e", borderRadius: 12, padding: 24, marginTop: 8 }}>
           <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>On corrige tout ça pour vous.</div>
           <div style={{ fontSize: 13, color: "#d1d5db", lineHeight: 1.6 }}>
             Purity Agency conçoit et déploie des sites rapides, bien référencés et pensés pour convertir.
@@ -187,7 +187,7 @@ export default async function AuditReportPage({ params }: { params: Promise<{ id
           <div style={{ fontSize: 13, marginTop: 12, color: "#a78bfa", fontWeight: 700 }}>purity-agency.be</div>
         </div>
 
-        <div style={{ fontSize: 10, color: "#9ca3af", marginTop: 20, textAlign: "center" }}>
+        <div style={{ fontSize: 10, color: "#737884", marginTop: 20, textAlign: "center" }}>
           Audit réalisé par Purity Agency à partir de données publiques (Google Lighthouse). Document sans engagement.
         </div>
       </div>

@@ -22,7 +22,7 @@ export function DraftActions({ draftId, hasContactEmail }: { draftId: string; ha
           <button
             type="submit"
             disabled={rejectPending || approvePending || rejectState?.ok || approveState?.ok}
-            className="px-4 py-2 text-xs font-semibold rounded-lg border border-red-500/20 hover:border-red-500/40 hover:bg-red-500/5 text-red-400 transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            className="px-4 py-2 text-xs font-semibold rounded-lg border border-red-500/30 hover:border-red-500/40 hover:bg-red-500/15 text-red-400 transition-all disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
             {rejectPending ? "Rejet..." : "Rejeter"}
           </button>
@@ -31,7 +31,7 @@ export function DraftActions({ draftId, hasContactEmail }: { draftId: string; ha
           <button
             type="submit"
             disabled={!hasContactEmail || approvePending || rejectPending || approveState?.ok || rejectState?.ok}
-            className="px-5 py-2 text-xs font-semibold rounded-lg bg-[#c4f82a] hover:brightness-95 text-black transition flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            className="px-5 py-2 text-xs font-semibold rounded-lg bg-[#6366f1] hover:bg-[#5b52e8] text-white transition flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
             {approvePending ? (
               "Envoi..."

@@ -80,7 +80,7 @@ export default async function CallPrepPage({ params }: { params: Promise<{ id: s
             {phone ? (
               <a href={`tel:${phone.replace(/\s/g, "")}`} style={{ fontSize: 20, fontWeight: 800, color: "#fff", textDecoration: "none" }}>📞 {phone}</a>
             ) : <div style={{ fontSize: 13, color: "#f59e0b" }}>Pas de numéro connu</div>}
-            <div style={{ fontSize: 11, color: "#9ca3af", marginTop: 6 }}>
+            <div style={{ fontSize: 11, color: "#737884", marginTop: 6 }}>
               Perf {kit.scores.performance ?? "—"} · SEO {kit.scores.seo ?? "—"}
             </div>
           </div>
@@ -94,19 +94,19 @@ export default async function CallPrepPage({ params }: { params: Promise<{ id: s
 
         <Section title="1 · Ouverture">
           <p style={{ margin: "0 0 8px", fontSize: 15 }}>{s.greeting}</p>
-          <p style={{ margin: 0, fontSize: 15, color: "#374151" }}>{s.permission}</p>
+          <p style={{ margin: 0, fontSize: 15, color: "#cbd0d8" }}>{s.permission}</p>
         </Section>
 
         <Section title="2 · Découverte (fais parler, écoute)">
           <ul style={{ margin: 0, paddingLeft: 18 }}>
-            {s.discovery.map((q, i) => <li key={i} style={{ fontSize: 15, marginBottom: 6, color: "#374151" }}>{q}</li>)}
+            {s.discovery.map((q, i) => <li key={i} style={{ fontSize: 15, marginBottom: 6, color: "#cbd0d8" }}>{q}</li>)}
           </ul>
         </Section>
 
         <Section title="3 · Pitch (court, orienté résultat)">
           <p style={{ margin: "0 0 8px", fontSize: 15 }}>{s.pitch}</p>
           <ul style={{ margin: 0, paddingLeft: 18 }}>
-            {s.bridgeToValue.map((v, i) => <li key={i} style={{ fontSize: 14, marginBottom: 5, color: "#374151" }}>{v}</li>)}
+            {s.bridgeToValue.map((v, i) => <li key={i} style={{ fontSize: 14, marginBottom: 5, color: "#cbd0d8" }}>{v}</li>)}
           </ul>
         </Section>
 
@@ -114,8 +114,8 @@ export default async function CallPrepPage({ params }: { params: Promise<{ id: s
           <div style={{ display: "grid", gap: 10 }}>
             {s.objections.map((o, i) => (
               <div key={i} style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 12 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#dc2626", marginBottom: 3 }}>{o.trigger}</div>
-                <div style={{ fontSize: 14, color: "#374151" }}>{o.response}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#f87171", marginBottom: 3 }}>{o.trigger}</div>
+                <div style={{ fontSize: 14, color: "#cbd0d8" }}>{o.response}</div>
               </div>
             ))}
           </div>
@@ -126,17 +126,17 @@ export default async function CallPrepPage({ params }: { params: Promise<{ id: s
         </Section>
 
         <Section title="Si messagerie vocale">
-          <p style={{ margin: 0, fontSize: 15, color: "#374151", fontStyle: "italic" }}>{s.voicemail}</p>
+          <p style={{ margin: 0, fontSize: 15, color: "#cbd0d8", fontStyle: "italic" }}>{s.voicemail}</p>
         </Section>
 
         <Section title="Notes de l'appel">
           <div style={{ borderBottom: "1px solid #e5e7eb", height: 26 }} />
           <div style={{ borderBottom: "1px solid #e5e7eb", height: 26 }} />
           <div style={{ borderBottom: "1px solid #e5e7eb", height: 26 }} />
-          <div style={{ marginTop: 10, fontSize: 13, color: "#6b7280" }}>Résultat : ☐ RDV pris ☐ Rappeler le ______ ☐ Envoyer mail ☐ Pas intéressé</div>
+          <div style={{ marginTop: 10, fontSize: 13, color: "#a3a9b4" }}>Résultat : ☐ RDV pris ☐ Rappeler le ______ ☐ Envoyer mail ☐ Pas intéressé</div>
         </Section>
 
-        <div style={{ fontSize: 10, color: "#9ca3af", textAlign: "center", marginTop: 20 }}>Document interne Purity Agency — préparé automatiquement à partir de l&apos;audit du prospect. Amir Kebiyeb · 0465 36 82 65</div>
+        <div style={{ fontSize: 10, color: "#737884", textAlign: "center", marginTop: 20 }}>Document interne Purity Agency — préparé automatiquement à partir de l&apos;audit du prospect. Amir Kebiyeb · 0465 36 82 65</div>
       </div>
     </>
   )

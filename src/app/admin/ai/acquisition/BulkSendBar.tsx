@@ -40,10 +40,10 @@ export function BulkSendBar({ scores }: { scores: number[] }) {
   }
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 flex flex-col sm:flex-row sm:items-center gap-3">
-      <div className="flex items-center gap-2 text-xs text-zinc-300">
+    <div className="rounded-xl border border-[#2a2b30] bg-[#212226] p-3 flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex items-center gap-2 text-xs text-[#cbd0d8]">
         <span className="font-semibold">Envoi groupé</span>
-        <span className="text-zinc-500">— seuil de score qualité minimum :</span>
+        <span className="text-[#737884]">— seuil de score qualité minimum :</span>
       </div>
 
       <div className="flex items-center gap-2">
@@ -54,20 +54,20 @@ export function BulkSendBar({ scores }: { scores: number[] }) {
           step={5}
           value={minScore}
           onChange={(e) => setMinScore(Number(e.target.value))}
-          className="w-32 accent-[#c4f82a]"
+          className="w-32 accent-[#6366f1]"
           aria-label="Score minimum"
         />
-        <span className="font-mono text-sm font-bold text-[#c4f82a] tabular-nums w-10 text-right">{minScore}</span>
+        <span className="font-mono text-sm font-bold text-[#6366f1] tabular-nums w-10 text-right">{minScore}</span>
       </div>
 
-      <span className="text-xs text-zinc-400">
-        <span className="font-bold text-white tabular-nums">{eligible}</span> éligible(s)
+      <span className="text-xs text-[#a3a9b4]">
+        <span className="font-bold text-[#e8eaed] tabular-nums">{eligible}</span> éligible(s)
       </span>
 
       <button
         onClick={run}
         disabled={pending || eligible === 0}
-        className="rounded-lg bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold px-4 py-2 transition-colors cursor-pointer"
+        className="rounded-lg bg-emerald-600 hover:bg-emerald-500/250 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold px-4 py-2 transition-colors cursor-pointer"
       >
         {pending ? "Envoi en cours…" : `Approuver & envoyer les ${eligible} ≥ ${minScore}`}
       </button>
@@ -75,7 +75,7 @@ export function BulkSendBar({ scores }: { scores: number[] }) {
       <button
         onClick={cleanup}
         disabled={pending}
-        className="rounded-lg border border-white/10 hover:bg-white/5 text-zinc-300 text-xs font-semibold px-3 py-2 transition-colors cursor-pointer disabled:opacity-40"
+        className="rounded-lg border border-[#2a2b30] hover:bg-[#212226] text-[#cbd0d8] text-xs font-semibold px-3 py-2 transition-colors cursor-pointer disabled:opacity-40"
         title="Rejeter les brouillons sans email ou désinscrits"
       >
         Nettoyer les injoignables
@@ -84,7 +84,7 @@ export function BulkSendBar({ scores }: { scores: number[] }) {
       <button
         onClick={rescore}
         disabled={pending}
-        className="rounded-lg border border-white/10 hover:bg-white/5 text-zinc-300 text-xs font-semibold px-3 py-2 transition-colors cursor-pointer disabled:opacity-40"
+        className="rounded-lg border border-[#2a2b30] hover:bg-[#212226] text-[#cbd0d8] text-xs font-semibold px-3 py-2 transition-colors cursor-pointer disabled:opacity-40"
         title="Recalculer le score de tous les leads avec le modèle actuel"
       >
         Re-scorer les leads

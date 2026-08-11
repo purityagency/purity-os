@@ -16,7 +16,7 @@ export function CopyButton({ text, label = "Copier" }: { text: string; label?: s
           /* clipboard indisponible */
         }
       }}
-      className="text-[11px] font-mono px-2.5 py-1 rounded-md border border-white/10 text-zinc-300 hover:bg-white/5 hover:text-white transition-colors cursor-pointer shrink-0"
+      className="text-[11px] font-mono px-2.5 py-1 rounded-md border border-[#2a2b30] text-[#cbd0d8] hover:bg-[#212226] hover:text-[#e8eaed] transition-colors cursor-pointer shrink-0"
     >
       {done ? "✓ Copié" : label}
     </button>

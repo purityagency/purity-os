@@ -37,7 +37,7 @@ export default async function AcquisitionCRMPage() {
         count={{ value: rows.length, label: "leads", tone: "violet" }}
       />
       <div className="flex-1 min-h-0">
-        <Suspense fallback={<p className="text-xs text-zinc-500 p-4">Chargement…</p>}>
+        <Suspense fallback={<p className="text-xs text-[#737884] p-4">Chargement…</p>}>
           <LeadsExplorer initialLeads={rows} />
         </Suspense>
       </div>

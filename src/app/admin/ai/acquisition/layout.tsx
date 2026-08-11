@@ -47,11 +47,11 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
   ]
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden bg-[#f6f7f9]">
-      {/* Barre de navigation — claire, épurée */}
+    <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden bg-[#09090b]">
+      {/* Barre de navigation — Tactical HQ */}
       <div
-        className={`shrink-0 flex items-center justify-between gap-3 px-4 sm:px-8 py-2.5 sticky top-0 z-50 bg-white border-b transition-colors ${
-          isScrolled ? "border-[#e0e2e7] shadow-sm" : "border-[#e6e7eb]"
+        className={`shrink-0 flex items-center justify-between gap-3 px-4 sm:px-8 py-2.5 sticky top-0 z-50 bg-[#09090b] border-b transition-colors ${
+          isScrolled ? "border-zinc-800 shadow-sm" : "border-zinc-800/50"
         }`}
       >
         <div className="flex items-center gap-1 overflow-x-auto max-w-full custom-scrollbar">
@@ -63,19 +63,17 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
                 key={tab.href}
                 href={tab.href}
                 aria-current={isActive ? "page" : undefined}
-                className={`group flex items-center gap-2 px-3 py-1.5 rounded-lg text-[13px] font-semibold transition-colors cursor-pointer whitespace-nowrap ${
+                className={`group flex items-center gap-2 px-3 py-1.5 rounded-md text-[13px] font-bold uppercase tracking-wider transition-colors cursor-pointer whitespace-nowrap ${
                   isActive
-                    ? "bg-[#17171a] text-white"
-                    : "text-[#5b616e] hover:text-[#17171a] hover:bg-[#f0f1f4]"
+                    ? "bg-zinc-800 text-zinc-100"
+                    : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900"
                 }`}
               >
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-white" : "text-[#9ca3af] group-hover:text-[#5b616e]"}`} />
+                <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-zinc-100" : "text-zinc-600 group-hover:text-zinc-400"}`} />
                 <span>{tab.name}</span>
                 {tab.badge > 0 && (
                   <span
-                    className={`ml-0.5 min-w-[16px] h-4 px-1 grid place-items-center rounded-full text-[10px] font-bold tabular-nums ${
-                      isActive ? "bg-white/20 text-white" : "bg-[#4f46e5] text-white"
-                    }`}
+                    className={`ml-1 min-w-[18px] h-4.5 px-1.5 grid place-items-center rounded bg-red-500 text-white text-[10px] font-black tracking-widest shadow-[0_0_8px_rgba(239,68,68,0.5)]`}
                   >
                     {tab.badge > 99 ? "99+" : tab.badge}
                   </span>
@@ -85,15 +83,15 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
           })}
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-medium text-[#8a909c] shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#059669]" />
-          <span className="hidden sm:inline">Pôle actif</span>
+        <div className="flex items-center gap-2 text-xs font-bold text-zinc-500 uppercase tracking-wider shrink-0">
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+          <span className="hidden sm:inline">Tactical Pôle Actif</span>
         </div>
       </div>
 
       {/* Conteneur de contenu */}
-      <div id="acquisition-content-area" className="flex-1 overflow-y-auto bg-[#f6f7f9] custom-scrollbar">
-        <div className="min-h-full">{children}</div>
+      <div id="acquisition-content-area" className="flex-1 overflow-y-auto bg-[#09090b] custom-scrollbar">
+        <div className="min-h-full p-4 sm:p-6 lg:p-8">{children}</div>
       </div>
     </div>
   )
