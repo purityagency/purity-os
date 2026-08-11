@@ -23,6 +23,18 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'unauthorized' }, { status: 401 });
   }
 
+  // COÛT : garde anti double-déclenchement. Des scans partaient en double (même
+  // horodatage) → sourcing facturé 2×. Si une mission a déjà été créée dans les
+  // 50 dernières minutes, on considère que le scan de ce créneau a déjà tourné.
+  const { prisma } = await import("@/lib/prisma");
+  const recentScan = await prisma.mission.findFirst({
+    where: { createdAt: { gte: new Date(Date.now() - 50 * 60 * 1000) } },
+    select: { id: true },
+  });
+  if (recentScan) {
+    return NextResponse.json({ status: "skipped_recent_scan", reason: "un scan a déjà tourné dans les 50 dernières minutes" });
+  }
+
   const alreadyToday = await MarketScout.countLeadsToday();
   const remaining = DAILY_LEAD_QUOTA - alreadyToday;
 

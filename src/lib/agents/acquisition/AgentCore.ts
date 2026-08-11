@@ -161,18 +161,26 @@ export abstract class AutonomousAgent {
 
       await throttleGeminiCall();
       const model = google(this.modelName);
+      // COÛT : on DÉSACTIVE le "thinking" de Gemini 2.5 (thinkingBudget: 0).
+      // Par défaut il génère des tokens de réflexion facturés au tarif de sortie
+      // (×2 à ×5 le coût par appel). Pour nos tâches — extraction, classification,
+      // rédaction structurée sous schéma zod — la réflexion n'apporte rien de
+      // mesurable. Vérifié : l'API accepte thinkingBudget:0 sur gemini-2.5-flash.
+      const providerOptions = { google: { thinkingConfig: { thinkingBudget: 0 } } } as const;
       return schema
         ? (await generateObject({
             model,
             system: this.systemInstruction,
             prompt,
             schema: schema as z.ZodTypeAny,
+            providerOptions,
           })).object
         : (await generateObject({
             model,
             system: this.systemInstruction,
             prompt,
             output: 'no-schema',
+            providerOptions,
           })).object;
     };
 

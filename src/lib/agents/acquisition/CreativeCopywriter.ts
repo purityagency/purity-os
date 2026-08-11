@@ -125,9 +125,14 @@ export class CreativeCopywriter extends AutonomousAgent {
       let result = await this.think<EmailDraftResponse>(prompt, "Rédaction par Manon Verhoeven (Essai 1)", EmailDraftSchema);
 
       let attempts = 1;
+      // COÛT : plafond de réécritures ramené de 3 à 2 (max 3 générations au lieu
+      // de 4). Le garde-fou déterministe (placeholder/code/prix) reste, et 2
+      // essais suffisent au modèle pour corriger — le 4e appel était surtout du
+      // gaspillage. Le filet stripPlaceholders + "ne pas créer si interdit"
+      // garantit qu'aucun brouillon non conforme ne passe malgré la baisse.
       while (
         (!result.humanDetectorPassed || result.selfCritiqueScore < 8 || containsPlaceholder(result.bodyHtml)) &&
-        attempts <= 3
+        attempts <= 2
       ) {
         const forbidden = describeForbidden(result.bodyHtml);
         await this.logger.startTask(

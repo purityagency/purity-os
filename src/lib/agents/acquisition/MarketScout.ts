@@ -139,6 +139,16 @@ export class MarketScout extends AutonomousAgent {
             continue;
           }
 
+          // COÛT : dédoublonnage AVANT l'appel LLM. Le cron rescanne souvent les
+          // mêmes secteurs/zones → beaucoup de résultats sont déjà en base. Les
+          // évaluer coûtait un appel Gemini pour rien. On vérifie d'abord, on
+          // n'évalue que du nouveau. Zéro perte de qualité.
+          const alreadyKnown = await prisma.lead.findFirst({ where: { websiteUrl: result.url }, select: { id: true } });
+          if (alreadyKnown) {
+            await this.logger.finishTask(`Doublon ignoré (avant éval): ${result.url}`);
+            continue;
+          }
+
           evaluationsUsed++;
 
           const evalPrompt = `
