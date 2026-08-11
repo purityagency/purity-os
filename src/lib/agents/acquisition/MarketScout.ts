@@ -162,10 +162,13 @@ export class MarketScout extends AutonomousAgent {
             plutôt que d'inventer un nom.
           `;
 
+          // Décision simple (bon lead oui/non + nom) → modèle lite, bien moins
+          // cher, largement suffisant pour cette classification (routage coût).
           const evaluation = await this.think<EvalResponse>(
             evalPrompt,
             `Évaluation rapide de ${result.url}`,
-            EvalResponseSchema
+            EvalResponseSchema,
+            MarketScout.CHEAP_MODEL,
           );
 
           // Garde-fou code (pas seulement prompt) : un nom introuvable et

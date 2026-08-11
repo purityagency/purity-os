@@ -254,10 +254,14 @@ export class IntelligenceAnalyst extends AutonomousAgent {
       jamais un nom qui ne serait pas écrit noir sur blanc dans le texte fourni.
     `;
 
+    // Choisir le meilleur email dans une liste + lire un nom explicite =
+    // extraction simple → modèle lite (coût). L'audit commercial, lui, reste
+    // sur flash (qualité).
     const extraction = await this.think<ContactExtraction>(
       prompt,
       'Extraction de contact',
-      ContactExtractionSchema
+      ContactExtractionSchema,
+      IntelligenceAnalyst.CHEAP_MODEL,
     );
 
     const bestEmail = extraction.bestEmail && realEmails.includes(extraction.bestEmail)

@@ -125,10 +125,16 @@ export abstract class AutonomousAgent {
     }
   }
 
+  // Modèle "lite" pour les tâches de pure classification/extraction (oui/non,
+  // choix dans une liste). ~6× moins cher en sortie que flash, qualité suffisante
+  // pour ces décisions simples (cost-aware-llm-pipeline : routage par complexité).
+  protected static readonly CHEAP_MODEL = 'gemini-3.1-flash-lite';
+
   protected async think<T>(
     prompt: string,
     logTaskName?: string,
-    schema?: z.ZodType<T>
+    schema?: z.ZodType<T>,
+    modelOverride?: string,
   ): Promise<T> {
     if (logTaskName) await this.logger.startTask(logTaskName);
 
@@ -160,7 +166,7 @@ export abstract class AutonomousAgent {
       }
 
       await throttleGeminiCall();
-      const model = google(this.modelName);
+      const model = google(modelOverride ?? this.modelName);
       // COÛT : on DÉSACTIVE le "thinking" de Gemini 2.5 (thinkingBudget: 0).
       // Par défaut il génère des tokens de réflexion facturés au tarif de sortie
       // (×2 à ×5 le coût par appel). Pour nos tâches — extraction, classification,
