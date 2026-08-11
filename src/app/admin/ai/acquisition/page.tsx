@@ -164,7 +164,7 @@ export default async function AdminAcquisitionPage() {
         {/* HERO Action Sentinel + Funnel */}
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
           {/* Main Action Sentinel */}
-          <div className="lg:col-span-3 rounded-3xl border border-white/[0.08] bg-[#121214] p-7 flex flex-col justify-between min-h-[260px] relative overflow-hidden group">
+          <div className="lg:col-span-3 rounded-3xl border border-white/10 bg-[#121214]/70 backdrop-blur-xl p-7 flex flex-col justify-between min-h-[260px] relative overflow-hidden group shadow-2xl">
             <div className="absolute -top-24 -right-24 w-64 h-64 rounded-full bg-[#c4f82a]/5 blur-3xl group-hover:bg-[#c4f82a]/10 transition-all duration-700 pointer-events-none" />
             <div>
               <div className="flex items-center justify-between">
@@ -197,7 +197,7 @@ export default async function AdminAcquisitionPage() {
           </div>
 
           {/* Live Funnel & Mission Launcher */}
-          <div className="lg:col-span-2 rounded-3xl border border-white/[0.08] bg-[#121214] p-6 flex flex-col justify-between gap-5">
+          <div className="lg:col-span-2 rounded-3xl border border-white/10 bg-[#121214]/70 backdrop-blur-xl p-6 flex flex-col justify-between gap-5 shadow-2xl">
             <div>
               <div className="flex items-center justify-between mb-4">
                 <span className="text-[11px] font-mono uppercase tracking-[0.2em] text-zinc-400 font-bold">
@@ -311,10 +311,10 @@ export default async function AdminAcquisitionPage() {
 
         {/* Pipeline Kanban & Mission Tracker */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-          <div className="lg:col-span-3 rounded-2xl border border-white/[0.08] bg-[#121214] p-4 min-h-[460px] flex flex-col justify-between overflow-hidden">
+          <div className="lg:col-span-3 rounded-2xl border border-white/10 bg-[#121214]/70 backdrop-blur-xl p-4 min-h-[460px] flex flex-col justify-between overflow-hidden shadow-2xl">
             <PipelineKanban leads={allLeads} counts={statusCounts} total={totalLeads} replyDetectionActive={false} />
           </div>
-          <div className="min-h-[460px] flex flex-col rounded-2xl border border-white/[0.08] bg-[#121214] p-4 overflow-hidden">
+          <div className="min-h-[460px] flex flex-col rounded-2xl border border-white/10 bg-[#121214]/70 backdrop-blur-xl p-4 overflow-hidden shadow-2xl">
             <h2 className="text-[10px] font-mono uppercase tracking-wider text-zinc-400 font-bold mb-3 shrink-0">
               Historique des Missions ({activeMissionsCount} actives)
             </h2>

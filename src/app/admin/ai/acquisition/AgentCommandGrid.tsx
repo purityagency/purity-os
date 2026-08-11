@@ -74,10 +74,10 @@ export function AgentCommandGrid({ agents }: { agents: AgentInfo[] }) {
             <div
               key={agent.name}
               onClick={() => setSelectedAgent(isSelected ? null : agent)}
-              className={`group relative rounded-2xl border p-3.5 transition-all duration-300 cursor-pointer overflow-hidden ${
+              className={`group relative rounded-2xl border p-3.5 transition-all duration-300 cursor-pointer overflow-hidden backdrop-blur-md ${
                 isSelected
-                  ? "border-[#c4f82a]/50 bg-[#19191d] shadow-[0_0_20px_rgba(196,248,42,0.1)]"
-                  : "border-white/[0.07] bg-[#121214] hover:border-white/20 hover:bg-[#161619]"
+                  ? "border-[#c4f82a]/50 bg-[#19191d]/90 shadow-[0_0_20px_rgba(196,248,42,0.15)]"
+                  : "border-white/[0.1] bg-[#121214]/70 hover:border-white/30 hover:bg-[#161619]/85 shadow-lg shadow-black/40"
               }`}
             >
               {/* Top Row: Avatar + Status */}
