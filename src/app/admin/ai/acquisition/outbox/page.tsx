@@ -91,7 +91,7 @@ export default async function AcquisitionOutboxPage() {
                       {email.openedAt ? `Ouvert ×${email.openCount}` : "Non ouvert"}
                     </span>
                     {email.clickedAt && (
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded border bg-violet-500/10 text-violet-300 border-violet-500/20">
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded border bg-[#c4f82a]/10 text-[#c4f82a] border-[#c4f82a]/25">
                         Clic ×{email.clickCount}
                       </span>
                     )}
@@ -104,7 +104,7 @@ export default async function AcquisitionOutboxPage() {
                   <summary className="cursor-pointer text-xs font-semibold text-zinc-300 hover:text-white bg-white/5 px-3 py-2 rounded-lg border border-white/10 transition-colors list-none text-center">
                     Voir le contenu ↓
                   </summary>
-                  <div className="absolute right-4 left-4 sm:left-auto sm:w-[500px] mt-2 p-4 bg-[#0a0510] border border-white/10 rounded-xl shadow-2xl z-50 max-h-[60vh] overflow-y-auto custom-scrollbar">
+                  <div className="absolute right-4 left-4 sm:left-auto sm:w-[500px] mt-2 p-4 bg-[#141416] border border-white/10 rounded-xl shadow-2xl z-50 max-h-[60vh] overflow-y-auto custom-scrollbar">
                     <div 
                       className="text-sm text-zinc-300 prose prose-invert max-w-none prose-p:my-1 prose-a:text-emerald-400"
                       dangerouslySetInnerHTML={{ __html: email.bodyHtml }}

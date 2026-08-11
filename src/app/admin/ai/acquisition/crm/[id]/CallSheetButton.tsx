@@ -132,8 +132,8 @@ function DossierTab({ data, leadId }: { data: CallSheetData; leadId: string }) {
   const shot = data.websiteUrl ? `https://image.thum.io/get/width/700/crop/900/noanimate/${data.websiteUrl}` : null
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border border-violet-500/20 bg-violet-500/[0.05] p-4">
-        <div className="text-[10px] font-mono uppercase tracking-wider text-violet-300 mb-1">Angle d&apos;accroche</div>
+      <div className="rounded-xl border border-[#c4f82a]/25 bg-[#c4f82a]/10 p-4">
+        <div className="text-[10px] font-mono uppercase tracking-wider text-[#c4f82a] mb-1">Angle d&apos;accroche</div>
         <p className="text-sm text-white leading-relaxed">{k.oneLiner}</p>
       </div>
 
@@ -210,7 +210,7 @@ function MentalTab({ data }: { data: CallSheetData }) {
               <div className="flex items-center justify-between gap-2 mb-1">
                 <span className="text-sm font-bold text-white">{p.name}</span>
               </div>
-              <div className="text-[10px] font-mono text-violet-300/80 mb-1.5">{p.source}</div>
+              <div className="text-[10px] font-mono text-[#c4f82a]/80 mb-1.5">{p.source}</div>
               <div className="text-xs text-zinc-400 mb-1.5"><span className="text-zinc-500">Quand :</span> {p.when}</div>
               <div className="text-sm text-zinc-200 border-l-2 border-emerald-500/40 pl-3 italic">{p.example}</div>
             </div>
@@ -250,7 +250,7 @@ function ScriptTab({ data }: { data: CallSheetData }) {
       <div>
         <SectionTitle>Découverte (fais parler, écoute — SPIN)</SectionTitle>
         <ul className="space-y-1.5">
-          {s.discovery.map((q, i) => <li key={i} className="text-sm text-zinc-300 flex gap-2"><span className="text-violet-400">{i + 1}.</span><span>{q}</span></li>)}
+          {s.discovery.map((q, i) => <li key={i} className="text-sm text-zinc-300 flex gap-2"><span className="text-[#c4f82a]">{i + 1}.</span><span>{q}</span></li>)}
         </ul>
       </div>
       <div>
@@ -303,7 +303,7 @@ function AfterTab({ data, leadId }: { data: CallSheetData; leadId: string }) {
       </div>
       <div className="flex flex-wrap gap-2">
         <a href={`/admin/ai/acquisition/crm/${leadId}`} className="text-[11px] font-mono px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-zinc-200 hover:bg-white/10">Ouvrir la fiche complète →</a>
-        <a href={`/admin/ai/acquisition/crm/${leadId}/audit`} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono px-3 py-2 rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20">Envoyer le PDF d&apos;audit</a>
+        <a href={`/admin/ai/acquisition/crm/${leadId}/audit`} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono px-3 py-2 rounded-lg border border-[#c4f82a]/30 bg-[#c4f82a]/10 text-[#c4f82a] hover:bg-[#c4f82a]/18">Envoyer le PDF d&apos;audit</a>
       </div>
     </div>
   )

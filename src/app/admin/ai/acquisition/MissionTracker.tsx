@@ -51,7 +51,7 @@ function MissionCard({ mission }: { mission: Mission }) {
         </div>
         <div className="h-[1px] bg-white/5 w-full">
           <div
-            className="h-full bg-violet-500/80 transition-all duration-700 shadow-[0_0_5px_rgba(124,58,237,0.5)]"
+            className="h-full bg-[#c4f82a] transition-all duration-700"
             style={{ width: `${progress}%` }}
           />
         </div>
@@ -86,7 +86,7 @@ export function MissionTracker({ missions }: { missions: Mission[] }) {
             onClick={() => setFilter(f)}
             className={`text-[10px] px-2.5 py-1 rounded-md font-semibold transition-all cursor-pointer ${
               filter === f
-                ? "bg-violet-600 text-white"
+                ? "bg-[#c4f82a] text-black"
                 : "text-zinc-400 hover:text-white"
             }`}
           >

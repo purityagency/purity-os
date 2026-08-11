@@ -57,7 +57,7 @@ export function InboxClient({ leads }: { leads: InboxLead[] }) {
               type="button"
               onClick={() => setSelectedId(lead.id)}
               className={`text-left p-3 rounded-xl border transition-colors cursor-pointer ${
-                active ? "bg-violet-600/10 border-violet-500/40" : "bg-white/[0.02] border-white/5 hover:bg-white/[0.04]"
+                active ? "bg-[#c4f82a]/10 border-[#c4f82a]/40" : "bg-white/[0.02] border-white/5 hover:bg-white/[0.04]"
               }`}
             >
               <div className="flex justify-between items-start mb-1 gap-2">
@@ -120,7 +120,7 @@ export function InboxClient({ leads }: { leads: InboxLead[] }) {
               {selected.contactEmail ? (
                 <a
                   href={`mailto:${selected.contactEmail}?subject=${encodeURIComponent("RE: " + (selected.sentEmails[0]?.subject ?? "Votre projet"))}`}
-                  className="block text-center w-full py-2.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold transition-colors"
+                  className="block text-center w-full py-2.5 rounded-lg bg-[#c4f82a] hover:brightness-95 text-black text-sm font-bold transition"
                 >
                   Répondre par email
                 </a>

@@ -37,7 +37,7 @@ function CallRow({ r }: { r: Row }) {
         <p className="text-xs text-zinc-500 truncate mt-0.5">{r.location ?? "Localisation inconnue"} · {leadStatusLabel(r.status)}</p>
       </div>
       <a href={`tel:${r.phoneDial}`} className="text-sm font-mono text-emerald-300 hover:text-emerald-200 whitespace-nowrap shrink-0">📞 {r.phoneDisplay}</a>
-      <CallSheetButton leadId={r.id} label="Fiche d'appel →" className="text-[11px] font-mono px-2.5 py-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20 transition-colors whitespace-nowrap shrink-0 cursor-pointer" />
+      <CallSheetButton leadId={r.id} label="Fiche d'appel →" className="text-[11px] font-mono px-2.5 py-1.5 rounded-lg border border-[#c4f82a]/30 bg-[#c4f82a]/10 text-[#c4f82a] hover:bg-[#c4f82a]/18 transition-colors whitespace-nowrap shrink-0 cursor-pointer" />
     </div>
   )
 }

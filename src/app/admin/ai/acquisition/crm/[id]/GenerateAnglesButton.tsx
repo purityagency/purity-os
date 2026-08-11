@@ -19,7 +19,7 @@ export function GenerateAnglesButton({ leadId, hasAngles }: { leadId: string; ha
             setMsg(r.message)
           })
         }
-        className="text-xs font-mono px-3 py-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20 transition-colors disabled:opacity-50 cursor-pointer"
+        className="text-xs font-mono px-3 py-1.5 rounded-lg border border-[#c4f82a]/30 bg-[#c4f82a]/10 text-[#c4f82a] hover:bg-[#c4f82a]/18 transition-colors disabled:opacity-50 cursor-pointer"
       >
         {pending ? "Génération…" : hasAngles ? "Régénérer les angles" : "Générer les angles multi-canaux"}
       </button>

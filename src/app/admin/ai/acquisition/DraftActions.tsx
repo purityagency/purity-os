@@ -31,7 +31,7 @@ export function DraftActions({ draftId, hasContactEmail }: { draftId: string; ha
           <button
             type="submit"
             disabled={!hasContactEmail || approvePending || rejectPending || approveState?.ok || rejectState?.ok}
-            className="px-5 py-2 text-xs font-semibold rounded-lg bg-[#7C3AED] hover:bg-[#6D28D9] text-white shadow-lg shadow-[#7C3AED]/10 hover:shadow-[#7C3AED]/20 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+            className="px-5 py-2 text-xs font-semibold rounded-lg bg-[#c4f82a] hover:brightness-95 text-black transition flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
           >
             {approvePending ? (
               "Envoi..."

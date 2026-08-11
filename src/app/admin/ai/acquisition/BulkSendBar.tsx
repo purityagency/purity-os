@@ -54,10 +54,10 @@ export function BulkSendBar({ scores }: { scores: number[] }) {
           step={5}
           value={minScore}
           onChange={(e) => setMinScore(Number(e.target.value))}
-          className="w-32 accent-violet-500"
+          className="w-32 accent-[#c4f82a]"
           aria-label="Score minimum"
         />
-        <span className="font-mono text-sm font-bold text-violet-300 tabular-nums w-10 text-right">{minScore}</span>
+        <span className="font-mono text-sm font-bold text-[#c4f82a] tabular-nums w-10 text-right">{minScore}</span>
       </div>
 
       <span className="text-xs text-zinc-400">

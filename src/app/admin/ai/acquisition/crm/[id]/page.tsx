@@ -80,10 +80,10 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const techOpp = audit.techOpportunity
 
   return (
-    <div className="h-full overflow-y-auto bg-[#060309] p-4 lg:p-8">
+    <div className="h-full overflow-y-auto bg-[#0a0a0b] p-4 lg:p-8">
       <div className="max-w-5xl mx-auto space-y-5">
         {/* Retour */}
-        <Link href="/admin/ai/acquisition/crm" className="inline-flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-violet-300 transition-colors">
+        <Link href="/admin/ai/acquisition/crm" className="inline-flex items-center gap-1.5 text-xs font-mono text-zinc-400 hover:text-[#c4f82a] transition-colors">
           ← Retour au CRM
         </Link>
 
@@ -105,7 +105,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
           </div>
           <div className="shrink-0 flex items-center gap-3">
             <div className="flex flex-col gap-1.5">
-              <a href={`/admin/ai/acquisition/crm/${lead.id}/audit`} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono px-3 py-1.5 rounded-lg border border-violet-500/30 bg-violet-500/10 text-violet-200 hover:bg-violet-500/20 transition-colors whitespace-nowrap text-center">
+              <a href={`/admin/ai/acquisition/crm/${lead.id}/audit`} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono px-3 py-1.5 rounded-lg border border-[#c4f82a]/30 bg-[#c4f82a]/10 text-[#c4f82a] hover:bg-[#c4f82a]/18 transition-colors whitespace-nowrap text-center">
                 📄 PDF d&apos;audit
               </a>
               <a href={`/admin/ai/acquisition/crm/${lead.id}/deck`} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono px-3 py-1.5 rounded-lg border border-white/15 bg-white/5 text-zinc-200 hover:bg-white/10 transition-colors whitespace-nowrap text-center">
@@ -125,23 +125,23 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
         {/* Actions rapides / liens */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           <a href={lead.websiteUrl || "#"} target="_blank" rel="noopener noreferrer"
-             className={`flex items-center gap-2 p-3 rounded-xl border transition-colors ${lead.websiteUrl ? "border-white/10 bg-white/[0.02] hover:border-violet-500/40 hover:bg-white/[0.04]" : "border-white/5 bg-white/[0.01] opacity-40 pointer-events-none"}`}>
-            <GlobeIcon className="w-4 h-4 text-violet-400 shrink-0" />
+             className={`flex items-center gap-2 p-3 rounded-xl border transition-colors ${lead.websiteUrl ? "border-white/10 bg-white/[0.02] hover:border-[#c4f82a]/40 hover:bg-white/[0.04]" : "border-white/5 bg-white/[0.01] opacity-40 pointer-events-none"}`}>
+            <GlobeIcon className="w-4 h-4 text-[#c4f82a] shrink-0" />
             <div className="min-w-0"><div className="text-[10px] font-mono uppercase text-zinc-500">Site web</div><div className="text-xs text-white truncate">{lead.websiteUrl ? lead.websiteUrl.replace(/^https?:\/\/(www\.)?/, "") : "—"}</div></div>
           </a>
           <a href={lead.contactEmail ? `mailto:${lead.contactEmail}` : "#"}
-             className={`flex items-center gap-2 p-3 rounded-xl border transition-colors ${lead.contactEmail ? "border-white/10 bg-white/[0.02] hover:border-violet-500/40 hover:bg-white/[0.04]" : "border-white/5 bg-white/[0.01] opacity-40 pointer-events-none"}`}>
-            <MailIcon className="w-4 h-4 text-violet-400 shrink-0" />
+             className={`flex items-center gap-2 p-3 rounded-xl border transition-colors ${lead.contactEmail ? "border-white/10 bg-white/[0.02] hover:border-[#c4f82a]/40 hover:bg-white/[0.04]" : "border-white/5 bg-white/[0.01] opacity-40 pointer-events-none"}`}>
+            <MailIcon className="w-4 h-4 text-[#c4f82a] shrink-0" />
             <div className="min-w-0"><div className="text-[10px] font-mono uppercase text-zinc-500">Email</div><div className="text-xs text-white truncate">{lead.contactEmail ?? "—"}</div></div>
           </a>
           <a href={phone ? `tel:${phone.replace(/\s/g, "")}` : "#"}
-             className={`flex items-center gap-2 p-3 rounded-xl border transition-colors ${phone ? "border-white/10 bg-white/[0.02] hover:border-violet-500/40 hover:bg-white/[0.04]" : "border-white/5 bg-white/[0.01] opacity-40 pointer-events-none"}`}>
-            <UserIcon className="w-4 h-4 text-violet-400 shrink-0" />
+             className={`flex items-center gap-2 p-3 rounded-xl border transition-colors ${phone ? "border-white/10 bg-white/[0.02] hover:border-[#c4f82a]/40 hover:bg-white/[0.04]" : "border-white/5 bg-white/[0.01] opacity-40 pointer-events-none"}`}>
+            <UserIcon className="w-4 h-4 text-[#c4f82a] shrink-0" />
             <div className="min-w-0"><div className="text-[10px] font-mono uppercase text-zinc-500">Téléphone</div><div className="text-xs text-white truncate">{phone ?? "—"}</div></div>
           </a>
           <a href={mapsLink} target="_blank" rel="noopener noreferrer"
-             className="flex items-center gap-2 p-3 rounded-xl border border-white/10 bg-white/[0.02] hover:border-violet-500/40 hover:bg-white/[0.04] transition-colors">
-            <LocationIcon className="w-4 h-4 text-violet-400 shrink-0" />
+             className="flex items-center gap-2 p-3 rounded-xl border border-white/10 bg-white/[0.02] hover:border-[#c4f82a]/40 hover:bg-white/[0.04] transition-colors">
+            <LocationIcon className="w-4 h-4 text-[#c4f82a] shrink-0" />
             <div className="min-w-0"><div className="text-[10px] font-mono uppercase text-zinc-500">Google Maps</div><div className="text-xs text-white truncate">{lead.location ?? "Ouvrir"}</div></div>
           </a>
         </div>
@@ -173,7 +173,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                   <div className="text-[10px] font-mono uppercase tracking-wider text-zinc-500 mb-2">Modules Purity recommandés (interne)</div>
                   <div className="flex flex-wrap gap-1.5">
                     {audit.recommendedModules.map((m, i) => (
-                      <span key={i} className="text-[11px] font-mono px-2 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">{m}</span>
+                      <span key={i} className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#c4f82a]/10 text-[#c4f82a] border border-[#c4f82a]/25">{m}</span>
                     ))}
                   </div>
                 </div>
@@ -222,7 +222,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                                 {d.openedAt ? `Ouvert ×${d.openCount}` : "Non ouvert"}
                               </span>
                               {d.clickedAt && (
-                                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-violet-500/10 text-violet-300 border border-violet-500/20">
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#c4f82a]/10 text-[#c4f82a] border border-[#c4f82a]/25">
                                   Clic ×{d.clickCount}
                                 </span>
                               )}
@@ -246,7 +246,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             <section className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/5">
                 <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">Aperçu du site</span>
-                {lead.websiteUrl && <a href={lead.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono text-violet-400 hover:underline">Ouvrir ↗</a>}
+                {lead.websiteUrl && <a href={lead.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono text-[#c4f82a] hover:underline">Ouvrir ↗</a>}
               </div>
               {shot ? (
                 <a href={lead.websiteUrl!} target="_blank" rel="noopener noreferrer" className="block bg-black">
@@ -262,7 +262,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             <section className="rounded-2xl border border-white/10 bg-white/[0.02] overflow-hidden">
               <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/5">
                 <span className="text-[10px] font-mono uppercase tracking-wider text-zinc-400">Emplacement</span>
-                <a href={mapsLink} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono text-violet-400 hover:underline">Maps ↗</a>
+                <a href={mapsLink} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono text-[#c4f82a] hover:underline">Maps ↗</a>
               </div>
               <iframe
                 title={`Carte ${lead.companyName}`}
@@ -337,10 +337,10 @@ function PsiMetricRow({ m }: { m: PageSpeedMetric }) {
 
 function PageSpeedSection({ report }: { report: PageSpeedReport }) {
   return (
-    <section className="rounded-2xl border border-violet-500/20 bg-violet-500/[0.03] p-5">
+    <section className="rounded-2xl border border-[#c4f82a]/25 bg-[#c4f82a]/[0.06] p-5">
       <div className="flex items-center justify-between gap-2 mb-1">
         <h2 className="text-sm font-bold uppercase tracking-wider text-white font-mono flex items-center gap-2">
-          <GlobeIcon className="w-4 h-4 text-violet-400" /> Google PageSpeed Insights
+          <GlobeIcon className="w-4 h-4 text-[#c4f82a]" /> Google PageSpeed Insights
         </h2>
         <span className="text-[10px] font-mono text-zinc-500">{report.strategy} · {new Date(report.fetchedAt).toLocaleDateString("fr-BE")}</span>
       </div>

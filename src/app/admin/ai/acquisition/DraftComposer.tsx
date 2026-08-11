@@ -107,7 +107,7 @@ export function DraftComposer({ draft }: { draft: Draft }) {
         <div className="p-5 lg:p-6 bg-black/10">
           <div className="flex items-center justify-between mb-4">
             <span className="text-[10px] uppercase tracking-wider text-white/40 font-mono">Fiche Prospect</span>
-            <div className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-violet-500/10 text-violet-400 border border-violet-500/20">
+            <div className="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono bg-[#c4f82a]/10 text-[#c4f82a] border border-[#c4f82a]/25">
               Score: {draft.lead.score || "N/A"}
             </div>
           </div>
@@ -119,7 +119,7 @@ export function DraftComposer({ draft }: { draft: Draft }) {
               href={draft.lead.websiteUrl} 
               target="_blank" 
               rel="noopener noreferrer" 
-              className="text-xs text-violet-400 hover:underline inline-flex items-center gap-1 mb-4"
+              className="text-xs text-[#c4f82a] hover:underline inline-flex items-center gap-1 mb-4"
             >
               🌐 {draft.lead.websiteUrl.replace(/^https?:\/\/(www\.)?/, '')}
             </a>
@@ -162,7 +162,7 @@ export function DraftComposer({ draft }: { draft: Draft }) {
                 <span className="text-white/40 block mb-1">Modules recommandés</span>
                 <div className="flex flex-wrap gap-1">
                   {recommendedModules.map((m: string, idx: number) => (
-                    <span key={idx} className="px-2 py-0.5 rounded bg-violet-500/5 border border-violet-500/10 text-violet-300 text-[10px]">
+                    <span key={idx} className="px-2 py-0.5 rounded bg-[#c4f82a]/10 border border-[#c4f82a]/20 text-[#c4f82a] text-[10px]">
                       {m}
                     </span>
                   ))}
@@ -185,7 +185,7 @@ export function DraftComposer({ draft }: { draft: Draft }) {
                   value={tone}
                   onChange={(e) => setTone(e.target.value)}
                   disabled={isPending || isSaving || isSending || isRejecting}
-                  className="bg-black/40 border border-white/10 rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-violet-500 transition-all cursor-pointer"
+                  className="bg-black/40 border border-white/10 rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-[#c4f82a] transition-all cursor-pointer"
                 >
                   <option value="Liquid Glass (Premium)">Premium sobre</option>
                   <option value="Direct & Cash">Direct & cash</option>
@@ -220,7 +220,7 @@ export function DraftComposer({ draft }: { draft: Draft }) {
                       type="text"
                       value={subject}
                       onChange={(e) => setSubject(e.target.value)}
-                      className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500 transition-all"
+                      className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-[#c4f82a] transition-all"
                     />
                   </div>
                   <div>
@@ -229,7 +229,7 @@ export function DraftComposer({ draft }: { draft: Draft }) {
                       value={bodyHtml}
                       onChange={(e) => setBodyHtml(e.target.value)}
                       rows={8}
-                      className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-violet-500 transition-all resize-y"
+                      className="w-full bg-black/30 border border-white/10 rounded-lg px-3 py-2 text-xs text-white font-mono focus:outline-none focus:border-[#c4f82a] transition-all resize-y"
                     />
                   </div>
                 </div>
@@ -328,7 +328,7 @@ export function DraftComposer({ draft }: { draft: Draft }) {
               <button
                 onClick={handleSend}
                 disabled={!hasContactEmail || isPending || isSaving || isSending || isRejecting}
-                className="px-5 py-2 text-xs font-semibold rounded-lg bg-[#7C3AED] hover:bg-[#6D28D9] text-white shadow-lg shadow-[#7C3AED]/10 hover:shadow-[#7C3AED]/20 transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
+                className="px-5 py-2 text-xs font-semibold rounded-lg bg-[#c4f82a] hover:brightness-95 text-black transition flex items-center gap-1.5 disabled:opacity-40 disabled:pointer-events-none cursor-pointer"
               >
                 {isSending ? (
                   <>
