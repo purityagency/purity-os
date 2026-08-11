@@ -17,28 +17,27 @@ interface Lead {
 }
 
 const STAGES = [
-  { key: "NEW",            label: "Nouveaux",      color: "text-zinc-400",   border: "border-zinc-700",    bg: "bg-zinc-900/60",   dot: "bg-zinc-500" },
-  { key: "ENRICHED",       label: "Enrichis",      color: "text-blue-400",   border: "border-blue-800/60", bg: "bg-blue-950/30",   dot: "bg-blue-500" },
-  { key: "DRAFTED",        label: "Rédigés",       color: "text-amber-400",  border: "border-amber-800/60",bg: "bg-amber-950/30",  dot: "bg-amber-500" },
-  { key: "CONTACTED",      label: "Contactés",     color: "text-violet-400", border: "border-violet-700",  bg: "bg-violet-950/30", dot: "bg-violet-500" },
-  { key: "REPLIED",        label: "Répondu",       color: "text-cyan-400",   border: "border-cyan-800/60", bg: "bg-cyan-950/30",   dot: "bg-cyan-500" },
-  { key: "MEETING_BOOKED", label: "RDV Confirmé",  color: "text-emerald-400",border: "border-emerald-700", bg: "bg-emerald-950/30",dot: "bg-emerald-500" },
+  { key: "NEW", label: "Nouveaux", color: "text-zinc-400", border: "border-zinc-700/50", bg: "bg-zinc-900/40", dot: "bg-zinc-400" },
+  { key: "ENRICHED", label: "Enrichis", color: "text-sky-400", border: "border-sky-500/30", bg: "bg-sky-950/20", dot: "bg-sky-400" },
+  { key: "DRAFTED", label: "Rédigés", color: "text-amber-400", border: "border-amber-500/30", bg: "bg-amber-950/20", dot: "bg-amber-400" },
+  { key: "CONTACTED", label: "Contactés", color: "text-indigo-400", border: "border-indigo-500/30", bg: "bg-indigo-950/20", dot: "bg-indigo-400" },
+  { key: "REPLIED", label: "Réponses", color: "text-cyan-400", border: "border-cyan-500/30", bg: "bg-cyan-950/20", dot: "bg-cyan-400" },
+  { key: "MEETING_BOOKED", label: "RDV Gagnés", color: "text-[#c4f82a]", border: "border-[#c4f82a]/40", bg: "bg-[#c4f82a]/10", dot: "bg-[#c4f82a]" },
 ]
 
 function ScoreBadge({ score }: { score: number | null }) {
   if (score === null) return <span className="text-zinc-600 text-[10px] font-mono">—</span>
-  const color = score >= 70 ? "text-emerald-400" : score >= 40 ? "text-amber-400" : "text-red-400"
-  return <span className={`text-[10px] font-bold font-mono ${color}`}>{score}</span>
+  const color = score >= 70 ? "text-[#c4f82a]" : score >= 40 ? "text-amber-400" : "text-zinc-400"
+  return <span className={`text-[11px] font-bold font-mono ${color}`}>{score}</span>
 }
 
-// Ancienneté lisible ("il y a 3 j") — repère visuel des leads qui stagnent.
 function timeAgo(d: Date | string): string {
   const diff = Date.now() - new Date(d).getTime()
   const days = Math.floor(diff / 86_400_000)
-  if (days >= 1) return `il y a ${days} j`
+  if (days >= 1) return `${days}j`
   const hours = Math.floor(diff / 3_600_000)
-  if (hours >= 1) return `il y a ${hours} h`
-  return "à l'instant"
+  if (hours >= 1) return `${hours}h`
+  return "récent"
 }
 
 function LeadCard({ lead }: { lead: Lead }) {
@@ -46,59 +45,76 @@ function LeadCard({ lead }: { lead: Lead }) {
 
   return (
     <div
-      className="group rounded border border-white/[0.05] bg-[#0a0510] hover:border-violet-500/30 hover:bg-white/[0.03] transition-all duration-300 cursor-pointer p-1.5 space-y-1"
-      onClick={() => setExpanded(e => !e)}
+      className="group rounded-xl border border-white/[0.06] bg-[#161619] hover:border-white/20 hover:bg-[#1a1a1e] transition-all duration-200 p-2.5 space-y-1.5 cursor-pointer"
+      onClick={() => setExpanded((e) => !e)}
       role="button"
+      tabIndex={0}
       aria-expanded={expanded}
     >
-      <div className="flex items-start justify-between gap-1">
-        <p className="text-[10px] font-semibold text-white truncate leading-tight flex-1">{lead.companyName}</p>
-        <div className="flex items-center gap-1 shrink-0">
+      <div className="flex items-start justify-between gap-1.5">
+        <p className="text-xs font-bold text-white truncate leading-snug flex-1 group-hover:text-[#c4f82a] transition-colors">
+          {lead.companyName}
+        </p>
+        <div className="flex items-center gap-1.5 shrink-0">
           <ScoreBadge score={lead.score} />
-          <svg className={`w-2.5 h-2.5 text-zinc-600 transition-transform ${expanded ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 4.5 6 7.5 9 4.5" /></svg>
+          <svg
+            className={`w-3 h-3 text-zinc-500 transition-transform ${expanded ? "rotate-180" : ""}`}
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.5"
+          >
+            <path d="M3 4.5 6 7.5 9 4.5" />
+          </svg>
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-1 text-[10px] text-zinc-500">
+      <div className="flex items-center justify-between gap-1 text-[10px] text-zinc-400 font-mono">
         {lead.location ? (
           <span className="flex items-center gap-1 truncate">
             <LocationIcon className="w-3 h-3 text-zinc-500 shrink-0" />
             <span className="truncate">{lead.location}</span>
           </span>
-        ) : <span />}
-        <span className="shrink-0 text-zinc-600">{timeAgo(lead.updatedAt)}</span>
+        ) : (
+          <span />
+        )}
+        <span className="shrink-0 text-zinc-500">{timeAgo(lead.updatedAt)}</span>
       </div>
 
       {expanded && (
-        <div className="pt-2 border-t border-white/5 space-y-1.5 text-[10px] text-zinc-400">
+        <div className="pt-2 mt-1 border-t border-white/5 space-y-2 text-[11px] text-zinc-300 animate-in fade-in duration-150">
           {lead.contactName && (
-            <div className="flex items-center gap-1 text-zinc-300">
-              <UserIcon className="w-3 h-3 text-zinc-500 shrink-0" />
+            <div className="flex items-center gap-1.5 text-zinc-200">
+              <UserIcon className="w-3 h-3 text-zinc-400 shrink-0" />
               <span className="truncate">{lead.contactName}</span>
             </div>
           )}
           {lead.contactEmail && (
-            <p className="font-mono text-zinc-300 truncate">{lead.contactEmail}</p>
+            <div className="font-mono text-[10px] text-zinc-400 truncate">
+              ✉ {lead.contactEmail}
+            </div>
           )}
-          {lead.websiteUrl && (
-            <a
-              href={lead.websiteUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={e => e.stopPropagation()}
-              className="text-violet-400 hover:underline truncate flex items-center gap-1"
+          <div className="pt-1 flex items-center justify-between">
+            {lead.websiteUrl ? (
+              <a
+                href={lead.websiteUrl}
+                target="_blank"
+                rel="noreferrer"
+                onClick={(e) => e.stopPropagation()}
+                className="text-[10px] font-mono text-sky-400 hover:underline flex items-center gap-1"
+              >
+                <GlobeIcon className="w-3 h-3" />
+                <span>Site web</span>
+              </a>
+            ) : <span />}
+            <Link
+              href={`/admin/ai/acquisition/crm/${lead.id}`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-[10px] font-mono font-bold text-[#c4f82a] hover:underline"
             >
-              <GlobeIcon className="w-3 h-3 shrink-0" />
-              <span className="truncate">{lead.websiteUrl.replace(/^https?:\/\/(www\.)?/, '')}</span>
-            </a>
-          )}
-          <Link
-            href={`/admin/ai/acquisition/crm/${lead.id}`}
-            onClick={e => e.stopPropagation()}
-            className="inline-block text-violet-300 hover:text-violet-200 hover:underline"
-          >
-            Ouvrir la fiche →
-          </Link>
+              Fiche lead →
+            </Link>
+          </div>
         </div>
       )}
     </div>
@@ -109,81 +125,60 @@ export function PipelineKanban({
   leads,
   counts,
   total,
-  replyDetectionActive,
 }: {
   leads: Lead[]
   counts: Record<string, number>
   total: number
-  replyDetectionActive: boolean
+  replyDetectionActive?: boolean
 }) {
-  const byStage = (stageKey: string) => leads.filter(l => l.status === stageKey)
-
-  // Chiffres du funnel = comptes RÉELS (passés par le serveur), jamais dérivés
-  // du tableau plafonné à 200 cartes.
-  const contacted = (counts["CONTACTED"] ?? 0) + (counts["REPLIED"] ?? 0) + (counts["MEETING_BOOKED"] ?? 0)
-  const convRate = total > 0 ? Math.round((contacted / total) * 100) : 0
-  const meetings = counts["MEETING_BOOKED"] ?? 0
-  const replied = counts["REPLIED"] ?? 0
-
   return (
-    <div className="space-y-3">
-      {/* Funnel réel — mis en avant, avec vérité sur la détection de réponses */}
-      <div className="flex items-center flex-wrap gap-x-3 gap-y-1 text-xs font-mono">
-        <span className="text-zinc-300"><span className="font-bold text-white tabular-nums">{total}</span> sourcés</span>
-        <span className="text-zinc-600">→</span>
-        <span className="text-violet-300"><span className="font-bold tabular-nums">{contacted}</span> contactés <span className="text-zinc-500">({convRate}%)</span></span>
-        <span className="text-zinc-600">→</span>
-        {replyDetectionActive ? (
-          <span className="text-cyan-300"><span className="font-bold tabular-nums">{replied}</span> répondu</span>
-        ) : (
-          <span className="text-amber-400/90" title="Le Worker de détection n'est pas déployé — les réponses arrivent dans Gmail mais ne sont pas comptées ici.">
-            réponses <span className="underline decoration-dotted">non mesurées auto</span>
+    <div className="flex flex-col h-full space-y-3">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <h2 className="text-xs font-mono uppercase tracking-[0.2em] text-zinc-400 font-bold">
+            Pipeline d&apos;Acquisition
+          </h2>
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-zinc-300 border border-white/10">
+            {total} leads
           </span>
-        )}
-        <span className="text-zinc-600">→</span>
-        <span className={meetings > 0 ? "text-emerald-300" : "text-red-400/90"}>
-          <span className="font-bold tabular-nums">{meetings}</span> RDV
-        </span>
+        </div>
+        <Link
+          href="/admin/ai/acquisition/crm"
+          className="text-xs font-mono text-[#c4f82a] hover:underline font-bold"
+        >
+          Voir tous les leads →
+        </Link>
       </div>
 
-      {/* Kanban columns */}
-      <div className="flex gap-2 overflow-x-auto pb-2 h-full items-start" style={{ scrollbarWidth: 'none' }}>
-        {STAGES.map(stage => {
-          const stageLeads = byStage(stage.key)
-          const realCount = counts[stage.key] ?? 0
-          const truncated = realCount > stageLeads.length
+      {/* Columns */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5 flex-1 min-h-0 overflow-x-auto pb-2 custom-scrollbar">
+        {STAGES.map((stage) => {
+          const stageLeads = leads.filter((l) => l.status === stage.key)
+          const count = counts[stage.key] ?? stageLeads.length
+
           return (
-            <div key={stage.key} className={`rounded-lg border ${stage.border} ${stage.bg} p-1.5 w-[200px] shrink-0 flex flex-col gap-1 max-h-full`}>
-              {/* Column header — compte RÉEL */}
-              <div className="flex items-center justify-between mb-1 px-1">
+            <div
+              key={stage.key}
+              className={`flex flex-col rounded-2xl border ${stage.border} ${stage.bg} p-2.5 min-w-[170px]`}
+            >
+              {/* Stage header */}
+              <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5">
                 <div className="flex items-center gap-1.5">
-                  <span className={`w-1.5 h-1.5 rounded-full ${stage.dot}`} />
-                  <span className={`text-[9px] font-semibold uppercase tracking-wider ${stage.color}`}>
-                    {stage.label}
-                  </span>
+                  <span className={`w-2 h-2 rounded-full ${stage.dot}`} />
+                  <span className={`text-xs font-bold font-mono ${stage.color}`}>{stage.label}</span>
                 </div>
-                <span className={`text-[9px] font-bold font-mono ${stage.color} bg-black/40 px-1.5 rounded`}>
-                  {realCount}
+                <span className="text-[11px] font-bold font-mono tabular-nums text-white bg-black/40 px-1.5 py-0.5 rounded border border-white/10">
+                  {count}
                 </span>
               </div>
 
-              {/* Lead cards (échantillon si la colonne dépasse 200 chargés) */}
-              <div className="space-y-1.5 overflow-y-auto pr-1" style={{ scrollbarWidth: 'none' }}>
+              {/* Stage cards */}
+              <div className="flex-1 overflow-y-auto space-y-2 pr-0.5 custom-scrollbar max-h-[360px]">
                 {stageLeads.length === 0 ? (
-                  <div className="text-[9px] text-zinc-600 text-center py-2 italic">
-                    {stage.key === "REPLIED" && !replyDetectionActive ? "détection auto off" : "Vide"}
-                  </div>
+                  <p className="text-[10px] font-mono text-zinc-600 text-center py-6">Aucun lead</p>
                 ) : (
-                  <>
-                    {stageLeads.map(lead => (
-                      <LeadCard key={lead.id} lead={lead} />
-                    ))}
-                    {truncated && (
-                      <Link href={`/admin/ai/acquisition/crm?status=${stage.key}`} className="block text-[9px] text-zinc-500 hover:text-violet-300 text-center py-1">
-                        + {realCount - stageLeads.length} autres — voir CRM
-                      </Link>
-                    )}
-                  </>
+                  stageLeads.slice(0, 15).map((lead) => <LeadCard key={lead.id} lead={lead} />)
                 )}
               </div>
             </div>

@@ -40,8 +40,9 @@ export async function deliverDraft(draft: DraftWithLead): Promise<DeliverResult>
 
   const unsubscribeUrl = `${getBaseUrl()}/api/unsubscribe?token=${makeUnsubscribeToken(draft.lead.id)}`
 
+  let providerId: string | null = null
   try {
-    await sendEmail({
+    const r = await sendEmail({
       to: draft.lead.contactEmail,
       subject: draft.subject,
       from: prospectingFrom(),
@@ -55,13 +56,16 @@ export async function deliverDraft(draft: DraftWithLead): Promise<DeliverResult>
         websiteUrl: draft.lead.websiteUrl,
       }),
     })
+    providerId = r?.providerId ?? null
   } catch (e) {
     const message = e instanceof AppError ? e.message : "Échec d'envoi inattendu."
     return { ok: false, reason: "send_failed", message }
   }
 
   await prisma.$transaction([
-    prisma.emailDraft.update({ where: { id: draft.id }, data: { status: "SENT" } }),
+    // deliveryStatus = "sent" : Resend a accepté. Il passera à "delivered" /
+    // "bounced" quand le webhook Resend confirmera le sort réel de l'email.
+    prisma.emailDraft.update({ where: { id: draft.id }, data: { status: "SENT", providerId, deliveryStatus: "sent" } }),
     prisma.lead.update({ where: { id: draft.leadId }, data: { status: "CONTACTED", lastContactedAt: new Date() } }),
   ])
   eventBus.publish(new DraftReviewedEvent(draft.lead.id, draft.lead.companyName, "APPROVED"))

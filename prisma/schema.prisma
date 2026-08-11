@@ -329,6 +329,16 @@ model EmailDraft {
   clickCount   Int       @default(0)
   clickedAt    DateTime? // 1er clic
 
+  // Livraison réelle (source de vérité = Resend, via webhooks). providerId relie
+  // notre envoi à l'email Resend ; deliveryStatus reflète l'événement Resend le
+  // plus récent (sent → delivered → bounced/complained). Avant, "SENT" signifiait
+  // seulement "Resend a accepté" — jamais "réellement délivré".
+  providerId     String?   // ID de l'email côté Resend
+  deliveryStatus String?   // sent | delivered | bounced | complained | delivery_delayed
+  deliveredAt    DateTime?
+  bouncedAt      DateTime?
+  bounceReason   String?
+
   lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([leadId, status])

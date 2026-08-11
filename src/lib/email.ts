@@ -96,4 +96,9 @@ export async function sendEmail({
     const detail = await res.text().catch(() => "")
     throw new AppError(`Resend a refusé l'envoi (${res.status}) : ${detail}`, "EMAIL_SEND_FAILED", 502)
   }
+
+  // On récupère l'ID Resend : c'est LA clé qui relie notre envoi aux statuts
+  // réels de livraison (delivered/bounced/complained) reçus ensuite par webhook.
+  const data = (await res.json().catch(() => null)) as { id?: string } | null
+  return { providerId: data?.id ?? null }
 }

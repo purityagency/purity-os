@@ -9,7 +9,6 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
   const pathname = usePathname()
   const [isScrolled, setIsScrolled] = useState(false)
 
-  // Subtle blur effect on scroll
   useEffect(() => {
     const handleScroll = () => {
       const scrollY = document.getElementById("acquisition-content-area")?.scrollTop || 0
@@ -22,7 +21,7 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
 
   const TABS = [
     { name: "Cockpit", href: "/admin/ai/acquisition", Icon: OverviewIcon },
-    { name: "Leads", href: "/admin/ai/acquisition/crm", Icon: TableIcon },
+    { name: "Leads CRM", href: "/admin/ai/acquisition/crm", Icon: TableIcon },
     { name: "Brouillons", href: "/admin/ai/acquisition/drafts", Icon: SparklesIcon },
     { name: "Appels", href: "/admin/ai/acquisition/calls", Icon: PhoneIcon },
     { name: "Réponses", href: "/admin/ai/acquisition/inbox", Icon: InboxIcon },
@@ -30,15 +29,14 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
   ]
 
   return (
-    <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden">
-      {/* Barre de navigation — surface noire opaque, bordure nette (pas de
-          glassmorphism ni de glow, conformément à la direction visuelle). */}
+    <div className="flex flex-col h-[calc(100vh-80px)] overflow-hidden bg-[#0a0a0b]">
+      {/* Sub-Navigation Header Bar */}
       <div
-        className={`shrink-0 flex items-center justify-between gap-3 px-4 sm:px-6 py-3 sticky top-0 z-50 bg-[#0a0a0b] border-b transition-colors ${
-          isScrolled ? "border-white/10" : "border-white/5"
+        className={`shrink-0 flex items-center justify-between gap-3 px-4 sm:px-8 py-2.5 sticky top-0 z-50 bg-[#0a0a0b] border-b transition-colors ${
+          isScrolled ? "border-white/10" : "border-white/[0.06]"
         }`}
       >
-        <div className="flex items-center gap-1 bg-white/[0.02] border border-white/10 rounded-xl p-1 overflow-x-auto max-w-full" style={{ scrollbarWidth: "none" }}>
+        <div className="flex items-center gap-1 bg-[#141417] border border-white/[0.08] rounded-xl p-1 overflow-x-auto max-w-full custom-scrollbar">
           {TABS.map((tab) => {
             const isActive = pathname === tab.href
             const Icon = tab.Icon
@@ -48,24 +46,26 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
                 href={tab.href}
                 aria-current={isActive ? "page" : undefined}
                 style={isActive ? { background: "#c4f82a", color: "#000" } : undefined}
-                className={`group flex items-center gap-2 px-3 sm:px-4 py-1.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer whitespace-nowrap ${
-                  isActive ? "" : "text-zinc-400 hover:text-white hover:bg-white/[0.05]"
+                className={`group flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? "shadow-sm shadow-[#c4f82a]/20"
+                    : "text-zinc-400 hover:text-white hover:bg-white/[0.04]"
                 }`}
               >
-                <Icon className={`w-4 h-4 shrink-0 ${isActive ? "text-black" : "text-zinc-500 group-hover:text-zinc-300"}`} />
-                <span className="hidden sm:inline">{tab.name}</span>
+                <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-black" : "text-zinc-500 group-hover:text-zinc-300"}`} />
+                <span>{tab.name}</span>
               </Link>
             )
           })}
         </div>
 
-        <div className="flex items-center gap-2 text-xs font-mono text-zinc-500 shrink-0">
-          <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#c4f82a" }} />
-          <span className="hidden sm:inline">Pôle actif</span>
+        <div className="flex items-center gap-2 text-xs font-mono text-zinc-400 shrink-0">
+          <span className="w-2 h-2 rounded-full bg-[#c4f82a]" />
+          <span className="hidden sm:inline">VPS Strasbourg En Ligne</span>
         </div>
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content Scroll Container */}
       <div
         id="acquisition-content-area"
         className="flex-1 overflow-y-auto bg-[#0a0a0b] custom-scrollbar"
