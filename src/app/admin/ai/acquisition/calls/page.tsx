@@ -26,18 +26,19 @@ function scoreColor(s: number | null) {
 
 function CallRow({ r }: { r: Row }) {
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl border border-white/5 bg-white/[0.02] hover:bg-white/[0.04] transition-colors">
-      <div className={`text-sm font-bold tabular-nums w-9 text-center ${scoreColor(r.score)}`}>{r.score ?? "—"}</div>
-      <div className="min-w-0 flex-1">
+    <div className="grid grid-cols-[2.5rem_1fr_auto] sm:grid-cols-[2.5rem_minmax(0,1fr)_auto_auto] gap-3 items-center px-3 py-2.5 rounded-xl border border-white/[0.06] bg-[#141416] hover:border-white/[0.14] transition-colors">
+      <div className={`text-lg font-bold font-mono tabular-nums text-center ${scoreColor(r.score)}`}>{r.score ?? "—"}</div>
+      <div className="min-w-0">
         <div className="flex items-center gap-2">
           <p className="font-semibold text-white truncate text-sm">{r.companyName}</p>
-          <StatusBadge status={r.status} />
-          {!r.hasEmail && <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 shrink-0">tél. uniquement</span>}
+          {!r.hasEmail && <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-300 border border-amber-500/20 shrink-0">seul canal</span>}
         </div>
-        <p className="text-xs text-zinc-500 truncate mt-0.5">{r.location ?? "Localisation inconnue"} · {leadStatusLabel(r.status)}</p>
+        <p className="text-[11px] text-[#7a7a72] truncate mt-0.5">{r.location ?? "?"} · {leadStatusLabel(r.status)}</p>
       </div>
-      <a href={`tel:${r.phoneDial}`} className="text-sm font-mono text-emerald-300 hover:text-emerald-200 whitespace-nowrap shrink-0">📞 {r.phoneDisplay}</a>
-      <CallSheetButton leadId={r.id} label="Fiche d'appel →" className="text-[11px] font-mono px-2.5 py-1.5 rounded-lg border border-[#c4f82a]/30 bg-[#c4f82a]/10 text-[#c4f82a] hover:bg-[#c4f82a]/18 transition-colors whitespace-nowrap shrink-0 cursor-pointer" />
+      <CallSheetButton leadId={r.id} label="Fiche →" className="hidden sm:inline-flex text-[11px] font-mono px-2.5 py-2 rounded-lg border border-[#c4f82a]/30 bg-[#c4f82a]/10 text-[#c4f82a] hover:bg-[#c4f82a]/18 transition-colors whitespace-nowrap cursor-pointer" />
+      <a href={`tel:${r.phoneDial}`} className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white transition-colors whitespace-nowrap shrink-0">
+        <span aria-hidden>📞</span><span className="font-mono">{r.phoneDisplay}</span>
+      </a>
     </div>
   )
 }

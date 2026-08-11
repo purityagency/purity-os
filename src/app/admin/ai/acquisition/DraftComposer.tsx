@@ -36,7 +36,7 @@ export function DraftComposer({ draft }: { draft: Draft }) {
   const [isEditing, setIsEditing] = useState(false)
   const [subject, setSubject] = useState(draft.subject)
   const [bodyHtml, setBodyHtml] = useState(draft.bodyHtml)
-  const [tone, setTone] = useState(draft.tone || "Liquid Glass (Premium)")
+  const [tone, setTone] = useState(draft.tone || "Manon Verhoeven — Audit & Accroche Sur-Mesure")
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
 
   const [isPending, startTransition] = useTransition()
@@ -187,7 +187,7 @@ export function DraftComposer({ draft }: { draft: Draft }) {
                   disabled={isPending || isSaving || isSending || isRejecting}
                   className="bg-black/40 border border-white/10 rounded px-2.5 py-1 text-xs text-white focus:outline-none focus:border-[#c4f82a] transition-all cursor-pointer"
                 >
-                  <option value="Liquid Glass (Premium)">Premium sobre</option>
+                  <option value="Manon Verhoeven — Audit & Accroche Sur-Mesure">Manon Verhoeven — Sur-Mesure</option>
                   <option value="Direct & Cash">Direct & cash</option>
                   <option value="Subtil & Conseil">Subtil & conseil</option>
                   <option value="Cyber-Futuriste">Moderne & tech</option>
