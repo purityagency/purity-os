@@ -110,93 +110,99 @@ export default async function AdminAcquisitionPage() {
   ]
 
   return (
-    <div className="h-full overflow-y-auto bg-[#09090b]">
-      <div className="max-w-[1600px] mx-auto px-5 lg:px-8 py-6 space-y-6">
+    <div className="h-full overflow-y-auto bg-[#060309]">
+      <div className="max-w-[1480px] mx-auto space-y-6">
 
-        {/* En-tête Tactical HQ */}
-        <div className="flex flex-wrap items-end justify-between gap-4 border-b border-zinc-800 pb-4">
+        {/* En-tête : Minimaliste & Clair */}
+        <div className="flex flex-wrap items-end justify-between gap-4 border-b border-white/5 pb-4">
           <div>
-            <h1 className="text-3xl font-black uppercase tracking-widest text-zinc-100">Tactical HQ</h1>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500 mt-1">Acquisition Department · Live Telemetry</p>
+            <h1 className="text-2xl font-semibold text-[#f8fafc] tracking-tight">Acquisition</h1>
+            <p className="text-[13px] text-[#94a3b8] mt-1">Vue d&apos;ensemble du pipeline et des prochaines actions.</p>
           </div>
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center gap-2 text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />{agentsActive}/10 DÉPLOYÉS
-            </span>
-            <span className="hidden sm:inline text-[10px] font-black uppercase tracking-widest px-3 py-2 rounded bg-zinc-900 border border-zinc-800 text-zinc-400">SCORE MOYEN {avgScore}/100</span>
+            <span className="hidden sm:inline text-xs font-medium px-3 py-1.5 rounded-lg bg-[#0f1014] border border-white/5 text-[#94a3b8]">Score global {avgScore}/100</span>
             <details className="relative group">
-              <summary className="cursor-pointer list-none inline-flex items-center gap-2 rounded bg-zinc-100 text-zinc-900 text-[11px] font-black uppercase tracking-widest px-4 py-2 hover:bg-white hover:scale-105 transition-all">DEPLOIMENT MISSION</summary>
-              <div className="absolute right-0 top-12 z-30 w-80 p-5 rounded-md border border-zinc-700 bg-[#121214] shadow-2xl space-y-4">
-                <div className="text-[11px] font-black uppercase tracking-widest text-zinc-100 border-b border-zinc-800 pb-2">Nouvelle Mission Tactique</div>
-                <form action={launchMission} className="space-y-3">
+              <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 rounded-lg bg-[#7c3aed] text-white text-[13px] font-medium px-4 py-2 hover:bg-[#6d28d9] transition-colors shadow-sm">+ Déployer une mission</summary>
+              <div className="absolute right-0 top-11 z-30 w-80 p-5 rounded-xl border border-white/10 bg-[#0f1014] shadow-2xl space-y-4">
+                <div className="text-[13px] font-semibold text-[#f8fafc] border-b border-white/5 pb-3">Nouvelle mission</div>
+                <form action={launchMission} className="space-y-3.5">
                   {[
-                    { id: "name", label: "Nom de code", ph: "ex : Opération Namur" },
-                    { id: "sectors", label: "Secteur(s) cible", ph: "ex : Coiffure" },
-                    { id: "locations", label: "Zone(s) d'opération", ph: "ex : Namur" },
+                    { id: "name", label: "Nom de code", ph: "ex : Coiffeurs Namur" },
+                    { id: "sectors", label: "Secteur(s)", ph: "ex : Coiffure" },
+                    { id: "locations", label: "Zone(s)", ph: "ex : Namur" },
                   ].map((f) => (
                     <div key={f.id}>
-                      <label className="block text-[9px] font-bold uppercase tracking-widest text-zinc-500 mb-1" htmlFor={`m-${f.id}`}>{f.label}</label>
-                      <input id={`m-${f.id}`} name={f.id} type="text" required placeholder={f.ph} className="w-full rounded bg-[#09090b] border border-zinc-800 px-3 py-2 text-xs text-zinc-100 placeholder:text-zinc-700 focus:outline-none focus:border-zinc-500 transition-colors" />
+                      <label className="block text-[11px] font-medium text-[#94a3b8] mb-1.5" htmlFor={`m-${f.id}`}>{f.label}</label>
+                      <input id={`m-${f.id}`} name={f.id} type="text" required placeholder={f.ph} className="w-full rounded-lg bg-[#1a1b1f] border border-white/5 px-3 py-2 text-[13px] text-[#f8fafc] placeholder:text-[#64748b] focus:outline-none focus:border-[#7c3aed] transition-colors" />
                     </div>
                   ))}
                   <div>
-                    <label className="block text-[9px] font-bold uppercase tracking-widest text-zinc-500 mb-1" htmlFor="m-quota">Quota Cible (1-50)</label>
-                    <input id="m-quota" name="maxLeads" type="number" min={1} max={50} defaultValue={15} required className="w-full rounded bg-[#09090b] border border-zinc-800 px-3 py-2 text-xs text-zinc-100 focus:outline-none focus:border-zinc-500 transition-colors" />
+                    <label className="block text-[11px] font-medium text-[#94a3b8] mb-1.5" htmlFor="m-quota">Quota Cible (1-50)</label>
+                    <input id="m-quota" name="maxLeads" type="number" min={1} max={50} defaultValue={15} required className="w-full rounded-lg bg-[#1a1b1f] border border-white/5 px-3 py-2 text-[13px] text-[#f8fafc] focus:outline-none focus:border-[#7c3aed] transition-colors" />
                   </div>
-                  <button type="submit" className="w-full mt-2 py-2.5 rounded bg-zinc-100 text-zinc-900 text-[10px] font-black uppercase tracking-widest hover:bg-white transition-colors">Exécuter l'ordre</button>
+                  <button type="submit" className="w-full mt-2 py-2.5 rounded-lg bg-[#f8fafc] text-[#060309] text-[13px] font-semibold hover:bg-white transition-colors">Lancer l'opération</button>
                 </form>
               </div>
             </details>
           </div>
         </div>
 
-        {/* Command Queue & Tactical Metrics */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-          <div className={`lg:col-span-4 rounded-md border p-6 flex flex-col justify-between transition-colors ${pendingDrafts > 0 || callableCount > 0 ? 'bg-red-500/5 border-red-500/30' : 'bg-[#18181b] border-zinc-800'}`}>
+        {/* Le Cœur : Command Center & Pipeline */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+          {/* Command Queue : Minimaliste mais explicite */}
+          <div className="lg:col-span-4 rounded-xl border border-white/5 bg-[#0f1014] p-6 flex flex-col justify-between relative overflow-hidden">
+            {/* Glow de fond subtil si alerte */}
+            {(pendingDrafts > 0 || callableCount > 0) && (
+              <div className="absolute -top-10 -right-10 w-32 h-32 bg-[#ef4444] opacity-5 blur-[50px] rounded-full pointer-events-none" />
+            )}
             <div>
-              <div className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${pendingDrafts > 0 || callableCount > 0 ? 'text-red-500' : 'text-zinc-500'}`}>
-                {pendingDrafts > 0 || callableCount > 0 ? <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" /> : null}
-                Command Queue
+              <div className="flex items-center justify-between">
+                <div className="text-[12px] font-medium text-[#94a3b8]">Prochaine Action</div>
+                {(pendingDrafts > 0 || callableCount > 0) && (
+                  <span className="flex h-2 w-2 rounded-full bg-[#ef4444]" />
+                )}
               </div>
-              <div className="mt-4 flex items-baseline gap-3">
-                <span className={`text-6xl font-black tabular-nums leading-none tracking-tighter ${pendingDrafts > 0 || callableCount > 0 ? 'text-red-500' : 'text-zinc-100'}`}>{next.value}</span>
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-400">{next.label}</span>
+              <div className="mt-5 flex items-baseline gap-2">
+                <span className="text-5xl font-semibold tabular-nums tracking-tight text-[#f8fafc]">{next.value}</span>
+                <span className="text-[14px] font-medium text-[#64748b]">{next.label}</span>
               </div>
-              <p className="mt-3 text-[11px] font-medium text-zinc-500">{next.sub}</p>
+              <p className="mt-2 text-[13px] text-[#94a3b8] leading-relaxed">{next.sub}</p>
             </div>
-            <Link href={next.href} className={`mt-6 inline-flex w-max items-center justify-center gap-2 rounded px-5 py-3 text-[10px] font-black uppercase tracking-widest transition-all ${pendingDrafts > 0 || callableCount > 0 ? 'bg-red-500 text-white hover:bg-red-400 shadow-[0_0_15px_rgba(239,68,68,0.3)]' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700 hover:text-white'}`}>
-              {next.verb}
+            <Link href={next.href} className="mt-8 inline-flex w-max items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-[13px] font-medium transition-colors bg-[#1a1b1f] border border-white/5 text-[#f8fafc] hover:bg-[#212226]">
+              {next.verb} →
             </Link>
           </div>
 
-          <div className="lg:col-span-5 rounded-md border border-zinc-800 bg-[#18181b] p-6">
-            <div className="text-[10px] font-black uppercase tracking-widest text-zinc-500 mb-5">Situation du Théâtre (Pipeline)</div>
+          {/* Situation de l'entonnoir */}
+          <div className="lg:col-span-5 rounded-xl border border-white/5 bg-[#0f1014] p-6">
+            <div className="text-[12px] font-medium text-[#94a3b8] mb-6">Pipeline de conversion</div>
             <div className="grid grid-cols-4 gap-4">
               {funnel.map((f) => (
                 <div key={f.k}>
-                  <div className="text-3xl font-black tabular-nums text-zinc-100 leading-none tracking-tighter">{f.v}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mt-2 truncate">{f.k}</div>
-                  <div className="mt-3 h-1.5 rounded-full bg-zinc-900 overflow-hidden border border-zinc-800">
-                    <div className="h-full rounded-full" style={{ width: `${Math.max(3, f.pct)}%`, background: f.k === "RDV" ? "#10b981" : "#52525b" }} />
+                  <div className="text-3xl font-semibold tabular-nums text-[#f8fafc] tracking-tight">{f.v}</div>
+                  <div className="text-[12px] text-[#64748b] mt-1 mb-3">{f.k}</div>
+                  <div className="h-1 rounded-full bg-white/5 overflow-hidden">
+                    <div className="h-full rounded-full" style={{ width: `${Math.max(3, f.pct)}%`, background: f.k === "RDV" ? "#10b981" : "#7c3aed" }} />
                   </div>
-                  <div className="text-[9px] font-black text-zinc-600 mt-1.5 tabular-nums tracking-widest">{f.pct}%</div>
+                  <div className="text-[11px] font-medium text-[#94a3b8] mt-2 tabular-nums">{f.pct}%</div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="lg:col-span-3 grid grid-cols-2 gap-3">
+          {/* Macro KPIs rapides */}
+          <div className="lg:col-span-3 grid grid-cols-2 gap-4">
             {kpis.map((k) => {
               const inner = (
                 <div className="flex flex-col h-full justify-center">
-                  <div className="text-2xl font-black tabular-nums text-zinc-100 leading-none tracking-tighter">{k.v}</div>
-                  <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-2 leading-tight">{k.l}</div>
+                  <div className="text-2xl font-semibold tabular-nums text-[#f8fafc] tracking-tight">{k.v}</div>
+                  <div className="text-[11px] text-[#94a3b8] mt-1 leading-tight">{k.l}</div>
                 </div>
               )
               return k.href ? (
-                <Link key={k.l} href={k.href} className="rounded-md border border-zinc-800 bg-[#18181b] p-4 hover:border-zinc-500 hover:bg-[#27272a] transition-all">{inner}</Link>
+                <Link key={k.l} href={k.href} className="rounded-xl border border-white/5 bg-[#0f1014] p-4 hover:bg-[#1a1b1f] transition-colors">{inner}</Link>
               ) : (
-                <div key={k.l} className="rounded-md border border-zinc-800 bg-[#18181b] p-4">{inner}</div>
+                <div key={k.l} className="rounded-xl border border-white/5 bg-[#0f1014] p-4">{inner}</div>
               )
             })}
           </div>
@@ -206,16 +212,16 @@ export default async function AdminAcquisitionPage() {
         <AgentCommandGrid agents={agents} />
 
         {/* Pipeline compact par étape */}
-        <div className="rounded-md border border-zinc-800 bg-[#18181b] p-6">
-          <div className="flex items-end justify-between border-b border-zinc-800 pb-2 mb-4">
-            <span className="text-[11px] font-black uppercase tracking-widest text-zinc-500">Détail Tactique · État des Cibles</span>
-            <Link href="/admin/ai/acquisition/crm" className="text-[9px] font-black uppercase tracking-widest text-zinc-400 hover:text-zinc-100 transition-colors">Afficher Base Complète →</Link>
+        <div className="rounded-xl border border-white/5 bg-[#0f1014] p-6">
+          <div className="flex items-center justify-between border-b border-white/5 pb-4 mb-5">
+            <span className="text-[12px] font-medium text-[#94a3b8]">Répartition des statuts CRM</span>
+            <Link href="/admin/ai/acquisition/crm" className="text-[12px] font-medium text-[#7c3aed] hover:text-[#6d28d9] transition-colors">Consulter la base →</Link>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
             {LEAD_STATUS_ORDER.filter((s) => s !== "BOUNCED").map((s) => (
-              <Link key={s} href={`/admin/ai/acquisition/crm?status=${s}`} className="rounded border border-zinc-800 bg-[#121214] px-4 py-3 hover:border-zinc-500 hover:bg-[#27272a] transition-all flex flex-col justify-between">
-                <div className="text-2xl font-black tabular-nums text-zinc-100 leading-none tracking-tighter">{statusCounts[s] ?? 0}</div>
-                <div className="text-[9px] font-bold uppercase tracking-widest text-zinc-500 mt-2 leading-tight">{leadStatusLabel(s)}</div>
+              <Link key={s} href={`/admin/ai/acquisition/crm?status=${s}`} className="rounded-lg border border-white/5 bg-[#060309] px-4 py-3 hover:bg-[#1a1b1f] transition-colors flex flex-col justify-between">
+                <div className="text-2xl font-semibold tabular-nums text-[#f8fafc] tracking-tight">{statusCounts[s] ?? 0}</div>
+                <div className="text-[11px] font-medium text-[#64748b] mt-1.5">{leadStatusLabel(s)}</div>
               </Link>
             ))}
           </div>
