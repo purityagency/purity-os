@@ -7,6 +7,7 @@ import { PipelineKanban } from "./PipelineKanban"
 import { BulkSendBar } from "./BulkSendBar"
 import { AgentCommandGrid, AgentInfo, AgentStatus } from "./AgentCommandGrid"
 import { cleanBelgianPhone } from "@/lib/acquisition/phone"
+import { SpaceStarsBackground } from "@/components/acquisition/SpaceStarsBackground"
 
 export const dynamic = "force-dynamic"
 export const revalidate = 0
@@ -130,8 +131,9 @@ export default async function AdminAcquisitionPage() {
   ]
 
   return (
-    <div className="h-full overflow-y-auto bg-[#0a0a0b] custom-scrollbar">
-      <div className="max-w-[1480px] mx-auto px-4 lg:px-8 py-6 space-y-6">
+    <SpaceStarsBackground>
+      <div className="h-full overflow-y-auto custom-scrollbar">
+        <div className="max-w-[1480px] mx-auto px-4 lg:px-8 py-6 space-y-6">
 
         {/* Dynamic Header */}
         <div className="flex flex-wrap items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
@@ -322,7 +324,8 @@ export default async function AdminAcquisitionPage() {
           </div>
         </div>
 
+        </div>
       </div>
-    </div>
+    </SpaceStarsBackground>
   )
 }

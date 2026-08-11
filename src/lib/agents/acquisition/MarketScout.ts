@@ -30,6 +30,25 @@ function getExa(): Exa {
   return _exa;
 }
 
+const BLOCKED_AGGREGATOR_DOMAINS = [
+  'facebook.com', 'instagram.com', 'linkedin.com', 'twitter.com', 'x.com',
+  'youtube.com', 'tiktok.com', 'pinterest.com',
+  'pagesjaunes.be', 'goldenpages.be', 'resto.be', 'tripadvisor.be', 'tripadvisor.com',
+  'booking.com', 'airbnb.com', 'takeaway.com', 'ubereats.com', 'deliveroo.be',
+  'yelp.be', 'yelp.com', 'truvo.be', 'editus.lu', 'belgique-entreprises.be',
+  'monitordecequi.be', 'ejustice.just.fgov.be', 'kbopub.economie.fgov.be',
+  'wikipedia.org', 'amazon.com', 'ebay.com'
+];
+
+function isAggregatorDomain(urlStr: string): boolean {
+  try {
+    const hostname = new URL(urlStr).hostname.toLowerCase().replace(/^www\./, '');
+    return BLOCKED_AGGREGATOR_DOMAINS.some(domain => hostname === domain || hostname.endsWith(`.${domain}`));
+  } catch {
+    return true;
+  }
+}
+
 const SearchStrategySchema = z.object({
   queries: z.array(z.string().min(3)).min(1),
 });
@@ -113,6 +132,13 @@ export class MarketScout extends AutonomousAgent {
             );
             return leadsFound;
           }
+
+          // Filtrage immédiat des annuaires et réseaux sociaux pour ne capturer que les vrais sites PME
+          if (!result.url || isAggregatorDomain(result.url)) {
+            await this.logger.finishTask(`Ignoré (annuaire/réseau social): ${result.url}`);
+            continue;
+          }
+
           evaluationsUsed++;
 
           const evalPrompt = `

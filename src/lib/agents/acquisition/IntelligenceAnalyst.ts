@@ -174,19 +174,44 @@ export class IntelligenceAnalyst extends AutonomousAgent {
     contactPhone: string | null;
     techOpportunity: number;
   }> {
-    // On lit l'accueil PUIS quelques pages de contact courantes : un email s'y
-    // trouve bien plus souvent que sur la home. Les fetchs tournent en
-    // parallèle, chacun avec son propre timeout, jamais bloquant.
+    // On lit l'accueil PUIS on découvre dynamiquement toutes les sous-pages de
+    // contact, d'équipe et d'aide (ex: /contact, /a-propos, /notre-equipe, /mentions-legales).
+    // Les fetchs tournent en parallèle, chacun avec son propre timeout, jamais bloquant.
     let origin = '';
     try {
       origin = new URL(url).origin;
     } catch {
       origin = '';
     }
-    const pageUrls = [url, ...(origin ? CONTACT_PATHS.map((p) => origin + p) : [])];
-    const pages = await Promise.all(pageUrls.map(fetchHtml));
+
+    const homeHtml = await fetchHtml(url);
+
+    // Extraction dynamique des liens internes de contact et d'équipe sur l'accueil
+    const dynamicSubpages: string[] = [];
+    if (homeHtml && origin) {
+      const linkMatches = homeHtml.matchAll(/href=["']([^"']+)["']/gi);
+      for (const m of linkMatches) {
+        const href = m[1].trim();
+        if (/contact|about|equipe|team|mentions|legal|impressum|qui-sommes-nous|nous-contacter|rendez-vous|reservation/i.test(href)) {
+          try {
+            const absoluteUrl = new URL(href, url).href;
+            if (absoluteUrl.startsWith(origin) && !dynamicSubpages.includes(absoluteUrl) && absoluteUrl !== url) {
+              dynamicSubpages.push(absoluteUrl);
+            }
+          } catch {
+            /* URL invalide ignorée */
+          }
+        }
+      }
+    }
+
+    const staticUrls = origin ? CONTACT_PATHS.map((p) => origin + p) : [];
+    const targetUrls = [...new Set([...dynamicSubpages, ...staticUrls])].slice(0, 10);
+
+    const subpagesHtml = await Promise.all(targetUrls.map(fetchHtml));
+    const pages = [homeHtml, ...subpagesHtml];
     const html = pages.filter(Boolean).join('\n');
-    const techOpportunity = computeTechOpportunity(pages[0] || html, url);
+    const techOpportunity = computeTechOpportunity(homeHtml || html, url);
 
     if (!html) {
       return { contactName: null, contactRole: null, contactEmail: null, contactPhone: null, techOpportunity };
@@ -271,17 +296,20 @@ export class IntelligenceAnalyst extends AutonomousAgent {
       if (performanceScore && performanceScore < 50) rawPainPoints.push("Vitesse mobile critique (<50)");
       if (seoScore && seoScore < 80) rawPainPoints.push("SEO de base défaillant");
 
+      const contact = await this.extractContact(lead.websiteUrl);
+
       const prompt = `
-        Voici les résultats de l'audit technique pour l'entreprise ${lead.companyName} (URL: ${lead.websiteUrl}):
-        - Performance Mobile: ${performanceScore || 'N/A'}
+        Voici les résultats de l'audit technique et l'opportunité de l'entreprise ${lead.companyName} (URL: ${lead.websiteUrl}):
+        - Performance Mobile: ${performanceScore || 'N/A (Signal opportunité: ' + contact.techOpportunity + '/100)'}
         - SEO: ${seoScore || 'N/A'}
-        - Problèmes bruts détectés: ${rawPainPoints.join(', ')}
+        - Problèmes bruts détectés: ${rawPainPoints.length > 0 ? rawPainPoints.join(', ') : 'Site existant fonctionnel'}
 
-        En te basant sur le catalogue Purity, quels modules (ex: M04, M07) doit-on absolument proposer à ce prospect ?
-        Formule les pain points commerciaux de manière agressive mais professionnelle.
+        Rappel de la doctrine Purity Agency : TOUTE entreprise PME / indépendant en Wallonie est un prospect à forte valeur pour Purity.
+        - Si le site est lent ou daté : recommander Création / Refonte (M03, M04, M07) et Fiche Google Business (M08).
+        - Si le site est déjà rapide ou moderne : recommander l'Acquisition (SEO Local M13, Publicité Google/Meta M14, Campagnes Email/SMS M15) et l'IA (Pilote Automatique Chatbot WhatsApp & Réservation 24/7 M21/M22, Purity Studio M10/M11).
 
-        Les modules recommandés DOIVENT être de vrais identifiants du catalogue
-        officiel (format "MXX", ex: M04, M07) — jamais un nom de module inventé.
+        Identifie 2 à 4 modules pertinents du catalogue Purity (codes réels format "MXX", ex: M04, M07, M13, M14, M21, M22) adaptés à ce profil.
+        Formule les opportunités et axes d'amélioration commerciaux de manière ultra-professionnelle et concrète.
       `;
 
       const analysis = await this.think<AuditAnalysis>(
@@ -289,8 +317,6 @@ export class IntelligenceAnalyst extends AutonomousAgent {
         "Analyse technique et commerciale",
         AuditAnalysisSchema
       );
-
-      const contact = await this.extractContact(lead.websiteUrl);
 
       await prisma.lead.update({
         where: { id: leadId },

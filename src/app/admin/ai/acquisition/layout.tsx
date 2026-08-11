@@ -19,13 +19,30 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
     return () => container?.removeEventListener("scroll", handleScroll)
   }, [])
 
+  // Pastilles de notification : compteurs d'actions en attente, rafraîchis au
+  // montage, toutes les 60 s, au changement d'onglet et au retour sur la fenêtre.
+  const [badges, setBadges] = useState<{ drafts: number; replies: number; callable: number }>({ drafts: 0, replies: 0, callable: 0 })
+  useEffect(() => {
+    let alive = true
+    const load = () =>
+      fetch("/api/admin/acquisition/badges", { cache: "no-store" })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((d) => { if (alive && d) setBadges(d) })
+        .catch(() => {})
+    load()
+    const iv = setInterval(load, 60_000)
+    const onFocus = () => load()
+    window.addEventListener("focus", onFocus)
+    return () => { alive = false; clearInterval(iv); window.removeEventListener("focus", onFocus) }
+  }, [pathname])
+
   const TABS = [
-    { name: "Cockpit", href: "/admin/ai/acquisition", Icon: OverviewIcon },
-    { name: "Leads CRM", href: "/admin/ai/acquisition/crm", Icon: TableIcon },
-    { name: "Brouillons", href: "/admin/ai/acquisition/drafts", Icon: SparklesIcon },
-    { name: "Appels", href: "/admin/ai/acquisition/calls", Icon: PhoneIcon },
-    { name: "Réponses", href: "/admin/ai/acquisition/inbox", Icon: InboxIcon },
-    { name: "Envoyés", href: "/admin/ai/acquisition/outbox", Icon: MailIcon },
+    { name: "Cockpit", href: "/admin/ai/acquisition", Icon: OverviewIcon, badge: 0 },
+    { name: "Leads CRM", href: "/admin/ai/acquisition/crm", Icon: TableIcon, badge: 0 },
+    { name: "Brouillons", href: "/admin/ai/acquisition/drafts", Icon: SparklesIcon, badge: badges.drafts },
+    { name: "Appels", href: "/admin/ai/acquisition/calls", Icon: PhoneIcon, badge: badges.callable },
+    { name: "Réponses", href: "/admin/ai/acquisition/inbox", Icon: InboxIcon, badge: badges.replies },
+    { name: "Envoyés", href: "/admin/ai/acquisition/outbox", Icon: MailIcon, badge: 0 },
   ]
 
   return (
@@ -54,6 +71,15 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
               >
                 <Icon className={`w-3.5 h-3.5 shrink-0 ${isActive ? "text-black" : "text-zinc-500 group-hover:text-zinc-300"}`} />
                 <span>{tab.name}</span>
+                {tab.badge > 0 && (
+                  <span
+                    className={`ml-0.5 min-w-[16px] h-4 px-1 grid place-items-center rounded-full text-[10px] font-bold font-mono tabular-nums ${
+                      isActive ? "bg-black/80 text-[#c4f82a]" : "bg-[#c4f82a] text-black"
+                    }`}
+                  >
+                    {tab.badge > 99 ? "99+" : tab.badge}
+                  </span>
+                )}
               </Link>
             )
           })}
