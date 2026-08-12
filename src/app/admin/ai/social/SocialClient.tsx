@@ -172,11 +172,20 @@ function ContentCard({ d, onStatus }: { d: DraftView; onStatus: (s: string) => v
       </div>
 
       {/* Actions */}
-      <div className="flex items-center gap-2 px-4 h-12 border-t border-white/5">
+      <div className="flex items-center gap-2 px-4 h-12 border-t border-white/5 overflow-x-auto custom-scrollbar whitespace-nowrap">
         <button onClick={copyAll} className="text-[12px] font-medium px-3 py-1.5 rounded-md border border-white/10 text-[#cbd5e1] hover:bg-white/5 transition-colors">
           {copied ? "Copié ✓" : "Copier le post"}
         </button>
-        <div className="ml-auto flex items-center gap-2">
+        <a 
+          href={`/api/social/render?draftId=${d.id}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[12px] font-medium px-3 py-1.5 rounded-md bg-[#7c3aed]/15 text-[#c4b5fd] border border-[#7c3aed]/30 hover:bg-[#7c3aed]/25 transition-colors flex items-center gap-1.5"
+        >
+          <span>Générer Visuel</span>
+          <span className="text-[10px]">↗</span>
+        </a>
+        <div className="ml-auto flex items-center gap-2 pl-4">
           {!approved && (
             <button onClick={() => onStatus("APPROVED")} className="text-[12px] font-semibold px-3 py-1.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors">Valider</button>
           )}
