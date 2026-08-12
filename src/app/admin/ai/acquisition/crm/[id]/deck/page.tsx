@@ -19,7 +19,7 @@ interface AuditData {
   pageSpeed?: PageSpeedReport
 }
 
-function Slide({ children, dark = false }: { children: React.ReactNode; dark?: boolean }) {
+function Slide({ children }: { children: React.ReactNode }) {
   return (
     <section
       style={{
@@ -29,13 +29,14 @@ function Slide({ children, dark = false }: { children: React.ReactNode; dark?: b
         display: "flex",
         flexDirection: "column",
         justifyContent: "center",
-        padding: "48px 52px",
-        margin: "0 auto 20px",
+        padding: "56px 64px",
+        margin: "0 auto 24px",
         maxWidth: 900,
-        background: dark ? "#0b0b12" : "#1a1b1e",
-        color: dark ? "#1a1b1e" : "#111827",
-        borderRadius: 14,
-        border: dark ? "none" : "1px solid #e5e7eb",
+        background: "#060309",
+        color: "#f8fafc",
+        borderRadius: 16,
+        border: "1px solid rgba(255,255,255,0.05)",
+        boxShadow: "0 25px 50px -12px rgba(0,0,0,0.5)",
       }}
     >
       {children}
@@ -44,7 +45,7 @@ function Slide({ children, dark = false }: { children: React.ReactNode; dark?: b
 }
 
 const kicker = (t: string, color = "#7c3aed") => (
-  <div style={{ fontSize: 12, textTransform: "uppercase" as const, letterSpacing: 2, color, fontWeight: 800, marginBottom: 14 }}>{t}</div>
+  <div style={{ fontSize: 13, textTransform: "uppercase" as const, letterSpacing: 2.5, color, fontWeight: 800, marginBottom: 18 }}>{t}</div>
 )
 
 export default async function DeckPage({ params }: { params: Promise<{ id: string }> }) {
@@ -80,29 +81,37 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
   return (
     <>
       <PrintButton label="Enregistrer le deck en PDF" />
-      <style>{`@media print { .no-print { display:none !important } @page { margin: 0; size: A4 landscape } section { border:none !important } } body { background:#f3f4f6 }`}</style>
-      <div style={{ padding: 20, fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif" }}>
+      <style>{`
+        @media print { 
+          .no-print { display:none !important } 
+          @page { margin: 0; size: A4 landscape } 
+          section { border:none !important; box-shadow:none !important; border-radius:0 !important; margin:0 !important; min-height: 100vh !important; }
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        } 
+        body { background:#060309; }
+      `}</style>
+      <div style={{ padding: "20px 0", fontFamily: "system-ui, -apple-system, Segoe UI, Roboto, sans-serif" }}>
 
         {/* Slide 1 — Couverture */}
-        <Slide dark>
+        <Slide>
           {kicker("Purity Agency · Wallonie", "#a78bfa")}
-          <div style={{ fontSize: 15, color: "#737884", marginBottom: 8 }}>Préparé pour</div>
-          <h1 style={{ fontSize: 46, fontWeight: 800, lineHeight: 1.05, margin: 0 }}>{lead.companyName}</h1>
-          <p style={{ fontSize: 20, color: "#d1d5db", marginTop: 20, maxWidth: 640 }}>{kit.oneLiner}</p>
-          <div style={{ marginTop: 28, fontSize: 13, color: "#a3a9b4" }}>Comment on va vous aider — et ce que ça change pour vous.</div>
+          <div style={{ fontSize: 16, color: "#71717a", marginBottom: 10 }}>Préparé pour</div>
+          <h1 style={{ fontSize: 52, fontWeight: 800, lineHeight: 1.05, margin: 0, color: "#f8fafc" }}>{lead.companyName}</h1>
+          <p style={{ fontSize: 22, color: "#a1a1aa", marginTop: 24, maxWidth: 680 }}>{kit.oneLiner}</p>
+          <div style={{ marginTop: 32, fontSize: 14, color: "#52525b" }}>Comment on va vous aider — et ce que ça change pour vous.</div>
         </Slide>
 
         {/* Slide 2 — Le constat */}
         <Slide>
           {kicker("Le constat")}
-          <h2 style={{ fontSize: 30, fontWeight: 800, margin: "0 0 20px" }}>Où vous perdez des clients aujourd&apos;hui</h2>
-          <div style={{ display: "grid", gap: 14 }}>
+          <h2 style={{ fontSize: 36, fontWeight: 800, margin: "0 0 28px", color: "#f8fafc" }}>Où vous perdez des clients aujourd&apos;hui</h2>
+          <div style={{ display: "grid", gap: 20 }}>
             {clientFindings.map((f, i) => (
-              <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                <div style={{ width: 30, height: 30, borderRadius: 8, background: f.severity === "critique" ? "#fee2e2" : "#fef3c7", color: f.severity === "critique" ? "#f87171" : "#d97706", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, flexShrink: 0 }}>{i + 1}</div>
+              <div key={i} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                <div style={{ width: 34, height: 34, borderRadius: 10, background: f.severity === "critique" ? "rgba(248,113,113,0.15)" : "rgba(217,119,6,0.15)", color: f.severity === "critique" ? "#f87171" : "#fbbf24", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 800, flexShrink: 0, fontSize: 16 }}>{i + 1}</div>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 700 }}>{f.title}</div>
-                  {f.detail && <div style={{ fontSize: 15, color: "#4b5563", marginTop: 3 }}>{f.detail}</div>}
+                  <div style={{ fontSize: 20, fontWeight: 700, color: "#f8fafc" }}>{f.title}</div>
+                  {f.detail && <div style={{ fontSize: 16, color: "#a1a1aa", marginTop: 4, lineHeight: 1.5 }}>{f.detail}</div>}
                 </div>
               </div>
             ))}
@@ -113,35 +122,35 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
         {(kit.scores.performance !== null || kit.scores.seo !== null) && (
           <Slide>
             {kicker("Les chiffres, sans filtre")}
-            <h2 style={{ fontSize: 30, fontWeight: 800, margin: "0 0 24px" }}>Votre présence en ligne, mesurée</h2>
-            <div style={{ display: "flex", gap: 16 }}>
+            <h2 style={{ fontSize: 36, fontWeight: 800, margin: "0 0 32px", color: "#f8fafc" }}>Votre présence en ligne, mesurée</h2>
+            <div style={{ display: "flex", gap: 20 }}>
               {[
                 { label: "Vitesse mobile", v: kit.scores.performance },
                 { label: "Référencement", v: kit.scores.seo },
                 { label: "Accessibilité", v: kit.scores.accessibility },
                 { label: "Bonnes pratiques", v: kit.scores.bestPractices },
               ].map((x) => (
-                <div key={x.label} style={{ flex: 1, textAlign: "center", padding: "20px 8px", border: "1px solid #e5e7eb", borderRadius: 12 }}>
-                  <div style={{ fontSize: 40, fontWeight: 800, color: x.v === null ? "#737884" : x.v >= 90 ? "#34d399" : x.v >= 50 ? "#d97706" : "#f87171" }}>{x.v ?? "—"}</div>
-                  <div style={{ fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5, color: "#a3a9b4", marginTop: 6 }}>{x.label}</div>
+                <div key={x.label} style={{ flex: 1, textAlign: "center", padding: "28px 12px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16 }}>
+                  <div style={{ fontSize: 48, fontWeight: 800, color: x.v === null ? "#3f3f46" : x.v >= 90 ? "#34d399" : x.v >= 50 ? "#fbbf24" : "#f87171" }}>{x.v ?? "—"}</div>
+                  <div style={{ fontSize: 12, textTransform: "uppercase", letterSpacing: 1, color: "#71717a", marginTop: 10 }}>{x.label}</div>
                 </div>
               ))}
             </div>
-            <div style={{ fontSize: 13, color: "#737884", marginTop: 16 }}>Mesures Google Lighthouse (sur 100). Plus c&apos;est bas, plus vous perdez de visiteurs.</div>
+            <div style={{ fontSize: 14, color: "#52525b", marginTop: 20 }}>Mesures Google Lighthouse (sur 100). Plus c&apos;est bas, plus vous perdez de visiteurs.</div>
           </Slide>
         )}
 
         {/* Slide 4 — Notre approche */}
-        <Slide dark>
+        <Slide>
           {kicker("Notre approche", "#a78bfa")}
-          <h2 style={{ fontSize: 30, fontWeight: 800, margin: "0 0 22px" }}>Ce qu&apos;on met en place pour vous</h2>
-          <div style={{ display: "grid", gap: 16 }}>
+          <h2 style={{ fontSize: 36, fontWeight: 800, margin: "0 0 28px", color: "#f8fafc" }}>Ce qu&apos;on met en place pour vous</h2>
+          <div style={{ display: "grid", gap: 20 }}>
             {kit.valueProps.slice(0, 4).map((v, i) => (
-              <div key={i} style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                <div style={{ color: "#a78bfa", fontWeight: 800, fontSize: 18 }}>→</div>
+              <div key={i} style={{ display: "flex", gap: 16, alignItems: "flex-start" }}>
+                <div style={{ color: "#7c3aed", fontWeight: 800, fontSize: 22, lineHeight: 1 }}>→</div>
                 <div>
-                  <div style={{ fontSize: 18, fontWeight: 700 }}>{v.title}</div>
-                  <div style={{ fontSize: 15, color: "#d1d5db", marginTop: 2 }}>{v.detail}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: "#f8fafc" }}>{v.title}</div>
+                  <div style={{ fontSize: 16, color: "#a1a1aa", marginTop: 4, lineHeight: 1.5 }}>{v.detail}</div>
                 </div>
               </div>
             ))}
@@ -151,8 +160,8 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
         {/* Slide 5 — Pourquoi Purity */}
         <Slide>
           {kicker("Pourquoi Purity")}
-          <h2 style={{ fontSize: 30, fontWeight: 800, margin: "0 0 22px" }}>Une agence locale, orientée résultat</h2>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+          <h2 style={{ fontSize: 36, fontWeight: 800, margin: "0 0 32px", color: "#f8fafc" }}>Une agence locale, orientée résultat</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
             {[
               { t: "Basés en Wallonie", d: "On connaît votre marché local et vos clients. Un interlocuteur proche, pas un call-center." },
               { t: "On s'occupe de tout", d: "Conception, textes, mise en ligne, suivi. Vous validez, on exécute." },
@@ -160,21 +169,21 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
               { t: "Sans engagement pour démarrer", d: "On commence par un échange concret. Vous décidez ensuite, en connaissance de cause." },
             ].map((x) => (
               <div key={x.t}>
-                <div style={{ fontSize: 17, fontWeight: 700, color: "#7c3aed" }}>{x.t}</div>
-                <div style={{ fontSize: 14, color: "#4b5563", marginTop: 3 }}>{x.d}</div>
+                <div style={{ fontSize: 19, fontWeight: 700, color: "#7c3aed", marginBottom: 6 }}>{x.t}</div>
+                <div style={{ fontSize: 15, color: "#a1a1aa", lineHeight: 1.5 }}>{x.d}</div>
               </div>
             ))}
           </div>
         </Slide>
 
         {/* Slide 6 — Prochaine étape */}
-        <Slide dark>
+        <Slide>
           {kicker("Prochaine étape", "#a78bfa")}
-          <h2 style={{ fontSize: 34, fontWeight: 800, margin: "0 0 16px" }}>On en parle 20 minutes ?</h2>
-          <p style={{ fontSize: 18, color: "#d1d5db", maxWidth: 620 }}>
-            Un échange court et concret : on vous montre précisément quoi prioriser pour {lead.companyName}, et ce que ça peut vous rapporter. Sans engagement.
+          <h2 style={{ fontSize: 40, fontWeight: 800, margin: "0 0 20px", color: "#f8fafc" }}>On en parle 20 minutes ?</h2>
+          <p style={{ fontSize: 20, color: "#a1a1aa", maxWidth: 680, lineHeight: 1.5 }}>
+            Un échange court et concret : on vous montre précisément quoi prioriser pour <strong style={{ color: "#f8fafc", fontWeight: 700 }}>{lead.companyName}</strong>, et ce que ça peut vous rapporter. Sans engagement.
           </p>
-          <div style={{ marginTop: 28, fontSize: 20, fontWeight: 800, color: "#a78bfa" }}>purity-agency.be</div>
+          <div style={{ marginTop: 36, fontSize: 24, fontWeight: 800, color: "#7c3aed" }}>purity-agency.be</div>
         </Slide>
 
       </div>
