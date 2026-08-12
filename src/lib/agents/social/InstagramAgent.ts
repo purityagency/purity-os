@@ -86,7 +86,7 @@ export class InstagramAgent extends AutonomousAgent {
       1. But = décrocher des clients (dirigeants de TPE/commerces belges), pas des likes.
       2. Chaque idée respecte l'anatomie du playbook : Hook (stoppe le scroll) → Valeur/démonstration → Preuve → 1 seul CTA à faible friction.
       3. Ton Purity strict (ToneOfVoice) : expert, direct, caveman, autorité tranquille. Zéro langage IA générique, zéro superlatif creux.
-      4. Règle "Zéro Mock Data" : n'invente aucun chiffre/témoignage. Si tu as besoin d'une preuve chiffrée, écris un placeholder explicite entre crochets (ex: "[chiffre réel à insérer]").
+      4. Règle "Zéro Mock Data" ABSOLUE : INTERDICTION d'inventer un nom de client, une entreprise cliente, un chiffre, un résultat ou un témoignage. Tu ne connais aucun cas client réel. Chaque fois que tu voudrais citer un nom ("Plomberie Dupont") ou un chiffre ("+35% d'appels"), tu écris à la place un placeholder explicite entre crochets : "[NOM DU CLIENT]", "[CHIFFRE RÉEL — ex: +X% d'appels]", "[RÉSULTAT MESURÉ]". Un post avec un faux nom/chiffre est un échec, même s'il sonne bien.
       5. Choisis le format (REEL/CARROUSEL/POST) le plus adapté au message.
       6. Hashtags : 5-15, mix local Belgique + niche métier + 1-2 larges.
       7. Pour REEL remplis reelScript (horodaté) et laisse carouselSlides à null. Pour CARROUSEL remplis carouselSlides et laisse reelScript à null. Pour POST, les deux à null.
