@@ -17,6 +17,7 @@ export const DEPARTMENTS = [
   { id: "04_PRODUCTION_DIGITALE", alias: "PRODUCTION", label: "Production Digitale", tagline: "L'excellence opérationnelle" },
   { id: "05_VENTES_CLIENTS", alias: "VENTES", label: "Ventes & Clients", tagline: "La relation qui fidélise" },
   { id: "06_STRATEGIE_DATA", alias: "STRATEGIE", label: "Stratégie & Data", tagline: "L'intelligence décisionnelle" },
+  { id: "07_VISIBILITE_RESEAUX", alias: "RESEAUX", label: "Visibilité & Réseaux", tagline: "Le rayonnement de la marque" },
 ] as const
 
 export type DepartmentId = (typeof DEPARTMENTS)[number]["id"]
