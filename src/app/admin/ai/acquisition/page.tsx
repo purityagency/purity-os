@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma"
 import { requireAdminSession } from "@/lib/session"
-import { launchMission } from "@/actions/acquisitionActions"
 import Link from "next/link"
 import { AgentCommandGrid, AgentInfo, AgentStatus } from "./AgentCommandGrid"
+import { AcquisitionHeaderActions } from "./AcquisitionHeaderActions"
 import { cleanBelgianPhone } from "@/lib/acquisition/phone"
 import { LEAD_STATUS_ORDER, leadStatusLabel } from "@/lib/leadStatus"
 
@@ -114,36 +114,14 @@ export default async function AdminAcquisitionPage() {
       <div className="max-w-[1480px] mx-auto space-y-6">
 
         {/* En-tête : Minimaliste & Clair */}
-        <div className="flex flex-wrap items-end justify-between gap-4 border-b border-white/5 pb-4">
+        <div className="flex flex-wrap items-end justify-between gap-4 border-b border-white/5 pb-4 relative z-50">
           <div>
             <h1 className="text-2xl font-semibold text-[#f8fafc] tracking-tight">Acquisition</h1>
             <p className="text-[13px] text-[#94a3b8] mt-1">Vue d&apos;ensemble du pipeline et des prochaines actions.</p>
           </div>
           <div className="flex items-center gap-3">
             <span className="hidden sm:inline text-xs font-medium px-3 py-1.5 rounded-lg bg-[#0f1014] border border-white/5 text-[#94a3b8]">Score global {avgScore}/100</span>
-            <details className="relative group">
-              <summary className="cursor-pointer list-none inline-flex items-center gap-1.5 rounded-lg bg-[#7c3aed] text-white text-[13px] font-medium px-4 py-2 hover:bg-[#6d28d9] transition-colors shadow-sm">+ Déployer une mission</summary>
-              <div className="absolute right-0 top-11 z-30 w-80 p-5 rounded-xl border border-white/10 bg-[#0f1014] shadow-2xl space-y-4">
-                <div className="text-[13px] font-semibold text-[#f8fafc] border-b border-white/5 pb-3">Nouvelle mission</div>
-                <form action={launchMission} className="space-y-3.5">
-                  {[
-                    { id: "name", label: "Nom de code", ph: "ex : Coiffeurs Namur" },
-                    { id: "sectors", label: "Secteur(s)", ph: "ex : Coiffure" },
-                    { id: "locations", label: "Zone(s)", ph: "ex : Namur" },
-                  ].map((f) => (
-                    <div key={f.id}>
-                      <label className="block text-[11px] font-medium text-[#94a3b8] mb-1.5" htmlFor={`m-${f.id}`}>{f.label}</label>
-                      <input id={`m-${f.id}`} name={f.id} type="text" required placeholder={f.ph} className="w-full rounded-lg bg-[#1a1b1f] border border-white/5 px-3 py-2 text-[13px] text-[#f8fafc] placeholder:text-[#64748b] focus:outline-none focus:border-[#7c3aed] transition-colors" />
-                    </div>
-                  ))}
-                  <div>
-                    <label className="block text-[11px] font-medium text-[#94a3b8] mb-1.5" htmlFor="m-quota">Quota Cible (1-50)</label>
-                    <input id="m-quota" name="maxLeads" type="number" min={1} max={50} defaultValue={15} required className="w-full rounded-lg bg-[#1a1b1f] border border-white/5 px-3 py-2 text-[13px] text-[#f8fafc] focus:outline-none focus:border-[#7c3aed] transition-colors" />
-                  </div>
-                  <button type="submit" className="w-full mt-2 py-2.5 rounded-lg bg-[#f8fafc] text-[#060309] text-[13px] font-semibold hover:bg-white transition-colors">Lancer l'opération</button>
-                </form>
-              </div>
-            </details>
+            <AcquisitionHeaderActions missions={missions} />
           </div>
         </div>
 

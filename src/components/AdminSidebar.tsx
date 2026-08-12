@@ -59,6 +59,7 @@ export function AdminSidebar({ session }: { session: Session }) {
         { name: "Production Digitale", poleBadge: "P04", href: "/admin/ai/production", IconComponent: ProjectsIcon },
         { name: "Ventes & Clients", poleBadge: "P05", href: "/admin/ai/ventes", IconComponent: UsersIcon },
         { name: "Stratégie & Data", poleBadge: "P06", href: "/admin/ai/strategie", IconComponent: SparklesIcon },
+        { name: "Visibilité & Réseaux", poleBadge: "P07", href: "/admin/ai/social", IconComponent: SparklesIcon },
       ]
     },
     {

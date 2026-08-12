@@ -399,6 +399,7 @@ model ContentDraft {
   format      String   // REEL, CAROUSEL, POST
   postText    String   @db.Text
   mediaUrls   Json?    // ["https://..."]
+  structured  Json?    // Contenu riche de l'agent : hook, cta, hashtags, visualBrief, reelScript, carouselSlides, pillar, humanScore
   status      String   @default("PENDING_GUARDIAN_APPROVAL") // PENDING_GUARDIAN_APPROVAL, PENDING_CEO_APPROVAL, APPROVED, REJECTED, PUBLISHED
   scheduledAt DateTime?
   createdAt   DateTime @default(now())
