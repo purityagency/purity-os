@@ -84,8 +84,9 @@ export default async function DeckPage({ params }: { params: Promise<{ id: strin
       <style>{`
         @media print { 
           .no-print { display:none !important } 
-          @page { margin: 0; size: A4 landscape } 
-          section { border:none !important; box-shadow:none !important; border-radius:0 !important; margin:0 !important; min-height: 100vh !important; }
+          @page { margin: 0; size: 1920px 1080px; } 
+          body, html { width: 1920px !important; height: 1080px !important; background: #060309 !important; }
+          section { border:none !important; box-shadow:none !important; border-radius:0 !important; margin:0 !important; min-height: 1080px !important; width: 1920px !important; padding: 120px 160px !important; break-inside: avoid; page-break-after: always; display: flex !important; flex-direction: column !important; justify-content: center !important; }
           * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         } 
         body { background:#060309; }
