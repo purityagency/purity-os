@@ -5,14 +5,18 @@ import Link from "next/link"
 import { CopyButton } from "./CopyButton"
 import { GenerateAnglesButton } from "./GenerateAnglesButton"
 import { EnrichButton } from "./EnrichButton"
-import { CallSheetButton } from "./CallSheetButton"
 import { GenerateStrategyButton } from "./GenerateStrategyButton"
 import { RefreshPlacesButton } from "./RefreshPlacesButton"
-import { GlobeIcon, LocationIcon, UserIcon, MailIcon } from "@/components/icons"
-import { StatusBadge } from "@/components/StatusBadge"
+import { ProspectSpotlightHeader } from "./ProspectSpotlightHeader"
+import { IABriefCard } from "./IABriefCard"
+import { CommandBar } from "./CommandBar"
+import { ObjectionDeck } from "./ObjectionDeck"
+import { CompactTimeline } from "./CompactTimeline"
+import { SpotlightInspectors, type InspectorSpec } from "./SpotlightInspectors"
+import { GlobeIcon } from "@/components/icons"
 import type { PageSpeedReport, PageSpeedMetric } from "@/lib/acquisition/pageSpeedInsights"
-import { scoreBand, scoreTextClass, scoreBgClass } from "@/lib/acquisition/scoreColor"
-import { buildSalesKit } from "@/lib/acquisition/salesKit"
+import { scoreBand, scoreTextClass } from "@/lib/acquisition/scoreColor"
+import { buildSalesKit, type AngleKey } from "@/lib/acquisition/salesKit"
 import { buildLeadKitInput, sectorFromMissionParameters } from "@/lib/acquisition/buildLeadKitInput"
 import type { OpportunityStrategy } from "@/lib/agents/acquisition/OpportunityStrategist"
 
@@ -83,6 +87,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
   const audit = (lead.auditData as AuditData | null) ?? {}
   const phone = audit.contactPhone ?? null
+  const phoneDial = phone ? phone.replace(/\s/g, "") : null
   const score = lead.score ?? null
   const sector = sectorFromMissionParameters(lead.mission?.parameters)
   const kit = buildSalesKit(buildLeadKitInput(lead, sector))
@@ -96,403 +101,329 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
     ? `https://image.thum.io/get/width/900/crop/1100/noanimate/${lead.websiteUrl}`
     : null
 
-  const perf = audit.performanceScore
-  const seo = audit.seoScore
-  const techOpp = audit.techOpportunity
+  const perf = audit.performanceScore ?? null
+  const seo = audit.seoScore ?? null
+  const techOpp = audit.techOpportunity ?? null
+  const conversionCriterion = audit.scoreBreakdown?.find((c) => c.label === "Conversion")
+  const conversionPct = conversionCriterion ? Math.round((conversionCriterion.points / conversionCriterion.maxPoints) * 100) : 0
+
+  // ---- Spotlight Header : anneau segmenté (SEO / Mobile / Conversion) ----
+  const ringSegments = [
+    { label: "SEO", value: seo ?? 0, color: "var(--chart-1)" },
+    { label: "Mobile", value: perf ?? 0, color: "var(--chart-3)" },
+    { label: "Conversion", value: conversionPct, color: "var(--chart-5)" },
+  ]
+
+  // ---- IA Brief : résumé + pourquoi appeler (jamais figé sur "site web") ----
+  const briefSummary = audit.strategy?.executiveSummary ?? kit.oneLiner
+  const whyCallBullets = [
+    kit.findings[0]?.title,
+    `${primaryAngle.label} : ${primaryAngle.dailyPain}`,
+    `${kit.lossEstimate.weeklyLow}€–${kit.lossEstimate.weeklyHigh}€/semaine potentiellement en jeu`,
+  ].filter((b): b is string => !!b)
+
+  // ---- Inspecteurs (Arc-style) : contenu calculé serveur, transmis en ReactNode ----
+  const inspectors: InspectorSpec[] = [
+    {
+      key: "seo",
+      label: "SEO",
+      value: seo !== null ? `${Math.round(seo)}` : "—",
+      tone: scoreBand(seo) === "excellent" ? "success" : scoreBand(seo) === "moyen" ? "warn" : "critical",
+      title: "Référencement (SEO)",
+      subtitle: seo !== null ? `Score ${Math.round(seo)}/100` : "Non mesuré",
+      content: (
+        <div className="space-y-4">
+          <ScoreTile label="Score SEO" value={seo !== null ? Math.round(seo) : null} />
+          {audit.painPoints && audit.painPoints.length > 0 && (
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] mb-2">Problèmes détectés</div>
+              <ul className="space-y-1.5">
+                {audit.painPoints.map((p, i) => <li key={i} className="text-sm text-[#d4d4d8] flex gap-2"><span className="text-red-400 shrink-0">▹</span><span>{p}</span></li>)}
+              </ul>
+            </div>
+          )}
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] mb-1">Angle d&apos;acquisition</div>
+            <p className="text-sm text-[#d4d4d8]">{kit.angles.find((a) => a.key === "acquisition")?.dailyPain}</p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "performance",
+      label: "Performance",
+      value: perf !== null ? `${Math.round(perf)}` : "—",
+      tone: scoreBand(perf) === "excellent" ? "success" : scoreBand(perf) === "moyen" ? "warn" : "critical",
+      title: "Performance mobile",
+      subtitle: audit.pageSpeed ? `Test Lighthouse ${audit.pageSpeed.strategy}` : undefined,
+      content: (
+        <div className="space-y-4">
+          <ScoreTile label="Vitesse mobile" value={perf !== null ? Math.round(perf) : null} />
+          {audit.pageSpeed ? <PageSpeedBody report={audit.pageSpeed} /> : (
+            <p className="text-sm text-[#71717a] italic">Pas encore de test PageSpeed Insights complet pour ce lead.</p>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "maps",
+      label: "Maps",
+      icon: <GlobeIcon />,
+      title: "Emplacement",
+      subtitle: lead.location ?? undefined,
+      content: (
+        <div className="space-y-3">
+          <iframe title={`Carte ${lead.companyName}`} src={mapsEmbed} loading="lazy" referrerPolicy="no-referrer-when-downgrade" className="w-full h-[280px] rounded-xl border border-white/5" />
+          <a href={mapsLink} target="_blank" rel="noopener noreferrer" className="text-[12px] text-[#A855F7] hover:underline">Ouvrir dans Google Maps ↗</a>
+        </div>
+      ),
+    },
+    {
+      key: "reputation",
+      label: "Réputation",
+      value: audit.googlePlaces?.rating ? `${audit.googlePlaces.rating}★` : undefined,
+      tone: audit.googlePlaces?.rating ? "success" : "neutral",
+      title: "Réputation Google",
+      content: (
+        <div className="space-y-3">
+          <RefreshPlacesButton leadId={lead.id} />
+          {audit.googlePlaces && !audit.googlePlaces.error && audit.googlePlaces.rating ? (
+            <div className="flex items-center gap-4">
+              <div className="text-3xl font-bold tabular-nums text-emerald-400">{audit.googlePlaces.rating}<span className="text-base text-[#71717a]">/5</span></div>
+              <div className="text-sm text-[#d4d4d8]">{audit.googlePlaces.userRatingsTotal ?? 0} avis Google</div>
+            </div>
+          ) : (
+            <p className="text-sm text-[#71717a] italic">Pas encore de données — clique sur « Actualiser » pour récupérer la note et le nombre d&apos;avis.</p>
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "technique",
+      label: "Technique",
+      value: techOpp !== null ? `${techOpp}` : undefined,
+      title: "Audit technique",
+      subtitle: lead.websiteUrl ?? "Aucun site connu",
+      content: (
+        <div className="space-y-5">
+          {shot && (
+            <a href={lead.websiteUrl!} target="_blank" rel="noopener noreferrer" className="block rounded-xl overflow-hidden border border-white/5">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={shot} alt={`Aperçu de ${lead.companyName}`} loading="lazy" className="w-full h-auto block" />
+            </a>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            <ScoreTile label="Opportunité" value={techOpp} invert />
+            <ScoreTile label="Perf. mobile" value={perf !== null ? Math.round(perf) : null} />
+          </div>
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] mb-2">Audit conversion</div>
+            <div className="space-y-1">
+              <ChecklistRow label="Bouton WhatsApp" ok={audit.hasWhatsApp} impact="Les visiteurs mobiles doivent chercher comment vous contacter." />
+              <ChecklistRow label="Numéro de téléphone visible" ok={!!phone} impact="Un client pressé abandonne plutôt que de chercher votre numéro." />
+              <ChecklistRow label="Réservation en ligne" ok={audit.hasBookingWidget} impact="Chaque rendez-vous doit passer par un appel — impossible en dehors de vos horaires." />
+              <ChecklistRow label="Formulaire de contact" ok={audit.hasContactForm} impact="Un visiteur qui ne veut pas téléphoner n'a aucun autre moyen de vous laisser sa demande." />
+              <ChecklistRow label="Connexion sécurisée (HTTPS)" ok={audit.isHttps} impact="Certains navigateurs affichent un avertissement « site non sécurisé »." />
+              <ChecklistRow label="Suivi analytics" ok={audit.hasAnalytics} impact="Impossible de savoir combien de visiteurs deviennent réellement des demandes." />
+            </div>
+          </div>
+          {audit.cmsDetected && <p className="text-[11px] font-mono text-[#71717a]">Technologie détectée : {audit.cmsDetected}</p>}
+          {audit.socialLinks && audit.socialLinks.length > 0 && (
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] mb-2">Réseaux sociaux détectés</div>
+              <div className="flex flex-wrap gap-2">
+                {audit.socialLinks.map((s, i) => (
+                  <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-white/[0.03] text-[#d4d4d8] border border-white/10 hover:border-[#A855F7]/40 transition-colors capitalize">{s.platform} ↗</a>
+                ))}
+              </div>
+            </div>
+          )}
+          {audit.recommendedModules && audit.recommendedModules.length > 0 && (
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] mb-2">Modules Purity recommandés</div>
+              <div className="flex flex-wrap gap-1.5">
+                {audit.recommendedModules.map((m, i) => <span key={i} className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#A855F7]/10 text-[#d8b4fe] border border-[#A855F7]/25">{m}</span>)}
+              </div>
+            </div>
+          )}
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] mb-2">Service recommandé</div>
+            <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/10 p-3 mb-2">
+              <div className="text-[10px] font-mono uppercase text-emerald-300 mb-0.5">{kit.serviceRecommendation.primary.moduleCode}</div>
+              <div className="text-sm font-semibold text-[#fafafa]">{kit.serviceRecommendation.primary.label}</div>
+              <div className="text-xs text-[#a1a1aa] mt-0.5">{kit.serviceRecommendation.primary.why}</div>
+            </div>
+            <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+              <div className="text-[10px] font-mono uppercase text-[#71717a] mb-0.5">Upsell — {kit.serviceRecommendation.upsell.moduleCode}</div>
+              <div className="text-sm font-semibold text-[#fafafa]">{kit.serviceRecommendation.upsell.label}</div>
+            </div>
+          </div>
+          {!perf && !seo && !audit.painPoints?.length && lead.websiteUrl && (
+            <EnrichButton leadId={lead.id} />
+          )}
+        </div>
+      ),
+    },
+    {
+      key: "scripts",
+      label: "Scripts",
+      tone: "neutral",
+      title: "Scripts de relance",
+      content: (
+        <div className="space-y-3">
+          <ScriptRow label="Rappel téléphonique" text={kit.channelScripts.relanceCall} />
+          <ScriptRow label="SMS" text={kit.channelScripts.sms} />
+          <ScriptRow label="WhatsApp" text={kit.channelScripts.whatsapp} />
+          <ScriptRow label={`Email — ${kit.channelScripts.emailFollowup.subject}`} text={kit.channelScripts.emailFollowup.body} />
+        </div>
+      ),
+    },
+  ]
+
+  if (audit.strategy) {
+    inspectors.push({
+      key: "strategie",
+      label: "Stratégie",
+      tone: "ai",
+      title: "Stratégie générée par IA",
+      content: (
+        <div className="space-y-4">
+          <p className="text-sm text-[#d4d4d8] leading-relaxed">{audit.strategy.executiveSummary}</p>
+          <MetaRow label="Plus gros problème" value={audit.strategy.biggestProblem} />
+          <MetaRow label="Meilleur angle" value={audit.strategy.bestAngle} />
+          <MetaRow label="Offre idéale" value={audit.strategy.idealOffer} />
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] mb-2">Plan d&apos;action 30 jours</div>
+            <ol className="space-y-1.5">
+              {audit.strategy.actionPlan30Days.map((step, i) => (
+                <li key={i} className="text-sm text-[#d4d4d8] flex gap-2"><span className="text-[#A855F7] font-mono text-xs shrink-0">S{step.week}</span><span>{step.action}</span></li>
+              ))}
+            </ol>
+          </div>
+        </div>
+      ),
+    })
+  }
+
+  inspectors.push({
+    key: "plus",
+    label: "Plus",
+    tone: "neutral",
+    title: "Angles multi-canaux & historique",
+    content: (
+      <div className="space-y-5">
+        <div>
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a]">Angles multi-canaux</div>
+            <GenerateAnglesButton leadId={lead.id} hasAngles={!!(audit.seoAudit || audit.linkedinDraft || audit.adsBrief)} />
+          </div>
+          <div className="grid grid-cols-1 gap-2 mb-3">
+            <ChannelRationale label="SEO" angle={kit.angles.find((a) => a.key === "presence" || a.key === "acquisition")} />
+            <ChannelRationale label="LinkedIn" angle={kit.angles.find((a) => a.key === "metier" || a.key === "acquisition")} />
+            <ChannelRationale label="Google/Meta Ads" angle={kit.angles.find((a) => a.key === "acquisition")} />
+          </div>
+          {audit.seoAudit || audit.linkedinDraft || audit.adsBrief ? (
+            <div className="space-y-3">
+              <AngleBox title="Audit SEO comparatif" value={audit.seoAudit} />
+              <AngleBox title="Message LinkedIn" value={audit.linkedinDraft} copyable />
+              <AngleBox title="Brief campagne Ads" value={audit.adsBrief} />
+            </div>
+          ) : (
+            <p className="text-xs text-[#71717a] italic">Aucun angle généré.</p>
+          )}
+        </div>
+        {lead.emailDrafts.length > 0 && (
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] mb-2">Emails de prospection ({lead.emailDrafts.length})</div>
+            <div className="space-y-3">
+              {lead.emailDrafts.map((d) => (
+                <div key={d.id} className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+                  <div className="flex items-center justify-between gap-2 mb-1.5">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-white/5 text-[#a1a1aa]">{d.status} · {d.tone}</span>
+                    <CopyButton text={d.subject + "\n\n" + d.bodyHtml.replace(/<[^>]+>/g, "")} label="Copier" />
+                  </div>
+                  <div className="text-sm font-semibold text-[#fafafa] mb-1">{d.subject}</div>
+                  <div className="text-sm text-[#a1a1aa] leading-relaxed" dangerouslySetInnerHTML={{ __html: d.bodyHtml }} />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    ),
+  })
+
+  const moreLinks = [
+    { href: `/admin/ai/acquisition/crm/${lead.id}/audit`, label: "📄 PDF audit" },
+    { href: `/admin/ai/acquisition/crm/${lead.id}/deck`, label: "🖥️ Deck" },
+  ]
+
+  const metaStrip = [
+    { label: "Contact", value: lead.contactName || "—" },
+    { label: "Relances", value: `${lead.relanceCount}/2` },
+    { label: "Dernier contact", value: lead.lastContactedAt ? new Date(lead.lastContactedAt).toLocaleDateString("fr-BE") : "—" },
+  ]
 
   return (
-    <div className="h-full overflow-y-auto bg-[#212226] p-4 lg:p-8">
-      <div className="max-w-5xl mx-auto space-y-5">
-        {/* Retour */}
-        <Link href="/admin/ai/acquisition/crm" className="inline-flex items-center gap-1.5 text-xs font-mono text-[#a3a9b4] hover:text-[#6366f1] transition-colors">
+    <div className="h-full overflow-y-auto bg-background p-4 lg:p-8">
+      <div className="max-w-4xl mx-auto space-y-5">
+        <Link href="/admin/ai/acquisition/crm" className="inline-flex items-center gap-1.5 text-xs font-mono text-[#71717a] hover:text-[#A855F7] transition-colors">
           ← Retour au CRM
         </Link>
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-[#2a2b30] pb-5">
-          <div className="min-w-0">
-            <div className="flex items-center gap-2 mb-1 text-[10px] font-mono uppercase tracking-wider text-[#737884]">
-              <span>Fiche prospection</span>
-              <span className="text-[#737884]">·</span>
-              <span>Source {lead.source}</span>
-              {audit.lastAuditAt && <><span className="text-[#737884]">·</span><span>Audité le {new Date(audit.lastAuditAt).toLocaleDateString("fr-BE")}</span></>}
-            </div>
-            <h1 className="text-2xl font-bold text-[#e8eaed] tracking-tight truncate">{lead.companyName}</h1>
-            <div className="flex flex-wrap items-center gap-2 mt-2">
-              <StatusBadge status={lead.status} />
-              <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-indigo-500/15 text-[#6366f1] border border-indigo-500/30">Profil : {kit.archetype.label}</span>
-              {lead.mission?.name && <span className="text-[11px] font-mono text-[#737884]">Mission : {lead.mission.name}</span>}
-              {lead.optedOut && <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-red-500/15 text-red-400 border border-red-500/30">Désinscrit</span>}
-            </div>
-            <p className="text-sm text-[#a3a9b4] mt-2 max-w-xl leading-relaxed">{kit.oneLiner}</p>
-          </div>
-          <div className="shrink-0 flex items-center gap-3">
-            <div className="flex flex-col gap-1.5">
-              <a href={`/admin/ai/acquisition/crm/${lead.id}/audit`} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono px-3 py-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/15 text-[#6366f1] hover:bg-indigo-500/25 transition-colors whitespace-nowrap text-center">
-                📄 PDF d&apos;audit
-              </a>
-              <a href={`/admin/ai/acquisition/crm/${lead.id}/deck`} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono px-3 py-1.5 rounded-lg border border-[#2a2b30] bg-[#212226] text-[#cbd0d8] hover:bg-[#e8eaef] transition-colors whitespace-nowrap text-center">
-                🖥️ Deck présentation
-              </a>
-              <CallSheetButton leadId={lead.id} label={`📞 Fiche d'appel${phone ? "" : " (pas de n°)"}`} className={`text-[11px] font-mono px-3 py-1.5 rounded-lg border transition-colors whitespace-nowrap text-center cursor-pointer ${phone ? "border-emerald-300 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25" : "border-[#2a2b30] bg-[#212226] text-[#cbd0d8] hover:bg-[#e8eaef]"}`} />
-              <GenerateStrategyButton leadId={lead.id} hasStrategy={!!audit.strategy} />
-            </div>
-            {score !== null && (
-              <div className="text-right">
-                <div className={`text-4xl font-bold tabular-nums ${scoreTextClass(scoreBand(score))}`}>{score}<span className="text-lg text-[#737884]">/100</span></div>
-                <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884]">Score qualité</div>
-              </div>
-            )}
-          </div>
-        </div>
+        <ProspectSpotlightHeader
+          companyName={lead.companyName}
+          activity={sector ?? lead.mission?.name ?? null}
+          location={lead.location}
+          status={lead.status}
+          ringSegments={ringSegments}
+          ringCenterValue={attackScore !== null ? `${attackScore}` : score !== null ? `${score}` : "—"}
+          ringCenterLabel={attackPriority ?? "Score"}
+          leadId={lead.id}
+          moreLinks={moreLinks}
+          metaStrip={metaStrip}
+        />
 
-        {/* Bandeau Opportunity Intelligence — Potentiel / Urgence / Heure idéale / Canal / Offre */}
-        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
-          <IntelStat label="Potentiel" value={attackScore !== null ? `${attackScore}/100` : "—"} tone={attackScore !== null ? scoreBand(attackScore) : "inconnu"} />
-          <IntelStat label="Priorité" value={attackPriority ?? "Non calculée"} tone={attackPriority === "Critique" || attackPriority === "Forte" ? "excellent" : attackPriority === "Moyenne" ? "moyen" : "inconnu"} />
-          <IntelStat label="Heure idéale" value="Mar-jeu 8-9h / 16-17h" tone="inconnu" />
-          <IntelStat label="Canal" value={audit.contactChannel === "PHONE" ? "Appel" : audit.contactChannel === "EMAIL" ? "Email" : "À qualifier"} tone="inconnu" />
-          <IntelStat label="Offre" value={kit.serviceRecommendation.primary.label} tone="inconnu" />
-        </div>
+        <CommandBar leadId={lead.id} phone={phone} phoneDial={phoneDial} mapsLink={mapsLink} websiteUrl={lead.websiteUrl} email={lead.contactEmail} />
 
-        {/* Bloc 1 — Trigger d'appel : pourquoi appeler maintenant */}
-        <section className="rounded-2xl border border-red-500/30 bg-red-500/10 p-5">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-red-300 font-mono">🔥 Pourquoi appeler maintenant ?</h2>
-            <CopyButton text={kit.callScript.hook} label="Copier l'ouverture" />
-          </div>
-          <div className="space-y-2">
-            <div>
-              <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884] mb-0.5">Plus gros problème détecté</div>
-              <div className="text-sm text-[#e8eaed]">{kit.findings[0]?.title}</div>
-            </div>
-            <div>
-              <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884] mb-0.5">Opportunité principale</div>
-              <div className="text-sm text-[#e8eaed]">{primaryAngle.label} — {primaryAngle.dailyPain}</div>
-            </div>
-            <div className="rounded-xl bg-[#1a1b1e]/60 border border-red-500/20 p-3 mt-2">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-red-300/80 mb-1">Phrase d&apos;ouverture prête</div>
-              <div className="text-sm text-[#e8eaed] leading-relaxed">{kit.callScript.hook}</div>
-            </div>
-          </div>
+        <IABriefCard
+          summary={briefSummary}
+          whyCallBullets={whyCallBullets}
+          hookText={kit.callScript.hook}
+          topObjection={kit.callScript.objections[0]}
+          serviceLabel={kit.serviceRecommendation.primary.label}
+          lossRange={`${kit.lossEstimate.weeklyLow}€–${kit.lossEstimate.weeklyHigh}€`}
+          ctaSlot={<GenerateStrategyButton leadId={lead.id} hasStrategy={!!audit.strategy} />}
+        />
+
+        <SpotlightInspectors inspectors={inspectors} />
+
+        <section className="glass-panel rounded-3xl p-5">
+          <h2 className="text-[11px] font-mono uppercase tracking-wider text-[#71717a] mb-3">Objections probables</h2>
+          <ObjectionDeck objections={kit.callScript.objections} />
         </section>
 
-        {/* Bloc 2 — Profil psychologique */}
-        <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
-          <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-3">Profil décisionnel estimé — {kit.archetype.label}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-400/80 mb-1.5">Ce qui le convainc</div>
-              <ul className="space-y-1">
-                {kit.archetype.convinces.map((c, i) => <li key={i} className="text-sm text-[#cbd0d8] flex gap-2"><span className="text-emerald-400 shrink-0">✓</span><span>{c}</span></li>)}
-              </ul>
-            </div>
-            <div>
-              <div className="text-[10px] font-mono uppercase tracking-wider text-red-400/80 mb-1.5">Ce qu&apos;il déteste</div>
-              <ul className="space-y-1">
-                {kit.archetype.hates.map((c, i) => <li key={i} className="text-sm text-[#cbd0d8] flex gap-2"><span className="text-red-400 shrink-0">✕</span><span>{c}</span></li>)}
-              </ul>
-            </div>
-          </div>
+        <section className="glass-panel rounded-3xl p-5">
+          <h2 className="text-[11px] font-mono uppercase tracking-wider text-[#71717a] mb-3">Historique</h2>
+          <CompactTimeline createdAt={lead.createdAt} lastContactedAt={lead.lastContactedAt} relanceCount={lead.relanceCount} emailDrafts={lead.emailDrafts} />
         </section>
-
-        {/* Stratégie IA générée */}
-        {audit.strategy && (
-          <section className="rounded-2xl border border-indigo-500/30 bg-indigo-500/15 p-5">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-3">🧠 Stratégie générée</h2>
-            <p className="text-sm text-[#cbd0d8] leading-relaxed mb-4">{audit.strategy.executiveSummary}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-              <MetaRow label="Plus gros problème" value={audit.strategy.biggestProblem} />
-              <MetaRow label="Meilleur angle" value={audit.strategy.bestAngle} />
-              <MetaRow label="Offre idéale" value={audit.strategy.idealOffer} />
-            </div>
-            <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884] mb-2">Plan d&apos;action 30 jours</div>
-            <ol className="space-y-1.5">
-              {audit.strategy.actionPlan30Days.map((step, i) => (
-                <li key={i} className="text-sm text-[#cbd0d8] flex gap-2"><span className="text-[#6366f1] font-mono text-xs shrink-0">S{step.week}</span><span>{step.action}</span></li>
-              ))}
-            </ol>
-          </section>
-        )}
-
-        {/* Bloc 4 — Intelligence Google Business (scope réduit : note + nb avis) */}
-        <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono">Réputation Google</h2>
-            <RefreshPlacesButton leadId={lead.id} />
-          </div>
-          {audit.googlePlaces && !audit.googlePlaces.error && audit.googlePlaces.rating ? (
-            <div className="flex items-center gap-4">
-              <div className="text-3xl font-bold tabular-nums text-emerald-400">{audit.googlePlaces.rating}<span className="text-base text-[#737884]">/5</span></div>
-              <div className="text-sm text-[#cbd0d8]">{audit.googlePlaces.userRatingsTotal ?? 0} avis Google</div>
-            </div>
-          ) : (
-            <p className="text-xs text-[#737884] italic">Pas encore de données Google Business — clique sur « Actualiser » pour récupérer la note et le nombre d&apos;avis.</p>
-          )}
-        </section>
-
-        {/* Actions rapides / liens */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <a href={lead.websiteUrl || "#"} target="_blank" rel="noopener noreferrer"
-             className={`flex items-center gap-2 p-3 rounded-xl border transition-colors ${lead.websiteUrl ? "border-[#2a2b30] bg-[#212226] hover:border-indigo-300 hover:bg-[#212226]" : "border-[#2a2b30] bg-[#212226] opacity-40 pointer-events-none"}`}>
-            <GlobeIcon className="w-4 h-4 text-[#6366f1] shrink-0" />
-            <div className="min-w-0"><div className="text-[10px] font-mono uppercase text-[#737884]">Site web</div><div className="text-xs text-[#e8eaed] truncate">{lead.websiteUrl ? lead.websiteUrl.replace(/^https?:\/\/(www\.)?/, "") : "—"}</div></div>
-          </a>
-          <a href={lead.contactEmail ? `mailto:${lead.contactEmail}` : "#"}
-             className={`flex items-center gap-2 p-3 rounded-xl border transition-colors ${lead.contactEmail ? "border-[#2a2b30] bg-[#212226] hover:border-indigo-300 hover:bg-[#212226]" : "border-[#2a2b30] bg-[#212226] opacity-40 pointer-events-none"}`}>
-            <MailIcon className="w-4 h-4 text-[#6366f1] shrink-0" />
-            <div className="min-w-0"><div className="text-[10px] font-mono uppercase text-[#737884]">Email</div><div className="text-xs text-[#e8eaed] truncate">{lead.contactEmail ?? "—"}</div></div>
-          </a>
-          <a href={phone ? `tel:${phone.replace(/\s/g, "")}` : "#"}
-             className={`flex items-center gap-2 p-3 rounded-xl border transition-colors ${phone ? "border-[#2a2b30] bg-[#212226] hover:border-indigo-300 hover:bg-[#212226]" : "border-[#2a2b30] bg-[#212226] opacity-40 pointer-events-none"}`}>
-            <UserIcon className="w-4 h-4 text-[#6366f1] shrink-0" />
-            <div className="min-w-0"><div className="text-[10px] font-mono uppercase text-[#737884]">Téléphone</div><div className="text-xs text-[#e8eaed] truncate">{phone ?? "—"}</div></div>
-          </a>
-          <a href={mapsLink} target="_blank" rel="noopener noreferrer"
-             className="flex items-center gap-2 p-3 rounded-xl border border-[#2a2b30] bg-[#212226] hover:border-indigo-300 hover:bg-[#212226] transition-colors">
-            <LocationIcon className="w-4 h-4 text-[#6366f1] shrink-0" />
-            <div className="min-w-0"><div className="text-[10px] font-mono uppercase text-[#737884]">Google Maps</div><div className="text-xs text-[#e8eaed] truncate">{lead.location ?? "Ouvrir"}</div></div>
-          </a>
-        </div>
-
-        {/* Corps : audit à gauche, previews à droite */}
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
-          {/* Colonne principale */}
-          <div className="lg:col-span-3 space-y-5">
-            {/* Audit expert */}
-            <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-4">Audit technique</h2>
-              <div className="grid grid-cols-3 gap-3 mb-4">
-                <ScoreTile label="Perf. mobile" value={typeof perf === "number" ? Math.round(perf) : null} />
-                <ScoreTile label="SEO" value={typeof seo === "number" ? Math.round(seo) : null} />
-                <ScoreTile label="Opportunité" value={typeof techOpp === "number" ? techOpp : null} invert />
-              </div>
-              {audit.painPoints && audit.painPoints.length > 0 && (
-                <div className="mb-4">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884] mb-2">Points de douleur détectés</div>
-                  <ul className="space-y-1.5">
-                    {audit.painPoints.map((p, i) => (
-                      <li key={i} className="text-sm text-[#cbd0d8] flex gap-2"><span className="text-red-400 shrink-0">▹</span><span>{p}</span></li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              {audit.recommendedModules && audit.recommendedModules.length > 0 && (
-                <div>
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884] mb-2">Modules Purity recommandés (interne)</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {audit.recommendedModules.map((m, i) => (
-                      <span key={i} className="text-[11px] font-mono px-2 py-0.5 rounded bg-indigo-500/15 text-[#6366f1] border border-indigo-500/30">{m}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {!perf && !seo && !audit.painPoints?.length && (
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                  <p className="text-xs text-[#737884] italic">Lead pas encore enrichi (audit, contact, brouillon manquants).</p>
-                  {lead.websiteUrl && <EnrichButton leadId={lead.id} />}
-                </div>
-              )}
-            </section>
-
-            {/* Test Google PageSpeed Insights (hot leads) */}
-            {audit.pageSpeed && <PageSpeedSection report={audit.pageSpeed} />}
-
-            {/* Bloc 5 — Audit Conversion : checklist en langage clair, impact business */}
-            <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-4">Audit Conversion</h2>
-              <div className="space-y-2">
-                <ChecklistRow label="Bouton WhatsApp" ok={audit.hasWhatsApp} impact="Les visiteurs mobiles doivent chercher comment vous contacter." />
-                <ChecklistRow label="Numéro de téléphone visible" ok={!!phone} impact="Un client pressé abandonne plutôt que de chercher votre numéro." />
-                <ChecklistRow label="Réservation en ligne" ok={audit.hasBookingWidget} impact="Chaque rendez-vous doit passer par un appel — impossible en dehors de vos horaires." />
-                <ChecklistRow label="Formulaire de contact" ok={audit.hasContactForm} impact="Un visiteur qui ne veut pas téléphoner n'a aucun autre moyen de vous laisser sa demande." />
-                <ChecklistRow label="Vitesse mobile correcte" ok={typeof perf === "number" ? perf >= 70 : null} impact="Plus de la moitié des visiteurs partent avant 3 secondes de chargement." />
-                <ChecklistRow label="Connexion sécurisée (HTTPS)" ok={audit.isHttps} impact="Certains navigateurs affichent un avertissement « site non sécurisé » qui fait fuir." />
-                <ChecklistRow label="Suivi analytics" ok={audit.hasAnalytics} impact="Impossible de savoir combien de visiteurs deviennent réellement des demandes." />
-              </div>
-              {audit.cmsDetected && <p className="text-[11px] font-mono text-[#737884] mt-3">Technologie détectée : {audit.cmsDetected}</p>}
-            </section>
-
-            {/* Bloc 6 — Réseaux sociaux : présence uniquement, pas de métrique inventée */}
-            <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-3">Réseaux sociaux</h2>
-              {audit.socialLinks && audit.socialLinks.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {audit.socialLinks.map((s, i) => (
-                    <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-[#1a1b1e] text-[#cbd0d8] border border-[#2a2b30] hover:border-indigo-300 transition-colors capitalize">{s.platform} ↗</a>
-                  ))}
-                  {audit.socialLinks.some((s) => s.platform === "instagram" || s.platform === "facebook") && scoreBand(perf ?? null) !== "excellent" && (
-                    <p className="text-xs text-[#a3a9b4] italic mt-1 w-full">Présence sociale active, mais le site vers lequel elle renvoie reste peu optimisé pour convertir.</p>
-                  )}
-                </div>
-              ) : (
-                <p className="text-xs text-[#737884] italic">Aucun réseau social détecté sur le site.</p>
-              )}
-            </section>
-
-            {/* Bloc 7 — Estimation des pertes (toujours une fourchette, jamais une certitude) */}
-            <section className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-amber-300 font-mono mb-2">Estimation — à prendre comme ordre de grandeur</h2>
-              <div className="text-2xl font-bold text-[#e8eaed] mb-1">{kit.lossEstimate.weeklyLow}€ – {kit.lossEstimate.weeklyHigh}€ <span className="text-sm font-normal text-[#a3a9b4]">/ semaine</span></div>
-              <p className="text-sm text-[#cbd0d8]">Basé sur : {kit.lossEstimate.basis}. Même quelques demandes manquées par semaine peuvent représenter plusieurs centaines d&apos;euros sur un mois.</p>
-            </section>
-
-            {/* Bloc 8 — Service Purity recommandé */}
-            <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-3">Service recommandé</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-300 mb-1">Priorité — {kit.serviceRecommendation.primary.moduleCode}</div>
-                  <div className="text-sm font-semibold text-[#e8eaed] mb-1">{kit.serviceRecommendation.primary.label}</div>
-                  <div className="text-xs text-[#a3a9b4]">{kit.serviceRecommendation.primary.why}</div>
-                </div>
-                <div className="rounded-xl border border-[#2a2b30] bg-[#1a1b1e] p-3">
-                  <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884] mb-1">Upsell naturel — {kit.serviceRecommendation.upsell.moduleCode}</div>
-                  <div className="text-sm font-semibold text-[#e8eaed] mb-1">{kit.serviceRecommendation.upsell.label}</div>
-                  <div className="text-xs text-[#a3a9b4]">{kit.serviceRecommendation.upsell.why}</div>
-                </div>
-              </div>
-            </section>
-
-            {/* Bloc 9 — Objections prédites */}
-            <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-3">Objections probables</h2>
-              <div className="grid gap-2">
-                {kit.callScript.objections.map((o, i) => (
-                  <div key={i} className="rounded-xl border border-[#2a2b30] bg-[#1a1b1e] p-3">
-                    <div className="text-sm font-bold text-red-300 mb-1">{o.trigger}</div>
-                    <div className="text-sm text-[#cbd0d8]">{o.response}</div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Bloc 10 — Scripts dynamiques (relance / SMS / WhatsApp / email) */}
-            <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-3">Scripts de relance</h2>
-              <div className="space-y-3">
-                <ScriptRow label="Rappel téléphonique" text={kit.channelScripts.relanceCall} />
-                <ScriptRow label="SMS" text={kit.channelScripts.sms} />
-                <ScriptRow label="WhatsApp" text={kit.channelScripts.whatsapp} />
-                <ScriptRow label={`Email — ${kit.channelScripts.emailFollowup.subject}`} text={kit.channelScripts.emailFollowup.body} />
-              </div>
-            </section>
-
-            {/* Bloc 11 — Angles générés (existant, + justification déterministe par canal) */}
-            <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
-              <div className="flex items-center justify-between gap-3 mb-3">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono">Angles multi-canaux</h2>
-                <GenerateAnglesButton leadId={lead.id} hasAngles={!!(audit.seoAudit || audit.linkedinDraft || audit.adsBrief)} />
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
-                <ChannelRationale label="SEO" angle={kit.angles.find((a) => a.key === "presence" || a.key === "acquisition")} />
-                <ChannelRationale label="LinkedIn" angle={kit.angles.find((a) => a.key === "metier" || a.key === "acquisition")} />
-                <ChannelRationale label="Google/Meta Ads" angle={kit.angles.find((a) => a.key === "acquisition")} />
-              </div>
-              {audit.seoAudit || audit.linkedinDraft || audit.adsBrief ? (
-                <div className="space-y-4">
-                  <AngleBox title="Audit SEO comparatif" value={audit.seoAudit} />
-                  <AngleBox title="Message LinkedIn (à envoyer manuellement)" value={audit.linkedinDraft} copyable />
-                  <AngleBox title="Brief campagne Ads" value={audit.adsBrief} />
-                </div>
-              ) : (
-                <p className="text-xs text-[#737884] italic">Aucun angle généré. Clique sur « Générer les angles multi-canaux » (LinkedIn, Ads, SEO).</p>
-              )}
-            </section>
-
-            {/* Emails de prospection */}
-            {lead.emailDrafts.length > 0 && (
-              <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-4">Emails de prospection ({lead.emailDrafts.length})</h2>
-                <div className="space-y-3">
-                  {lead.emailDrafts.map((d) => (
-                    <div key={d.id} className="rounded-xl border border-[#2a2b30] bg-[#1a1b1e] p-4">
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#212226] text-[#a3a9b4]">{d.status} · {d.tone}</span>
-                          {d.status === "SENT" && (
-                            <>
-                              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${d.openedAt ? "bg-emerald-500/15 text-emerald-300 border-emerald-500/30" : "bg-[#212226] text-[#737884] border-[#2a2b30]"}`}>
-                                {d.openedAt ? `Ouvert ×${d.openCount}` : "Non ouvert"}
-                              </span>
-                              {d.clickedAt && (
-                                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-500/15 text-[#6366f1] border border-indigo-500/30">
-                                  Clic ×{d.clickCount}
-                                </span>
-                              )}
-                            </>
-                          )}
-                        </div>
-                        <CopyButton text={d.subject + "\n\n" + d.bodyHtml.replace(/<[^>]+>/g, "")} label="Copier" />
-                      </div>
-                      <div className="text-sm font-semibold text-[#e8eaed] mb-1">{d.subject}</div>
-                      <div className="text-sm text-[#a3a9b4] leading-relaxed" dangerouslySetInnerHTML={{ __html: d.bodyHtml }} />
-                    </div>
-                  ))}
-                </div>
-              </section>
-            )}
-          </div>
-
-          {/* Colonne previews */}
-          <div className="lg:col-span-2 space-y-5">
-            {/* Screenshot du site */}
-            <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#2a2b30]">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-[#a3a9b4]">Aperçu du site</span>
-                {lead.websiteUrl && <a href={lead.websiteUrl} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono text-[#6366f1] hover:underline">Ouvrir ↗</a>}
-              </div>
-              {shot ? (
-                <a href={lead.websiteUrl!} target="_blank" rel="noopener noreferrer" className="block bg-black">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={shot} alt={`Aperçu de ${lead.companyName}`} loading="lazy" className="w-full h-auto block" />
-                </a>
-              ) : (
-                <div className="p-8 text-center text-xs text-[#737884] italic">Aucun site web connu</div>
-              )}
-            </section>
-
-            {/* Google Maps */}
-            <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] overflow-hidden">
-              <div className="flex items-center justify-between px-4 py-2.5 border-b border-[#2a2b30]">
-                <span className="text-[10px] font-mono uppercase tracking-wider text-[#a3a9b4]">Emplacement</span>
-                <a href={mapsLink} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono text-[#6366f1] hover:underline">Maps ↗</a>
-              </div>
-              <iframe
-                title={`Carte ${lead.companyName}`}
-                src={mapsEmbed}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                className="w-full h-[260px] block border-0"
-              />
-            </section>
-
-            {/* Contact & meta */}
-            <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5 space-y-2 text-sm">
-              <MetaRow label="Contact" value={lead.contactName || "—"} />
-              <MetaRow label="Rôle" value={lead.contactRole || "—"} />
-              <MetaRow label="Relances" value={`${lead.relanceCount}/2`} />
-              <MetaRow label="Dernier contact" value={lead.lastContactedAt ? new Date(lead.lastContactedAt).toLocaleDateString("fr-BE") : "—"} />
-              <MetaRow label="Ajouté le" value={new Date(lead.createdAt).toLocaleDateString("fr-BE")} />
-            </section>
-          </div>
-        </div>
       </div>
     </div>
   )
 }
 
-// Bloc 5 — état + impact business en langage clair, jamais de jargon.
+// ---- Composants de contenu réutilisés par les inspecteurs ----
+
 function ChecklistRow({ label, ok, impact }: { label: string; ok: boolean | null | undefined; impact: string }) {
   const known = ok !== null && ok !== undefined
   const icon = !known ? "•" : ok ? "✅" : "❌"
-  const color = !known ? "text-[#737884]" : ok ? "text-emerald-400" : "text-red-400"
+  const color = !known ? "text-[#71717a]" : ok ? "text-emerald-400" : "text-red-400"
   return (
     <div className="flex items-start gap-3 py-1.5">
       <span className={`shrink-0 ${color}`}>{icon}</span>
       <div className="min-w-0">
-        <div className={`text-sm ${known ? "text-[#e8eaed]" : "text-[#737884] italic"}`}>{label}{!known && " — non mesuré"}</div>
-        {known && !ok && <div className="text-xs text-[#a3a9b4] mt-0.5">Impact : {impact}</div>}
+        <div className={`text-sm ${known ? "text-[#fafafa]" : "text-[#71717a] italic"}`}>{label}{!known && " — non mesuré"}</div>
+        {known && !ok && <div className="text-xs text-[#a1a1aa] mt-0.5">Impact : {impact}</div>}
       </div>
     </div>
   )
@@ -500,42 +431,32 @@ function ChecklistRow({ label, ok, impact }: { label: string; ok: boolean | null
 
 function ScriptRow({ label, text }: { label: string; text: string }) {
   return (
-    <div className="rounded-xl border border-[#2a2b30] bg-[#1a1b1e] p-3">
+    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
       <div className="flex items-center justify-between gap-2 mb-1.5">
-        <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884]">{label}</div>
+        <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a]">{label}</div>
         <CopyButton text={text} label="Copier" />
       </div>
-      <div className="text-sm text-[#cbd0d8] whitespace-pre-wrap leading-relaxed">{text}</div>
+      <div className="text-sm text-[#d4d4d8] whitespace-pre-wrap leading-relaxed">{text}</div>
     </div>
   )
 }
 
-function ChannelRationale({ label, angle }: { label: string; angle?: { label: string; dailyPain: string; score: number } }) {
+function ChannelRationale({ label, angle }: { label: string; angle?: { label: string; dailyPain: string; score: number; key: AngleKey } }) {
   if (!angle) return null
   return (
-    <div className="rounded-xl border border-[#2a2b30] bg-[#1a1b1e] p-3">
-      <div className="text-[10px] font-mono uppercase tracking-wider text-[#6366f1] mb-1">{label}</div>
-      <div className="text-xs text-[#cbd0d8] leading-relaxed">{angle.dailyPain}</div>
-    </div>
-  )
-}
-
-function IntelStat({ label, value, tone }: { label: string; value: string; tone: ReturnType<typeof scoreBand> }) {
-  return (
-    <div className={`rounded-xl border p-3 ${scoreBgClass(tone)}`}>
-      <div className="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-0.5">{label}</div>
-      <div className="text-sm font-bold truncate">{value}</div>
+    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3">
+      <div className="text-[10px] font-mono uppercase tracking-wider text-[#A855F7] mb-1">{label}</div>
+      <div className="text-xs text-[#d4d4d8] leading-relaxed">{angle.dailyPain}</div>
     </div>
   )
 }
 
 function ScoreTile({ label, value, invert = false }: { label: string; value: number | null; invert?: boolean }) {
-  // invert=true : haut = bon (opportunité). sinon : bas = problème (perf/seo).
   const color = scoreTextClass(scoreBand(value, { invert }))
   return (
-    <div className="rounded-xl border border-[#2a2b30] bg-[#1a1b1e] p-3 text-center">
+    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-center">
       <div className={`text-2xl font-bold tabular-nums ${color}`}>{value === null ? "—" : value}</div>
-      <div className="text-[9px] font-mono uppercase tracking-wider text-[#737884] mt-0.5">{label}</div>
+      <div className="text-[9px] font-mono uppercase tracking-wider text-[#71717a] mt-0.5">{label}</div>
     </div>
   )
 }
@@ -543,8 +464,8 @@ function ScoreTile({ label, value, invert = false }: { label: string; value: num
 function MetaRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3">
-      <span className="text-[11px] font-mono uppercase tracking-wider text-[#737884]">{label}</span>
-      <span className="text-[#cbd0d8] truncate">{value}</span>
+      <span className="text-[11px] font-mono uppercase tracking-wider text-[#71717a]">{label}</span>
+      <span className="text-[#d4d4d8] truncate">{value}</span>
     </div>
   )
 }
@@ -552,59 +473,48 @@ function MetaRow({ label, value }: { label: string; value: string }) {
 function PsiScore({ label, value }: { label: string; value: number | null }) {
   const color = scoreTextClass(scoreBand(value, { thresholds: [90, 50] }))
   return (
-    <div className="rounded-xl border border-[#2a2b30] bg-[#1a1b1e] p-3 text-center">
+    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3 text-center">
       <div className={`text-2xl font-bold tabular-nums ${color}`}>{value ?? "—"}</div>
-      <div className="text-[9px] font-mono uppercase tracking-wider text-[#737884] mt-0.5">{label}</div>
+      <div className="text-[9px] font-mono uppercase tracking-wider text-[#71717a] mt-0.5">{label}</div>
     </div>
   )
 }
 
 function PsiMetricRow({ m }: { m: PageSpeedMetric }) {
-  const color = m.score === null ? "text-[#a3a9b4]" : scoreTextClass(scoreBand(m.score, { thresholds: [0.9, 0.5] }))
+  const color = m.score === null ? "text-[#a1a1aa]" : scoreTextClass(scoreBand(m.score, { thresholds: [0.9, 0.5] }))
   return (
-    <div className="flex items-center justify-between gap-3 py-1.5 border-b border-[#2a2b30] last:border-0">
-      <span className="text-sm text-[#cbd0d8] truncate">{m.title}</span>
+    <div className="flex items-center justify-between gap-3 py-1.5 border-b border-white/5 last:border-0">
+      <span className="text-sm text-[#d4d4d8] truncate">{m.title}</span>
       <span className={`text-sm font-mono tabular-nums shrink-0 ${color}`}>{m.displayValue || "—"}</span>
     </div>
   )
 }
 
-function PageSpeedSection({ report }: { report: PageSpeedReport }) {
+function PageSpeedBody({ report }: { report: PageSpeedReport }) {
+  if (report.error) {
+    return <p className="text-xs text-amber-400/80 italic">Test indisponible ({report.error}). Il sera relancé au prochain scoring.</p>
+  }
   return (
-    <section className="rounded-2xl border border-indigo-500/30 bg-indigo-500/15 p-5">
-      <div className="flex items-center justify-between gap-2 mb-1">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono flex items-center gap-2">
-          <GlobeIcon className="w-4 h-4 text-[#6366f1]" /> Google PageSpeed Insights
-        </h2>
-        <span className="text-[10px] font-mono text-[#737884]">{report.strategy} · {new Date(report.fetchedAt).toLocaleDateString("fr-BE")}</span>
+    <>
+      <div className="grid grid-cols-2 gap-2 mb-4">
+        <PsiScore label="Perf." value={report.scores.performance} />
+        <PsiScore label="SEO" value={report.scores.seo} />
+        <PsiScore label="Accessib." value={report.scores.accessibility} />
+        <PsiScore label="Bonnes prat." value={report.scores.bestPractices} />
       </div>
-      {report.finalUrl && <p className="text-[11px] font-mono text-[#737884] mb-4 truncate">{report.finalUrl}</p>}
-
-      {report.error ? (
-        <p className="text-xs text-amber-400/80 italic">Test indisponible ({report.error}). Il sera relancé au prochain scoring.</p>
-      ) : (
-        <>
-          <div className="grid grid-cols-4 gap-2 mb-4">
-            <PsiScore label="Perf." value={report.scores.performance} />
-            <PsiScore label="SEO" value={report.scores.seo} />
-            <PsiScore label="Accessib." value={report.scores.accessibility} />
-            <PsiScore label="Bonnes prat." value={report.scores.bestPractices} />
-          </div>
-          {report.coreWebVitals.length > 0 && (
-            <div className="mb-4">
-              <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884] mb-1">Core Web Vitals</div>
-              {report.coreWebVitals.map((m) => <PsiMetricRow key={m.id} m={m} />)}
-            </div>
-          )}
-          {report.opportunities.length > 0 && (
-            <div>
-              <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884] mb-1">Principales opportunités (gain temps)</div>
-              {report.opportunities.map((m) => <PsiMetricRow key={m.id} m={m} />)}
-            </div>
-          )}
-        </>
+      {report.coreWebVitals.length > 0 && (
+        <div className="mb-4">
+          <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] mb-1">Core Web Vitals</div>
+          {report.coreWebVitals.map((m) => <PsiMetricRow key={m.id} m={m} />)}
+        </div>
       )}
-    </section>
+      {report.opportunities.length > 0 && (
+        <div>
+          <div className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] mb-1">Opportunités (gain temps)</div>
+          {report.opportunities.map((m) => <PsiMetricRow key={m.id} m={m} />)}
+        </div>
+      )}
+    </>
   )
 }
 
@@ -612,19 +522,19 @@ function AngleBox({ title, value, copyable = false }: { title: string; value: un
   const entries = readableEntries(value)
   if (entries.length === 0) return null
   return (
-    <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono">{title}</h2>
+    <div className="rounded-xl border border-white/10 bg-white/[0.02] p-3.5">
+      <div className="flex items-center justify-between gap-2 mb-2">
+        <h3 className="text-[11px] font-mono uppercase tracking-wider text-[#71717a]">{title}</h3>
         {copyable && <CopyButton text={plainText(value)} label="Copier" />}
       </div>
       <div className="space-y-2">
         {entries.map((e, i) => (
           <div key={i} className="text-sm">
-            {e.label && <span className="text-[10px] font-mono uppercase tracking-wider text-[#737884] block mb-0.5">{e.label}</span>}
-            <span className="text-[#cbd0d8] leading-relaxed whitespace-pre-wrap">{e.text}</span>
+            {e.label && <span className="text-[10px] font-mono uppercase tracking-wider text-[#71717a] block mb-0.5">{e.label}</span>}
+            <span className="text-[#d4d4d8] leading-relaxed whitespace-pre-wrap">{e.text}</span>
           </div>
         ))}
       </div>
-    </section>
+    </div>
   )
 }
