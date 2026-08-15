@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { PrintButton } from "@/components/PrintButton"
 import { buildSalesKit } from "@/lib/acquisition/salesKit"
 import type { PageSpeedReport } from "@/lib/acquisition/pageSpeedInsights"
+import { scoreBand, scoreLabel, scoreHexColor } from "@/lib/acquisition/scoreColor"
 
 export const dynamic = "force-dynamic"
 
@@ -21,10 +22,8 @@ interface AuditData {
 }
 
 function grade(score: number | null): { label: string; color: string } {
-  if (score === null) return { label: "N/A", color: "#737884" }
-  if (score >= 90) return { label: "Excellent", color: "#34d399" }
-  if (score >= 50) return { label: "À améliorer", color: "#d97706" }
-  return { label: "Critique", color: "#f87171" }
+  const band = scoreBand(score, { thresholds: [90, 50] })
+  return { label: scoreLabel(band), color: scoreHexColor(band) }
 }
 
 function ScoreBlock({ label, score }: { label: string; score: number | null }) {

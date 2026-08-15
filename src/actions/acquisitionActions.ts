@@ -1,6 +1,7 @@
 "use server"
 
 import { prisma } from "@/lib/prisma"
+import type { Prisma } from "@prisma/client"
 import { revalidatePath } from "next/cache"
 import { requireAdminSession } from "@/lib/session"
 import { NotFoundError, ValidationError } from "@/lib/errors"
@@ -12,6 +13,45 @@ import { eventBus } from "@/core/events"
 import { DraftReviewedEvent } from "@/lib/agents/acquisition/events"
 
 export type ActionResult = { ok: true; message: string } | { ok: false; message: string }
+
+export type CallOutcome = "NO_ANSWER" | "NOT_INTERESTED" | "INTERESTED" | "MEETING"
+
+/**
+ * Boucle de résultat d'appel (Live Call Cockpit) : capture ce qui s'est
+ * vraiment passé pendant l'appel. Sans ça, le canal téléphone (56% de la
+ * base) ne capitalisait rien — on appelait, et rien n'était enregistré.
+ * MEETING -> statut MEETING_BOOKED. Les autres issues restent journalisées
+ * dans auditData.callLog (historique complet, jamais écrasé) + relancées
+ * normalement par le cron /relances.
+ */
+export async function logCallOutcome(leadId: string, outcome: CallOutcome, notes: string): Promise<ActionResult> {
+  await requireAdminSession()
+
+  const lead = await prisma.lead.findUnique({ where: { id: leadId } })
+  if (!lead) return { ok: false, message: "Lead introuvable." }
+
+  const audit = (lead.auditData as Record<string, unknown> | null) ?? {}
+  const prevLog = Array.isArray(audit.callLog) ? (audit.callLog as unknown[]) : []
+  const entry = { outcome, notes: notes.trim() || null, at: new Date().toISOString() }
+
+  await prisma.lead.update({
+    where: { id: leadId },
+    data: {
+      status: outcome === "MEETING" ? "MEETING_BOOKED" : lead.status,
+      auditData: {
+        ...audit,
+        callLog: [...prevLog, entry],
+        lastCallOutcome: outcome,
+        lastCallAt: entry.at,
+      } as object,
+    },
+  })
+
+  revalidatePath("/admin/ai/acquisition/calls")
+  revalidatePath("/admin/ai/acquisition/today")
+  revalidatePath(`/admin/ai/acquisition/crm/${leadId}`)
+  return { ok: true, message: "Issue d'appel enregistrée." }
+}
 
 /**
  * Lance une nouvelle Mission depuis l'admin. Le bouton "+ Nouvelle Mission"
@@ -268,7 +308,7 @@ export async function getCallSheet(leadId: string) {
   })
   if (!lead) throw new NotFoundError("Lead")
 
-  const audit = (lead.auditData as { performanceScore?: number | null; seoScore?: number | null; painPoints?: string[]; contactPhone?: string | null; pageSpeed?: unknown } | null) ?? {}
+  const audit = (lead.auditData as { performanceScore?: number | null; seoScore?: number | null; techOpportunity?: number | null; painPoints?: string[]; recommendedModules?: string[]; contactPhone?: string | null; pageSpeed?: unknown } | null) ?? {}
   const sectors = (lead.mission?.parameters as { sectors?: unknown } | null)?.sectors
   const sector = Array.isArray(sectors) && sectors.length > 0 ? String(sectors[0]) : null
   const phone = cleanBelgianPhone(audit.contactPhone)
@@ -284,6 +324,8 @@ export async function getCallSheet(leadId: string) {
     performanceScore: audit.performanceScore ?? null,
     seoScore: audit.seoScore ?? null,
     painPoints: audit.painPoints,
+    recommendedModules: audit.recommendedModules ?? null,
+    techOpportunity: audit.techOpportunity ?? null,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     pageSpeed: (audit.pageSpeed as any) ?? null,
   })
@@ -311,9 +353,8 @@ export type CallSheetData = Awaited<ReturnType<typeof getCallSheet>>
 export async function enrichLeadNow(leadId: string): Promise<ActionResult> {
   await requireAdminSession()
 
-  const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { id: true, websiteUrl: true } })
+  const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { id: true } })
   if (!lead) throw new NotFoundError("Lead")
-  if (!lead.websiteUrl) return { ok: false, message: "Ce lead n'a pas de site web — rien à auditer." }
 
   try {
     const { onLeadCaptured } = await import("@/lib/agents/acquisition/handlers/OnLeadCaptured")
@@ -323,6 +364,43 @@ export async function enrichLeadNow(leadId: string): Promise<ActionResult> {
     return { ok: true, message: "Lead enrichi (audit, contact, brouillon, score)." }
   } catch (e) {
     return { ok: false, message: e instanceof Error ? e.message : "Échec de l'enrichissement." }
+  }
+}
+
+/**
+ * Rafraîchit manuellement la note/nb d'avis Google Business d'un lead
+ * (bouton "🔄 Actualiser Google Business"). Contourne la fraîcheur de 14
+ * jours (déclenchement manuel = intention explicite), contrairement à
+ * l'enrichissement automatique qui respecte ce délai.
+ */
+export async function refreshGooglePlaces(leadId: string): Promise<ActionResult> {
+  await requireAdminSession()
+
+  const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { id: true, companyName: true, location: true } })
+  if (!lead) throw new NotFoundError("Lead")
+
+  try {
+    const { resolvePlaceId, fetchPlaceDetails } = await import("@/lib/acquisition/googlePlaces")
+    const current = await prisma.lead.findUnique({ where: { id: leadId }, select: { auditData: true } })
+    const existingAudit = (current?.auditData as Record<string, unknown> | null) ?? {}
+
+    // Pas de colonne dédiée (migration Prisma bloquée par un drift Neon non
+    // lié à ce chantier) — le Place ID vit dans auditData, sans migration.
+    let placeId = typeof existingAudit.googlePlaceId === 'string' ? existingAudit.googlePlaceId : null
+    if (!placeId) {
+      placeId = await resolvePlaceId(lead.companyName, lead.location)
+      if (!placeId) return { ok: false, message: "Entreprise introuvable sur Google Places (ou clé API absente)." }
+    }
+
+    const report = await fetchPlaceDetails(placeId)
+    await prisma.lead.update({ where: { id: leadId }, data: { auditData: { ...existingAudit, googlePlaceId: placeId, googlePlaces: report } as unknown as Prisma.InputJsonValue } })
+    revalidatePath(`/admin/ai/acquisition/crm/${leadId}`)
+
+    return report.error
+      ? { ok: false, message: `Échec Google Places : ${report.error}` }
+      : { ok: true, message: report.rating ? `Note ${report.rating}/5 (${report.userRatingsTotal ?? 0} avis).` : "Aucune note Google trouvée." }
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Échec de l'actualisation Google Places." }
   }
 }
 
@@ -376,4 +454,45 @@ export async function generateLeadAngles(leadId: string): Promise<ActionResult> 
 
   revalidatePath(`/admin/ai/acquisition/crm/${leadId}`)
   return { ok: true, message: "Angles multi-canaux générés." }
+}
+
+/**
+ * Génère à la demande la stratégie d'opportunité IA (résumé exécutif + plan
+ * d'action 30 jours) pour un lead — bouton "Générer une stratégie" sur la
+ * fiche. Raisonne sur buildSalesKit(), jamais sur les champs bruts.
+ */
+export async function generateLeadStrategy(leadId: string): Promise<ActionResult> {
+  await requireAdminSession()
+
+  const lead = await prisma.lead.findUnique({
+    where: { id: leadId },
+    include: { mission: { select: { parameters: true } } },
+  })
+  if (!lead) throw new NotFoundError("Lead")
+
+  try {
+    const { OpportunityStrategist } = await import("@/lib/agents/acquisition/OpportunityStrategist")
+    const { buildLeadKitInput, sectorFromMissionParameters } = await import("@/lib/acquisition/buildLeadKitInput")
+
+    const sector = sectorFromMissionParameters(lead.mission?.parameters)
+    const kitInput = buildLeadKitInput(lead, sector)
+    const strategy = await new OpportunityStrategist().generateStrategy(kitInput)
+
+    const current = (typeof lead.auditData === "object" && lead.auditData !== null ? lead.auditData : {}) as Record<string, unknown>
+    await prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        auditData: {
+          ...current,
+          strategy,
+          strategyGeneratedAt: new Date().toISOString(),
+        } as unknown as Prisma.InputJsonValue,
+      },
+    })
+
+    revalidatePath(`/admin/ai/acquisition/crm/${leadId}`)
+    return { ok: true, message: "Stratégie générée." }
+  } catch (e) {
+    return { ok: false, message: e instanceof Error ? e.message : "Échec de la génération de stratégie." }
+  }
 }

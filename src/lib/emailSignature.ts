@@ -35,22 +35,38 @@ export function dataSourceDisclosure(source: string, websiteUrl?: string | null)
   }
 }
 
+const LOGO_URL = "https://purity-agency.be/assets/logo.png"
+
+/**
+ * `variant` :
+ *  - "cold" (défaut) : 1er contact non sollicité — AUCUNE image (voir doc en
+ *    tête de fichier, ça reste la règle absolue pour rester hors Promotions).
+ *  - "engaged" : le prospect a DÉJÀ répondu (relance sur fil existant, ou
+ *    réponse à sa réponse) — Gmail ne reclassera pas un fil de conversation
+ *    actif en Promotions pour un logo discret. On peut se permettre une
+ *    identité de marque plus soignée : petit logo, mise en page légèrement
+ *    plus posée. Toujours sans bouton ni bloc couleur — un pied de mail pro,
+ *    pas un encart marketing.
+ */
 export function withAgentSignature(
   bodyHtml: string,
-  opts: { unsubscribeUrl: string; source: string; websiteUrl?: string | null },
+  opts: { unsubscribeUrl: string; source: string; websiteUrl?: string | null; variant?: "cold" | "engaged" },
 ): string {
   const sourceLine = dataSourceDisclosure(opts.source, opts.websiteUrl)
+  const engaged = opts.variant === "engaged"
 
-  // Signature volontairement sobre et proche du texte (aucune image, aucun
-  // bouton, un seul lien "cliquable" visible) pour ne pas déclencher le
-  // classifieur Promotions de Gmail. Les mentions légales sont en petit texte
-  // gris, sur le modèle d'un pied de mail pro classique — pas un encart marketing.
+  const brandBlock = engaged
+    ? `<img src="${LOGO_URL}" alt="Purity Agency" width="120" style="display:block; height:auto; margin-bottom:8px;">
+       <div style="font-weight:600;">${AGENT_NAME}</div>
+       <div style="color:#555;">Purity Agency — <a href="${SITE_URL}" style="color: #1a1a1a;">purity-agency.be</a></div>`
+    : `${AGENT_NAME}<br>
+       Purity Agency — <a href="${SITE_URL}" style="color: #1a1a1a;">purity-agency.be</a>`
+
   return `
     <div style="font-family: -apple-system, Segoe UI, Helvetica, Arial, sans-serif; font-size: 15px; line-height: 1.6; color: #1a1a1a; max-width: 560px;">
       ${bodyHtml}
       <div style="margin-top: 22px;">
-        ${AGENT_NAME}<br>
-        Purity Agency — <a href="${SITE_URL}" style="color: #1a1a1a;">purity-agency.be</a>
+        ${brandBlock}
       </div>
       <div style="margin-top: 18px; font-size: 11.5px; line-height: 1.55; color: #9a9a9a;">
         ${sourceLine}. Pour ne plus être contacté :

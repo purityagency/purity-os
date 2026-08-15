@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma';
 import type { Prisma } from '@prisma/client';
 import { AutonomousAgent } from './AgentCore';
 import { runPageSpeedTest, isPageSpeedFresh } from '@/lib/acquisition/pageSpeedInsights';
+import { computeScoreBreakdown } from '@/lib/acquisition/attackPriority';
 
 // Seuil "hot lead" : au-delà, on déclenche un vrai test Google PageSpeed
 // Insights complet sur le site du prospect (volume faible = pas de rate-limit).
@@ -37,7 +38,12 @@ export class LeadScoringAnalyst extends AutonomousAgent {
     const breakdown: LeadScore['breakdown'] = [];
     let score = 0;
 
-    const audit = lead.auditData as { performanceScore?: number; seoScore?: number; techOpportunity?: number; contactPhone?: string } | null;
+    const audit = lead.auditData as {
+      performanceScore?: number; seoScore?: number; techOpportunity?: number; contactPhone?: string;
+      hasWhatsApp?: boolean; hasContactForm?: boolean; hasBookingWidget?: boolean;
+      hasViewportMeta?: boolean; isHttps?: boolean;
+      googlePlaces?: { rating?: number | null; userRatingsTotal?: number | null };
+    } | null;
 
     // 1. OPPORTUNITÉ TECHNIQUE (0-35) — le cœur : "cette entreprise a-t-elle
     // besoin de nous ?". Plus le site est mauvais, plus l'opportunité est
@@ -75,12 +81,16 @@ export class LeadScoringAnalyst extends AutonomousAgent {
     // 3. JOIGNABILITÉ — email (0-25) : un email nominatif (jean@) vaut bien plus
     // qu'un générique (info@/contact@) car il ouvre un vrai canal 1:1.
     const email = lead.contactEmail?.toLowerCase() ?? null;
+    // On s'appuie sur la qualité déjà calculée par l'Intelligence Analyst
+    // (nominatif > rôle > générique). Un générique ne joint aucun décideur : il
+    // vaut peu, car ce lead se travaille au téléphone, pas au mail.
+    const emailQuality = (audit as { emailQuality?: string } | null)?.emailQuality
+      ?? (email ? (/^(info|contact|hello|bonjour|admin|sales|commercial|accueil|welcome|mail|no-?reply)/.test(email.split('@')[0]) ? 'generic' : 'nominative') : null);
     let emailPts = 0;
-    if (email) {
-      const localPart = email.split('@')[0];
-      const isGeneric = /^(info|contact|hello|bonjour|admin|sales|commercial|accueil|welcome|mail|no-?reply)/.test(localPart);
-      emailPts = isGeneric ? 18 : 25;
-      breakdown.push({ criterion: 'Joignabilité email', points: emailPts, reason: isGeneric ? `Email générique (${email})` : `Email nominatif (${email})` });
+    if (email && emailQuality) {
+      emailPts = emailQuality === 'nominative' ? 25 : emailQuality === 'role' ? 22 : 8;
+      const label = emailQuality === 'generic' ? 'Email générique (faible)' : emailQuality === 'role' ? 'Email rôle-décideur' : 'Email nominatif (décideur)';
+      breakdown.push({ criterion: 'Joignabilité email', points: emailPts, reason: `${label} (${email})` });
     } else {
       breakdown.push({ criterion: 'Joignabilité email', points: 0, reason: 'Aucun email — lead injoignable par mail' });
     }
@@ -114,9 +124,47 @@ export class LeadScoringAnalyst extends AutonomousAgent {
 
     score = Math.max(0, Math.min(100, score));
 
+    // Bande de priorité = score × joignabilité réelle du décideur. Un score haut
+    // sans moyen de joindre le décideur n'est PAS un hot lead (on ne peut rien
+    // en faire). Pilote ensuite le routage par canal (email / appel / social).
+    const channel = (audit as { contactChannel?: string } | null)?.contactChannel ?? null;
+    const reachable = channel === 'EMAIL' || channel === 'PHONE';
+    const priorityBand: 'HOT' | 'WARM' | 'COLD' =
+      score >= 70 && reachable ? 'HOT'
+      : (score >= 45 && reachable) || (score >= 70 && !reachable) ? 'WARM'
+      : 'COLD';
+
+    // Score pondéré "Priorité d'attaque" (Conversion 30 / Réputation 20 /
+    // Mobile 15 / SEO 15 / Opportunité 20) — calcul ADDITIONNEL, n'écrase pas
+    // `score`/`priorityBand` ci-dessus dont dépendent déjà la liste CRM et
+    // /today. Réputation absente (pas encore de données Google Places) →
+    // son poids est redistribué sur les 4 autres critères (voir attackPriority.ts).
+    const scoreBreakdown = computeScoreBreakdown({
+      hasWhatsApp: audit?.hasWhatsApp ?? null,
+      hasContactForm: audit?.hasContactForm ?? null,
+      hasBookingWidget: audit?.hasBookingWidget ?? null,
+      hasPhone,
+      googleRating: audit?.googlePlaces?.rating ?? null,
+      googleReviewCount: audit?.googlePlaces?.userRatingsTotal ?? null,
+      performanceScore: perf ?? null,
+      techOpportunity: techOpp ?? null,
+      hasViewportMeta: audit?.hasViewportMeta ?? null,
+      isHttps: audit?.isHttps ?? null,
+      seoScore: seo ?? null,
+    });
+
     // Persisté depuis la migration 20260801024457_add_lead_score — avant
-    // ça le score était calculé puis jeté, invisible dans l'admin.
-    await prisma.lead.update({ where: { id: leadId }, data: { score } });
+    // ça le score était calculé puis jeté, invisible dans l'admin. On fusionne
+    // la bande + le canal recommandé dans auditData sans écraser le reste.
+    const mergedAudit = {
+      ...((lead.auditData as Record<string, unknown> | null) ?? {}),
+      priorityBand,
+      recommendedChannel: channel,
+      attackPriority: scoreBreakdown.priority,
+      attackScore: scoreBreakdown.score,
+      scoreBreakdown: scoreBreakdown.criteria,
+    };
+    await prisma.lead.update({ where: { id: leadId }, data: { score, auditData: mergedAudit as unknown as Prisma.InputJsonValue } });
 
     // HOT LEAD → test Google PageSpeed Insights complet sur son site. On garde
     // le rapport dans auditData.pageSpeed pour l'afficher sur la fiche prospect.

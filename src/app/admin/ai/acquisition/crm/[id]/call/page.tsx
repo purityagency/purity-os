@@ -17,6 +17,7 @@ interface AuditData {
   seoScore?: number | null
   techOpportunity?: number | null
   painPoints?: string[]
+  recommendedModules?: string[]
   contactPhone?: string | null
   pageSpeed?: PageSpeedReport
 }
@@ -57,6 +58,8 @@ export default async function CallPrepPage({ params }: { params: Promise<{ id: s
     seoScore: audit.seoScore ?? null,
     painPoints: audit.painPoints,
     pageSpeed: audit.pageSpeed ?? null,
+    recommendedModules: audit.recommendedModules ?? null,
+    techOpportunity: audit.techOpportunity ?? null,
   } satisfies LeadKitInput)
 
   const s = kit.callScript
@@ -108,6 +111,17 @@ export default async function CallPrepPage({ params }: { params: Promise<{ id: s
           <ul style={{ margin: 0, paddingLeft: 18 }}>
             {s.bridgeToValue.map((v, i) => <li key={i} style={{ fontSize: 14, marginBottom: 5, color: "#cbd0d8" }}>{v}</li>)}
           </ul>
+        </Section>
+
+        <Section title="Angles de repli (si le 1er ne prend pas)">
+          <div style={{ display: "grid", gap: 8 }}>
+            {kit.alternateAngles.map((a, i) => (
+              <div key={i} style={{ border: "1px solid #e5e7eb", borderRadius: 8, padding: 10 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "#7c3aed", textTransform: "uppercase", letterSpacing: 0.5 }}>{a.label}</div>
+                <div style={{ fontSize: 13, color: "#374151", marginTop: 2 }}>{a.hook}</div>
+              </div>
+            ))}
+          </div>
         </Section>
 
         <Section title="4 · Objections → réponses">

@@ -6,9 +6,15 @@ import { CopyButton } from "./CopyButton"
 import { GenerateAnglesButton } from "./GenerateAnglesButton"
 import { EnrichButton } from "./EnrichButton"
 import { CallSheetButton } from "./CallSheetButton"
+import { GenerateStrategyButton } from "./GenerateStrategyButton"
+import { RefreshPlacesButton } from "./RefreshPlacesButton"
 import { GlobeIcon, LocationIcon, UserIcon, MailIcon } from "@/components/icons"
 import { StatusBadge } from "@/components/StatusBadge"
 import type { PageSpeedReport, PageSpeedMetric } from "@/lib/acquisition/pageSpeedInsights"
+import { scoreBand, scoreTextClass, scoreBgClass } from "@/lib/acquisition/scoreColor"
+import { buildSalesKit } from "@/lib/acquisition/salesKit"
+import { buildLeadKitInput, sectorFromMissionParameters } from "@/lib/acquisition/buildLeadKitInput"
+import type { OpportunityStrategy } from "@/lib/agents/acquisition/OpportunityStrategist"
 
 export const dynamic = "force-dynamic"
 
@@ -24,11 +30,21 @@ interface AuditData {
   seoAudit?: unknown
   linkedinDraft?: unknown
   adsBrief?: unknown
+  attackPriority?: string
+  attackScore?: number
+  scoreBreakdown?: { label: string; points: number; maxPoints: number; reason: string }[]
+  strategy?: OpportunityStrategy
+  strategyGeneratedAt?: string
+  googlePlaces?: { rating?: number | null; userRatingsTotal?: number | null; error?: string; fetchedAt?: string }
+  hasWhatsApp?: boolean
+  hasContactForm?: boolean
+  hasBookingWidget?: boolean
+  hasAnalytics?: boolean
+  isHttps?: boolean
+  cmsDetected?: string | null
+  socialLinks?: { platform: string; url: string }[]
+  contactChannel?: string
   [k: string]: unknown
-}
-
-function scoreColor(s: number) {
-  return s >= 70 ? "text-emerald-400" : s >= 40 ? "text-amber-400" : "text-red-400"
 }
 
 // Rend une valeur inconnue (sortie d'agent) de façon lisible : chaîne brute,
@@ -59,7 +75,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const lead = await prisma.lead.findUnique({
     where: { id },
     include: {
-      mission: { select: { name: true } },
+      mission: { select: { name: true, parameters: true } },
       emailDrafts: { orderBy: { createdAt: "desc" } },
     },
   })
@@ -68,6 +84,11 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   const audit = (lead.auditData as AuditData | null) ?? {}
   const phone = audit.contactPhone ?? null
   const score = lead.score ?? null
+  const sector = sectorFromMissionParameters(lead.mission?.parameters)
+  const kit = buildSalesKit(buildLeadKitInput(lead, sector))
+  const primaryAngle = kit.angles[0]
+  const attackPriority = audit.attackPriority ?? null
+  const attackScore = audit.attackScore ?? null
   const mapsQuery = encodeURIComponent(`${lead.companyName} ${lead.location ?? "Belgique"}`)
   const mapsEmbed = `https://maps.google.com/maps?q=${mapsQuery}&z=15&output=embed`
   const mapsLink = lead.googleMapsUrl || `https://www.google.com/maps/search/?api=1&query=${mapsQuery}`
@@ -99,9 +120,11 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             <h1 className="text-2xl font-bold text-[#e8eaed] tracking-tight truncate">{lead.companyName}</h1>
             <div className="flex flex-wrap items-center gap-2 mt-2">
               <StatusBadge status={lead.status} />
+              <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-indigo-500/15 text-[#6366f1] border border-indigo-500/30">Profil : {kit.archetype.label}</span>
               {lead.mission?.name && <span className="text-[11px] font-mono text-[#737884]">Mission : {lead.mission.name}</span>}
               {lead.optedOut && <span className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-red-500/15 text-red-400 border border-red-500/30">Désinscrit</span>}
             </div>
+            <p className="text-sm text-[#a3a9b4] mt-2 max-w-xl leading-relaxed">{kit.oneLiner}</p>
           </div>
           <div className="shrink-0 flex items-center gap-3">
             <div className="flex flex-col gap-1.5">
@@ -112,15 +135,101 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
                 🖥️ Deck présentation
               </a>
               <CallSheetButton leadId={lead.id} label={`📞 Fiche d'appel${phone ? "" : " (pas de n°)"}`} className={`text-[11px] font-mono px-3 py-1.5 rounded-lg border transition-colors whitespace-nowrap text-center cursor-pointer ${phone ? "border-emerald-300 bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25" : "border-[#2a2b30] bg-[#212226] text-[#cbd0d8] hover:bg-[#e8eaef]"}`} />
+              <GenerateStrategyButton leadId={lead.id} hasStrategy={!!audit.strategy} />
             </div>
             {score !== null && (
               <div className="text-right">
-                <div className={`text-4xl font-bold tabular-nums ${scoreColor(score)}`}>{score}<span className="text-lg text-[#737884]">/100</span></div>
+                <div className={`text-4xl font-bold tabular-nums ${scoreTextClass(scoreBand(score))}`}>{score}<span className="text-lg text-[#737884]">/100</span></div>
                 <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884]">Score qualité</div>
               </div>
             )}
           </div>
         </div>
+
+        {/* Bandeau Opportunity Intelligence — Potentiel / Urgence / Heure idéale / Canal / Offre */}
+        <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+          <IntelStat label="Potentiel" value={attackScore !== null ? `${attackScore}/100` : "—"} tone={attackScore !== null ? scoreBand(attackScore) : "inconnu"} />
+          <IntelStat label="Priorité" value={attackPriority ?? "Non calculée"} tone={attackPriority === "Critique" || attackPriority === "Forte" ? "excellent" : attackPriority === "Moyenne" ? "moyen" : "inconnu"} />
+          <IntelStat label="Heure idéale" value="Mar-jeu 8-9h / 16-17h" tone="inconnu" />
+          <IntelStat label="Canal" value={audit.contactChannel === "PHONE" ? "Appel" : audit.contactChannel === "EMAIL" ? "Email" : "À qualifier"} tone="inconnu" />
+          <IntelStat label="Offre" value={kit.serviceRecommendation.primary.label} tone="inconnu" />
+        </div>
+
+        {/* Bloc 1 — Trigger d'appel : pourquoi appeler maintenant */}
+        <section className="rounded-2xl border border-red-500/30 bg-red-500/10 p-5">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-red-300 font-mono">🔥 Pourquoi appeler maintenant ?</h2>
+            <CopyButton text={kit.callScript.hook} label="Copier l'ouverture" />
+          </div>
+          <div className="space-y-2">
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884] mb-0.5">Plus gros problème détecté</div>
+              <div className="text-sm text-[#e8eaed]">{kit.findings[0]?.title}</div>
+            </div>
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884] mb-0.5">Opportunité principale</div>
+              <div className="text-sm text-[#e8eaed]">{primaryAngle.label} — {primaryAngle.dailyPain}</div>
+            </div>
+            <div className="rounded-xl bg-[#1a1b1e]/60 border border-red-500/20 p-3 mt-2">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-red-300/80 mb-1">Phrase d&apos;ouverture prête</div>
+              <div className="text-sm text-[#e8eaed] leading-relaxed">{kit.callScript.hook}</div>
+            </div>
+          </div>
+        </section>
+
+        {/* Bloc 2 — Profil psychologique */}
+        <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-3">Profil décisionnel estimé — {kit.archetype.label}</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-400/80 mb-1.5">Ce qui le convainc</div>
+              <ul className="space-y-1">
+                {kit.archetype.convinces.map((c, i) => <li key={i} className="text-sm text-[#cbd0d8] flex gap-2"><span className="text-emerald-400 shrink-0">✓</span><span>{c}</span></li>)}
+              </ul>
+            </div>
+            <div>
+              <div className="text-[10px] font-mono uppercase tracking-wider text-red-400/80 mb-1.5">Ce qu&apos;il déteste</div>
+              <ul className="space-y-1">
+                {kit.archetype.hates.map((c, i) => <li key={i} className="text-sm text-[#cbd0d8] flex gap-2"><span className="text-red-400 shrink-0">✕</span><span>{c}</span></li>)}
+              </ul>
+            </div>
+          </div>
+        </section>
+
+        {/* Stratégie IA générée */}
+        {audit.strategy && (
+          <section className="rounded-2xl border border-indigo-500/30 bg-indigo-500/15 p-5">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-3">🧠 Stratégie générée</h2>
+            <p className="text-sm text-[#cbd0d8] leading-relaxed mb-4">{audit.strategy.executiveSummary}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+              <MetaRow label="Plus gros problème" value={audit.strategy.biggestProblem} />
+              <MetaRow label="Meilleur angle" value={audit.strategy.bestAngle} />
+              <MetaRow label="Offre idéale" value={audit.strategy.idealOffer} />
+            </div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884] mb-2">Plan d&apos;action 30 jours</div>
+            <ol className="space-y-1.5">
+              {audit.strategy.actionPlan30Days.map((step, i) => (
+                <li key={i} className="text-sm text-[#cbd0d8] flex gap-2"><span className="text-[#6366f1] font-mono text-xs shrink-0">S{step.week}</span><span>{step.action}</span></li>
+              ))}
+            </ol>
+          </section>
+        )}
+
+        {/* Bloc 4 — Intelligence Google Business (scope réduit : note + nb avis) */}
+        <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono">Réputation Google</h2>
+            <RefreshPlacesButton leadId={lead.id} />
+          </div>
+          {audit.googlePlaces && !audit.googlePlaces.error && audit.googlePlaces.rating ? (
+            <div className="flex items-center gap-4">
+              <div className="text-3xl font-bold tabular-nums text-emerald-400">{audit.googlePlaces.rating}<span className="text-base text-[#737884]">/5</span></div>
+              <div className="text-sm text-[#cbd0d8]">{audit.googlePlaces.userRatingsTotal ?? 0} avis Google</div>
+            </div>
+          ) : (
+            <p className="text-xs text-[#737884] italic">Pas encore de données Google Business — clique sur « Actualiser » pour récupérer la note et le nombre d&apos;avis.</p>
+          )}
+        </section>
 
         {/* Actions rapides / liens */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -189,11 +298,96 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
             {/* Test Google PageSpeed Insights (hot leads) */}
             {audit.pageSpeed && <PageSpeedSection report={audit.pageSpeed} />}
 
-            {/* Angles générés — à la demande (hors du chemin critique mission) */}
+            {/* Bloc 5 — Audit Conversion : checklist en langage clair, impact business */}
+            <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-4">Audit Conversion</h2>
+              <div className="space-y-2">
+                <ChecklistRow label="Bouton WhatsApp" ok={audit.hasWhatsApp} impact="Les visiteurs mobiles doivent chercher comment vous contacter." />
+                <ChecklistRow label="Numéro de téléphone visible" ok={!!phone} impact="Un client pressé abandonne plutôt que de chercher votre numéro." />
+                <ChecklistRow label="Réservation en ligne" ok={audit.hasBookingWidget} impact="Chaque rendez-vous doit passer par un appel — impossible en dehors de vos horaires." />
+                <ChecklistRow label="Formulaire de contact" ok={audit.hasContactForm} impact="Un visiteur qui ne veut pas téléphoner n'a aucun autre moyen de vous laisser sa demande." />
+                <ChecklistRow label="Vitesse mobile correcte" ok={typeof perf === "number" ? perf >= 70 : null} impact="Plus de la moitié des visiteurs partent avant 3 secondes de chargement." />
+                <ChecklistRow label="Connexion sécurisée (HTTPS)" ok={audit.isHttps} impact="Certains navigateurs affichent un avertissement « site non sécurisé » qui fait fuir." />
+                <ChecklistRow label="Suivi analytics" ok={audit.hasAnalytics} impact="Impossible de savoir combien de visiteurs deviennent réellement des demandes." />
+              </div>
+              {audit.cmsDetected && <p className="text-[11px] font-mono text-[#737884] mt-3">Technologie détectée : {audit.cmsDetected}</p>}
+            </section>
+
+            {/* Bloc 6 — Réseaux sociaux : présence uniquement, pas de métrique inventée */}
+            <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-3">Réseaux sociaux</h2>
+              {audit.socialLinks && audit.socialLinks.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {audit.socialLinks.map((s, i) => (
+                    <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="text-[11px] font-mono px-2.5 py-1 rounded-md bg-[#1a1b1e] text-[#cbd0d8] border border-[#2a2b30] hover:border-indigo-300 transition-colors capitalize">{s.platform} ↗</a>
+                  ))}
+                  {audit.socialLinks.some((s) => s.platform === "instagram" || s.platform === "facebook") && scoreBand(perf ?? null) !== "excellent" && (
+                    <p className="text-xs text-[#a3a9b4] italic mt-1 w-full">Présence sociale active, mais le site vers lequel elle renvoie reste peu optimisé pour convertir.</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-xs text-[#737884] italic">Aucun réseau social détecté sur le site.</p>
+              )}
+            </section>
+
+            {/* Bloc 7 — Estimation des pertes (toujours une fourchette, jamais une certitude) */}
+            <section className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-5">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-amber-300 font-mono mb-2">Estimation — à prendre comme ordre de grandeur</h2>
+              <div className="text-2xl font-bold text-[#e8eaed] mb-1">{kit.lossEstimate.weeklyLow}€ – {kit.lossEstimate.weeklyHigh}€ <span className="text-sm font-normal text-[#a3a9b4]">/ semaine</span></div>
+              <p className="text-sm text-[#cbd0d8]">Basé sur : {kit.lossEstimate.basis}. Même quelques demandes manquées par semaine peuvent représenter plusieurs centaines d&apos;euros sur un mois.</p>
+            </section>
+
+            {/* Bloc 8 — Service Purity recommandé */}
+            <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-3">Service recommandé</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-emerald-300 mb-1">Priorité — {kit.serviceRecommendation.primary.moduleCode}</div>
+                  <div className="text-sm font-semibold text-[#e8eaed] mb-1">{kit.serviceRecommendation.primary.label}</div>
+                  <div className="text-xs text-[#a3a9b4]">{kit.serviceRecommendation.primary.why}</div>
+                </div>
+                <div className="rounded-xl border border-[#2a2b30] bg-[#1a1b1e] p-3">
+                  <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884] mb-1">Upsell naturel — {kit.serviceRecommendation.upsell.moduleCode}</div>
+                  <div className="text-sm font-semibold text-[#e8eaed] mb-1">{kit.serviceRecommendation.upsell.label}</div>
+                  <div className="text-xs text-[#a3a9b4]">{kit.serviceRecommendation.upsell.why}</div>
+                </div>
+              </div>
+            </section>
+
+            {/* Bloc 9 — Objections prédites */}
+            <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-3">Objections probables</h2>
+              <div className="grid gap-2">
+                {kit.callScript.objections.map((o, i) => (
+                  <div key={i} className="rounded-xl border border-[#2a2b30] bg-[#1a1b1e] p-3">
+                    <div className="text-sm font-bold text-red-300 mb-1">{o.trigger}</div>
+                    <div className="text-sm text-[#cbd0d8]">{o.response}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Bloc 10 — Scripts dynamiques (relance / SMS / WhatsApp / email) */}
+            <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono mb-3">Scripts de relance</h2>
+              <div className="space-y-3">
+                <ScriptRow label="Rappel téléphonique" text={kit.channelScripts.relanceCall} />
+                <ScriptRow label="SMS" text={kit.channelScripts.sms} />
+                <ScriptRow label="WhatsApp" text={kit.channelScripts.whatsapp} />
+                <ScriptRow label={`Email — ${kit.channelScripts.emailFollowup.subject}`} text={kit.channelScripts.emailFollowup.body} />
+              </div>
+            </section>
+
+            {/* Bloc 11 — Angles générés (existant, + justification déterministe par canal) */}
             <section className="rounded-2xl border border-[#2a2b30] bg-[#212226] p-5">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <h2 className="text-sm font-bold uppercase tracking-wider text-[#e8eaed] font-mono">Angles multi-canaux</h2>
                 <GenerateAnglesButton leadId={lead.id} hasAngles={!!(audit.seoAudit || audit.linkedinDraft || audit.adsBrief)} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
+                <ChannelRationale label="SEO" angle={kit.angles.find((a) => a.key === "presence" || a.key === "acquisition")} />
+                <ChannelRationale label="LinkedIn" angle={kit.angles.find((a) => a.key === "metier" || a.key === "acquisition")} />
+                <ChannelRationale label="Google/Meta Ads" angle={kit.angles.find((a) => a.key === "acquisition")} />
               </div>
               {audit.seoAudit || audit.linkedinDraft || audit.adsBrief ? (
                 <div className="space-y-4">
@@ -288,13 +482,56 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
   )
 }
 
+// Bloc 5 — état + impact business en langage clair, jamais de jargon.
+function ChecklistRow({ label, ok, impact }: { label: string; ok: boolean | null | undefined; impact: string }) {
+  const known = ok !== null && ok !== undefined
+  const icon = !known ? "•" : ok ? "✅" : "❌"
+  const color = !known ? "text-[#737884]" : ok ? "text-emerald-400" : "text-red-400"
+  return (
+    <div className="flex items-start gap-3 py-1.5">
+      <span className={`shrink-0 ${color}`}>{icon}</span>
+      <div className="min-w-0">
+        <div className={`text-sm ${known ? "text-[#e8eaed]" : "text-[#737884] italic"}`}>{label}{!known && " — non mesuré"}</div>
+        {known && !ok && <div className="text-xs text-[#a3a9b4] mt-0.5">Impact : {impact}</div>}
+      </div>
+    </div>
+  )
+}
+
+function ScriptRow({ label, text }: { label: string; text: string }) {
+  return (
+    <div className="rounded-xl border border-[#2a2b30] bg-[#1a1b1e] p-3">
+      <div className="flex items-center justify-between gap-2 mb-1.5">
+        <div className="text-[10px] font-mono uppercase tracking-wider text-[#737884]">{label}</div>
+        <CopyButton text={text} label="Copier" />
+      </div>
+      <div className="text-sm text-[#cbd0d8] whitespace-pre-wrap leading-relaxed">{text}</div>
+    </div>
+  )
+}
+
+function ChannelRationale({ label, angle }: { label: string; angle?: { label: string; dailyPain: string; score: number } }) {
+  if (!angle) return null
+  return (
+    <div className="rounded-xl border border-[#2a2b30] bg-[#1a1b1e] p-3">
+      <div className="text-[10px] font-mono uppercase tracking-wider text-[#6366f1] mb-1">{label}</div>
+      <div className="text-xs text-[#cbd0d8] leading-relaxed">{angle.dailyPain}</div>
+    </div>
+  )
+}
+
+function IntelStat({ label, value, tone }: { label: string; value: string; tone: ReturnType<typeof scoreBand> }) {
+  return (
+    <div className={`rounded-xl border p-3 ${scoreBgClass(tone)}`}>
+      <div className="text-[9px] font-mono uppercase tracking-wider opacity-70 mb-0.5">{label}</div>
+      <div className="text-sm font-bold truncate">{value}</div>
+    </div>
+  )
+}
+
 function ScoreTile({ label, value, invert = false }: { label: string; value: number | null; invert?: boolean }) {
   // invert=true : haut = bon (opportunité). sinon : bas = problème (perf/seo).
-  const color =
-    value === null ? "text-[#737884]"
-      : invert
-        ? value >= 60 ? "text-emerald-400" : value >= 35 ? "text-amber-400" : "text-[#a3a9b4]"
-        : value >= 70 ? "text-emerald-400" : value >= 40 ? "text-amber-400" : "text-red-400"
+  const color = scoreTextClass(scoreBand(value, { invert }))
   return (
     <div className="rounded-xl border border-[#2a2b30] bg-[#1a1b1e] p-3 text-center">
       <div className={`text-2xl font-bold tabular-nums ${color}`}>{value === null ? "—" : value}</div>
@@ -312,21 +549,18 @@ function MetaRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-function psiRing(score: number | null) {
-  return score === null ? "text-[#737884]" : score >= 90 ? "text-emerald-400" : score >= 50 ? "text-amber-400" : "text-red-400"
-}
-
 function PsiScore({ label, value }: { label: string; value: number | null }) {
+  const color = scoreTextClass(scoreBand(value, { thresholds: [90, 50] }))
   return (
     <div className="rounded-xl border border-[#2a2b30] bg-[#1a1b1e] p-3 text-center">
-      <div className={`text-2xl font-bold tabular-nums ${psiRing(value)}`}>{value ?? "—"}</div>
+      <div className={`text-2xl font-bold tabular-nums ${color}`}>{value ?? "—"}</div>
       <div className="text-[9px] font-mono uppercase tracking-wider text-[#737884] mt-0.5">{label}</div>
     </div>
   )
 }
 
 function PsiMetricRow({ m }: { m: PageSpeedMetric }) {
-  const color = m.score === null ? "text-[#a3a9b4]" : m.score >= 0.9 ? "text-emerald-400" : m.score >= 0.5 ? "text-amber-400" : "text-red-400"
+  const color = m.score === null ? "text-[#a3a9b4]" : scoreTextClass(scoreBand(m.score, { thresholds: [0.9, 0.5] }))
   return (
     <div className="flex items-center justify-between gap-3 py-1.5 border-b border-[#2a2b30] last:border-0">
       <span className="text-sm text-[#cbd0d8] truncate">{m.title}</span>

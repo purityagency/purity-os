@@ -40,6 +40,12 @@ export async function deliverDraft(draft: DraftWithLead): Promise<DeliverResult>
 
   const unsubscribeUrl = `${getBaseUrl()}/api/unsubscribe?token=${makeUnsubscribeToken(draft.lead.id)}`
 
+  // "engaged" (petit logo, mise en page plus soignée) dès qu'on répond sur un
+  // fil déjà ouvert par le prospect (relance ou réponse à sa réponse) — "cold"
+  // (sobre, sans image) uniquement pour le tout premier contact non sollicité.
+  // Déduit de `tone` (pas de nouveau champ de schéma) : voir CreativeCopywriter.ts.
+  const variant: "cold" | "engaged" = /Relance|Réponse/.test(draft.tone) ? "engaged" : "cold"
+
   let providerId: string | null = null
   try {
     const r = await sendEmail({
@@ -54,6 +60,7 @@ export async function deliverDraft(draft: DraftWithLead): Promise<DeliverResult>
         unsubscribeUrl,
         source: draft.lead.source,
         websiteUrl: draft.lead.websiteUrl,
+        variant,
       }),
     })
     providerId = r?.providerId ?? null
