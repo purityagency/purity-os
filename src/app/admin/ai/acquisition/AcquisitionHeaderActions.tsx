@@ -143,31 +143,41 @@ export function AcquisitionHeaderActions({ missions }: { missions: any[] }) {
               </div>
 
               <div className="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar">
-                {missions.map(m => (
-                  <div key={m.id} className="p-4 rounded-xl border border-white/5 bg-[#0f1014]">
-                    <div className="flex justify-between items-start mb-3">
-                      <div>
-                        <div className="text-[14px] font-semibold text-[#f8fafc]">{m.name}</div>
-                        <div className="text-[11px] font-medium text-[#64748b] mt-1">{m.sectors.join(", ")} · {m.locations.join(", ")}</div>
+                {missions.map(m => {
+                  const params = (m.parameters as { sectors?: string[]; locations?: string[]; maxLeads?: number } | null) ?? {}
+                  const sectors = Array.isArray(params.sectors) ? params.sectors : []
+                  const locations = Array.isArray(params.locations) ? params.locations : []
+                  const maxLeads = params.maxLeads ?? 50
+                  const leadsCount = m._count?.leads || 0
+                  return (
+                    <div key={m.id} className="p-4 rounded-xl border border-white/5 bg-[#0f1014]">
+                      <div className="flex justify-between items-start mb-3">
+                        <div>
+                          <div className="text-[14px] font-semibold text-[#f8fafc]">{m.name}</div>
+                          <div className="text-[11px] font-medium text-[#64748b] mt-1">
+                            {sectors.length > 0 ? sectors.join(", ") : "—"}
+                            {locations.length > 0 ? ` · ${locations.join(", ")}` : ""}
+                          </div>
+                        </div>
+                        <span className={`px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider ${m.status === 'ACTIVE' ? 'bg-[#10b981]/10 text-[#10b981]' : 'bg-white/5 text-[#94a3b8]'}`}>
+                          {m.status}
+                        </span>
                       </div>
-                      <span className={`px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider ${m.status === 'ACTIVE' ? 'bg-[#10b981]/10 text-[#10b981]' : 'bg-white/5 text-[#94a3b8]'}`}>
-                        {m.status}
-                      </span>
+                      <div className="space-y-1.5">
+                        <div className="flex justify-between text-[11px] font-medium text-[#94a3b8]">
+                          <span>Progression</span>
+                          <span>{leadsCount} / {maxLeads} Leads</span>
+                        </div>
+                        <div className="h-1.5 rounded-full bg-[#1a1b1f] overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${m.status === 'ACTIVE' ? 'bg-[#7c3aed]' : 'bg-[#64748b]'}`}
+                            style={{ width: `${Math.min(100, Math.max(2, (leadsCount / maxLeads) * 100))}%` }}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between text-[11px] font-medium text-[#94a3b8]">
-                        <span>Progression</span>
-                        <span>{m._count?.leads || 0} / {m.maxLeads} Leads</span>
-                      </div>
-                      <div className="h-1.5 rounded-full bg-[#1a1b1f] overflow-hidden">
-                        <div 
-                          className={`h-full rounded-full transition-all duration-500 ${m.status === 'ACTIVE' ? 'bg-[#7c3aed]' : 'bg-[#64748b]'}`}
-                          style={{ width: `${Math.min(100, Math.max(2, ((m._count?.leads || 0) / m.maxLeads) * 100))}%` }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
                 
                 {missions.length === 0 && (
                   <div className="text-center py-10 text-[#64748b] text-[13px]">
