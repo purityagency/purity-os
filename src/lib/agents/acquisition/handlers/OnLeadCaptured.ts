@@ -22,13 +22,20 @@ export async function onLeadCaptured(event: LeadCapturedEvent): Promise<void> {
     const analyst = new IntelligenceAnalyst();
     await analyst.analyzeLead(event.leadId);
 
-    // Ne pas appeler le Copywriter (et gaspiller de l'API LLM) si aucun email n'a été trouvé
+    // On ne rédige un email QUE si on a un vrai email de décideur (nominatif ou
+    // rôle-décideur). Un email générique (info@/contact@) part en poubelle : ce
+    // lead-là se travaille au TÉLÉPHONE (fiche d'appel), pas au mail. Sans email
+    // décideur, on ne gaspille pas d'appel LLM sur un brouillon inutile.
     const enrichedLead = await prisma.lead.findUnique({ where: { id: event.leadId } });
-    if (enrichedLead?.contactEmail) {
+    const quality = (enrichedLead?.auditData as { emailQuality?: string } | null)?.emailQuality;
+    const emailUsable = !!enrichedLead?.contactEmail && (quality === 'nominative' || quality === 'role');
+    if (emailUsable) {
       const copywriter = new CreativeCopywriter();
       await copywriter.draftEmail(event.leadId);
+    } else if (enrichedLead?.contactEmail) {
+      logger.info(`[Handler] Email générique pour ${event.leadId} (${quality}) — pas de brouillon, ce lead se travaille au téléphone.`);
     } else {
-      logger.info(`[Handler] Aucun email trouvé pour le lead ${event.leadId}, brouillon annulé (Zéro gaspillage).`);
+      logger.info(`[Handler] Aucun email pour le lead ${event.leadId}, brouillon annulé (Zéro gaspillage).`);
     }
 
     // Scoring déterministe (aucun appel LLM). On NE déclenche PAS PageSpeed ici :

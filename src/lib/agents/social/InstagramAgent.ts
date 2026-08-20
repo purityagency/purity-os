@@ -57,6 +57,7 @@ export class InstagramAgent extends AutonomousAgent {
         ].join(' '),
         department: '07_VISIBILITE_SOCIALE',
         knowledgeFiles: [
+          'PurityVoiceProfile.md',
           'SocialStrategy.md',
           'InstagramPlaybook.md',
           'ToneOfVoice.md',

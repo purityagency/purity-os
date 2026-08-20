@@ -30,7 +30,7 @@ export class SocialProspector extends AutonomousAgent {
           "Chaque DM doit sembler écrit à la main en 20 secondes depuis le téléphone.",
         ].join(' '),
         department: '07_VISIBILITE_SOCIALE',
-        knowledgeFiles: ['SocialStrategy.md', 'InstagramPlaybook.md', 'ToneOfVoice.md'],
+        knowledgeFiles: ['PurityVoiceProfile.md', 'SocialStrategy.md', 'InstagramPlaybook.md', 'ToneOfVoice.md'],
       }
     );
   }

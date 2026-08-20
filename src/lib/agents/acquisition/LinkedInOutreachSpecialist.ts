@@ -24,6 +24,7 @@ export class LinkedInOutreachSpecialist extends AutonomousAgent {
           "Chaque message doit sembler avoir été écrit à la main en 30 secondes depuis l'app mobile LinkedIn."
         ].join(' '),
         department: '01_ACQUISITION',
+        knowledgeFiles: ['PurityVoiceProfile.md'],
       }
     );
   }

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
-import { generateInstagramPlan, updateDraftStatus } from "@/actions/socialActions"
+import { generateInstagramPlan, updateDraftStatus, generateDmBatch } from "@/actions/socialActions"
 
 export interface DraftView {
   id: string
@@ -30,13 +30,26 @@ const FORMAT_TONE: Record<string, string> = {
   POST: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
 }
 
-export function SocialClient({ initialDrafts }: { initialDrafts: DraftView[] }) {
+export function SocialClient({ initialDrafts, initialDms = [] }: { initialDrafts: DraftView[]; initialDms?: DraftView[] }) {
   const router = useRouter()
   const [pending, start] = useTransition()
   const [count, setCount] = useState(5)
   const [pillar, setPillar] = useState("")
   const [offer, setOffer] = useState("site premium + SEO local pour commerces & TPE belges")
   const [error, setError] = useState<string | null>(null)
+  const [dmPending, startDm] = useTransition()
+
+  function prospect() {
+    setError(null)
+    startDm(async () => {
+      try {
+        await generateDmBatch(3)
+        router.refresh()
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Erreur de prospection")
+      }
+    })
+  }
 
   function generate() {
     setError(null)
@@ -108,6 +121,74 @@ export function SocialClient({ initialDrafts }: { initialDrafts: DraftView[] }) 
           {initialDrafts.map((d) => <ContentCard key={d.id} d={d} onStatus={(s) => start(async () => { await updateDraftStatus(d.id, s); router.refresh() })} />)}
         </div>
       )}
+
+      {/* ── Prospection DM ─────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 pt-6 pb-4 border-b border-white/5">
+        <div>
+          <div className="text-[11px] font-mono uppercase tracking-[0.2em] text-[#7c3aed]">Prospection · DM</div>
+          <h2 className="text-xl font-bold tracking-tight mt-1">Openers DM Instagram</h2>
+          <p className="text-[13px] text-[#94a3b8] mt-1">Nora Aktas rédige un message value-first pour tes meilleurs leads du CRM.</p>
+        </div>
+        <button onClick={prospect} disabled={dmPending}
+          className="rounded-lg px-5 py-2 text-sm font-semibold text-white bg-[#7c3aed] hover:bg-[#6d28d9] transition disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap self-start">
+          {dmPending ? "Rédaction…" : "Prospecter 3 leads ✦"}
+        </button>
+      </div>
+      {dmPending && <p className="text-xs text-[#94a3b8]">Nora rédige les DM… (~20-40s, un lead à la fois)</p>}
+
+      {initialDms.length === 0 ? (
+        <div className="p-10 text-center border border-dashed border-white/10 rounded-2xl bg-[#0f1014]">
+          <p className="text-sm font-semibold text-[#cbd5e1]">Aucun DM encore.</p>
+          <p className="text-xs text-[#64748b] mt-1">Lance une prospection pour rédiger des openers sur tes leads réels.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {initialDms.map((d) => <DmCard key={d.id} d={d} onStatus={(s) => start(async () => { await updateDraftStatus(d.id, s); router.refresh() })} />)}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function DmCard({ d, onStatus }: { d: DraftView; onStatus: (s: string) => void }) {
+  const s = d.structured ?? {}
+  const company = String(s.companyName ?? "Lead")
+  const location = s.location ? String(s.location) : null
+  const score = typeof s.score === "number" ? (s.score as number) : null
+  const signal = String(s.signalUsed ?? "")
+  const humanScore = typeof s.humanScore === "number" ? (s.humanScore as number) : null
+  const [copied, setCopied] = useState(false)
+  const approved = d.status === "APPROVED" || d.status === "PUBLISHED"
+  const rejected = d.status === "REJECTED"
+
+  return (
+    <div className={`rounded-2xl border bg-[#0f1014] overflow-hidden flex flex-col ${rejected ? "border-white/5 opacity-50" : "border-white/5"}`}>
+      <div className="flex items-center gap-2 px-4 h-11 bg-[#09090c] border-b border-white/5">
+        <span className="text-[13px] font-semibold text-[#f8fafc] truncate">{company}</span>
+        {location && <span className="text-[11px] text-[#64748b]">{location}</span>}
+        {score != null && <span className="text-[11px] font-mono text-[#94a3b8]">score {score}</span>}
+        {humanScore != null && <span className="ml-auto text-[11px] font-mono text-[#7c3aed]">{humanScore}/10</span>}
+      </div>
+      <div className="p-4 space-y-3 flex-1">
+        <p className="text-[14px] text-[#f8fafc] whitespace-pre-wrap leading-relaxed">{d.postText}</p>
+        {signal && (
+          <div className="rounded-lg border border-white/5 bg-[#060309] p-3">
+            <div className="text-[10px] font-mono uppercase tracking-wider text-[#64748b] mb-1.5">Signal utilisé</div>
+            <p className="text-[12px] text-[#94a3b8] leading-relaxed">{signal}</p>
+          </div>
+        )}
+      </div>
+      <div className="flex items-center gap-2 px-4 h-12 border-t border-white/5">
+        <button onClick={() => navigator.clipboard.writeText(d.postText).then(() => { setCopied(true); setTimeout(() => setCopied(false), 1500) })}
+          className="text-[12px] font-medium px-3 py-1.5 rounded-md border border-white/10 text-[#cbd5e1] hover:bg-white/5 transition-colors">
+          {copied ? "Copié ✓" : "Copier le DM"}
+        </button>
+        <div className="ml-auto flex items-center gap-2">
+          {!approved && <button onClick={() => onStatus("APPROVED")} className="text-[12px] font-semibold px-3 py-1.5 rounded-md bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/25 transition-colors">Valider</button>}
+          {approved && <span className="text-[12px] font-semibold text-emerald-300">✓ Validé</span>}
+          {!rejected && !approved && <button onClick={() => onStatus("REJECTED")} className="text-[12px] font-medium px-3 py-1.5 rounded-md border border-white/10 text-[#94a3b8] hover:bg-white/5 transition-colors">Rejeter</button>}
+        </div>
+      </div>
     </div>
   )
 }

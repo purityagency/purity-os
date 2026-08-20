@@ -39,6 +39,7 @@ export default function AcquisitionLayout({ children }: { children: React.ReactN
 
   const TABS = [
     { name: "Cockpit", href: "/admin/ai/acquisition", Icon: OverviewIcon, badge: 0 },
+    { name: "Aujourd'hui", href: "/admin/ai/acquisition/today", Icon: PhoneIcon, badge: 0 },
     { name: "Leads CRM", href: "/admin/ai/acquisition/crm", Icon: TableIcon, badge: 0 },
     { name: "Brouillons", href: "/admin/ai/acquisition/drafts", Icon: SparklesIcon, badge: badges.drafts },
     { name: "Appels", href: "/admin/ai/acquisition/calls", Icon: PhoneIcon, badge: badges.callable },
