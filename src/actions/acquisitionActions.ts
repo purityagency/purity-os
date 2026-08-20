@@ -6,9 +6,10 @@ import { revalidatePath } from "next/cache"
 import { requireAdminSession } from "@/lib/session"
 import { NotFoundError, ValidationError } from "@/lib/errors"
 import { deliverDraft } from "@/lib/acquisition/deliverDraft"
-import { ChiefAcquisitionAI } from "@/lib/agents/acquisition/ChiefAcquisitionAI"
-
-import { CreativeCopywriter } from "@/lib/agents/acquisition/CreativeCopywriter"
+// ChiefAcquisitionAI et CreativeCopywriter sont importés de façon paresseuse
+// à l'intérieur des fonctions qui en ont besoin. Un import top-level ferait
+// exécuter le bloc de vérification GEMINI_API_KEY d'AgentCore au chargement
+// du module — ce qui crash quand ce fichier est bundlé côté client.
 import { eventBus } from "@/core/events"
 import { DraftReviewedEvent } from "@/lib/agents/acquisition/events"
 
@@ -81,6 +82,10 @@ export async function launchMission(formData: FormData) {
     throw new ValidationError("Le quota de leads doit être entre 1 et 50")
   }
 
+  // Import paresseux : AgentCore vérifie GEMINI_API_KEY au niveau module,
+  // ce throw ne doit s'exécuter que server-side à l'appel réel, jamais
+  // au chargement du bundle client.
+  const { ChiefAcquisitionAI } = await import("@/lib/agents/acquisition/ChiefAcquisitionAI")
   const chief = new ChiefAcquisitionAI()
   await chief.launchMission(name, sectors, locations, maxLeads)
 
@@ -282,6 +287,7 @@ export async function regenerateDraftAction(
   if (!draft) throw new NotFoundError("Brouillon")
 
   try {
+    const { CreativeCopywriter } = await import("@/lib/agents/acquisition/CreativeCopywriter")
     const copywriter = new CreativeCopywriter()
     await copywriter.draftEmail(draft.leadId, tone, draft.id)
     revalidateAcquisition()
